@@ -17,7 +17,7 @@ export const Header = ({ activeTab, onSelectTab }) => {
         </div>
         <div className="brand-titles">
           <span className="brand-title">MyDiary</span>
-          <span className="brand-badge">Desktop v0.1.0</span>
+          <span className="brand-badge">Desktop v0.2.0</span>
         </div>
       </div>
 
