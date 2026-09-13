@@ -1,0 +1,9 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  isElectron: true,
+  saveFile: (defaultFileName, base64Data, filterType) =>
+    ipcRenderer.invoke('save-file-dialog', { defaultFileName, base64Data, filterType }),
+  saveHwpxFile: (defaultFileName, base64Data) =>
+    ipcRenderer.invoke('save-file-dialog', { defaultFileName, base64Data, filterType: 'hwpx' }),
+});

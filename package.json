@@ -1,0 +1,58 @@
+{
+  "name": "mydiary-desktop",
+  "version": "0.1.0",
+  "description": "MyDiary Desktop - 학생 일지 및 성장 기록 관리 데스크톱 앱",
+  "author": "Sung Baekjin <sbjwin4271@gmail.com>",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "package:win": "vite build && electron-builder --win",
+    "package:mac": "vite build && electron-builder --mac",
+    "package:linux": "vite build && electron-builder --linux"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.2.0",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.sbjwin.mydiary.desktop",
+    "productName": "MyDiary",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  }
+}

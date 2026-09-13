@@ -1,0 +1,76 @@
+# 의존성 (Dependencies)
+node_modules/
+.pnp
+.pnp.js
+
+# 빌드 및 패키징 산출물 (Build Outputs & Packaging)
+dist/
+dist-electron/
+release/
+build/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.blockmap
+
+# Vite 번들러 및 도구 캐시 (Cache)
+.vite/
+.eslintcache
+.cache/
+
+# 환경 변수 및 보안/인증서 (Environment Variables & Secrets)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+
+# 로그 파일 (Logs)
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 운영체제 생성 파일 (OS Generated)
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE 및 에디터 (Editor & IDE)
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# 테스트 및 임시 내보내기 파일 (Temp & Export Artifacts)
+*.tmp
+*.temp
+*.bak
+*.hwpx
+*.docx
+*.pdf
+
+# AI 에이전트 설정 (AI Agent Governance & Local Skills)
+.agents/
