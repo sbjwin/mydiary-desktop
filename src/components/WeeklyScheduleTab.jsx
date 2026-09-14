@@ -13,6 +13,8 @@ import {
   LayoutGrid,
   Columns,
   Sparkles,
+  Copy,
+  RotateCcw,
 } from 'lucide-react';
 import { ScheduleModal } from './ScheduleModal';
 import { printWeeklyReport, shareWeeklyReportHwpx, shareWeeklyReportDocx } from '../services/PrintService';
@@ -197,6 +199,36 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
     }
   };
 
+  // 이전 주 시간표 복사 핸들러 (선생님 수동 선택 복사)
+  const handleCopyPrevWeek = async () => {
+    const prevMonday = getDateFromMondayOffset(currentMonday, -7);
+    const prevSunday = getDateFromMondayOffset(currentMonday, -1);
+    const confirmMsg = `이전 주(${prevMonday} ~ ${prevSunday})에 등록된 수업 일정들을 이번 주로 복사해 오시겠습니까?\n\n※ 기존에 등록된 이번 주 수업 일정이 있다면 이전 주 일정으로 새로 갱신됩니다.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await Database.copyPreviousWeekPlan(currentMonday);
+      await loadWeekData(currentMonday);
+      alert('이전 주 시간표가 성공적으로 복사되었습니다.');
+    } catch (err) {
+      alert('시간표 복사 실패: ' + err.message);
+    }
+  };
+
+  // 이번 주 시간표 전체 비우기 핸들러 (잘못 등록되거나 겹친 일정 일괄 정리)
+  const handleClearWeek = async () => {
+    const confirmMsg = `이번 주(${currentMonday} ~ ${sundayDate})에 등록된 모든 수업 일정을 비우시겠습니까?\n\n※ 작성 완료된 과거 수업 일지는 안전하게 보관되며, 시간표의 수업 배치만 깨끗이 비워집니다.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await Database.clearWeeklyPlan(currentMonday);
+      await loadWeekData(currentMonday);
+      alert('이번 주 시간표의 모든 수업 일정이 초기화되었습니다.');
+    } catch (err) {
+      alert('시간표 비우기 실패: ' + err.message);
+    }
+  };
+
   // 인쇄 및 문서 내보내기 핸들러
   const handlePrint = async () => {
     if (!weeklyPlan) return;
@@ -275,7 +307,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
           </button>
         </div>
 
-        {/* 액션 버튼 그룹 (수업 등록 / 인쇄 / 한글 / 워드) */}
+        {/* 액션 버튼 그룹 (수업 등록 / 복사 / 비우기 / 인쇄 / 한글 / 워드) */}
         <div className="week-actions-group">
           <button
             className="btn-primary sm"
@@ -283,6 +315,20 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
             title="새 수업 일정 등록"
           >
             <Plus size={15} /> 일정 추가
+          </button>
+          <button
+            className="btn-secondary sm"
+            onClick={handleCopyPrevWeek}
+            title="이전 주의 수업 일정들을 이번 주로 한 번에 복사합니다"
+          >
+            <Copy size={15} /> 이전 주 복사
+          </button>
+          <button
+            className="btn-secondary sm"
+            onClick={handleClearWeek}
+            title="이번 주 시간표에 등록된 모든 수업 일정을 비웁니다"
+          >
+            <RotateCcw size={15} /> 시간표 비우기
           </button>
           <button className="btn-secondary sm" onClick={handlePrint} title="A4 인쇄 또는 PDF 저장">
             <Printer size={15} /> 인쇄 / PDF
@@ -528,6 +574,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
         onDelete={handleDeleteSchedule}
         initialData={modalInitialData}
         students={students}
+        existingSchedules={weeklyPlan?.scheduleItems || []}
         onNavigateToDiary={onNavigateToDiary}
       />
     </div>

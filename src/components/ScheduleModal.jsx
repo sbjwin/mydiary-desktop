@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag } from 'lucide-react';
+import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag, AlertTriangle } from 'lucide-react';
 import { formatPhoneInfo } from '../database/Database';
 
 const QUICK_TAGS = ['=> 이번주만', '=> 보강', '=> 시간변경', '휴강'];
@@ -12,6 +12,7 @@ export const ScheduleModal = ({
   onDelete,
   initialData,
   students = [],
+  existingSchedules = [],
   onNavigateToDiary,
 }) => {
   const [studentId, setStudentId] = useState('');
@@ -24,7 +25,6 @@ export const ScheduleModal = ({
   const [paymentType, setPaymentType] = useState('지사입금');
   const [phoneInfo, setPhoneInfo] = useState('');
   const [address, setAddress] = useState('');
-  const [isRecurring, setIsRecurring] = useState(true);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -40,7 +40,6 @@ export const ScheduleModal = ({
       setPaymentType(initialData.paymentType || '지사입금');
       setPhoneInfo(initialData.phoneInfo || '');
       setAddress(initialData.address || '');
-      setIsRecurring(initialData.isRecurring !== false);
     } else {
       // 기본값
       setStudentId('');
@@ -53,9 +52,17 @@ export const ScheduleModal = ({
       setPaymentType('지사입금');
       setPhoneInfo('');
       setAddress('');
-      setIsRecurring(true);
     }
   }, [isOpen, initialData]);
+
+  // 동일 날짜 및 시작 시간대 수업 중복 감지 (현재 수정 중인 대상 제외)
+  const conflictSchedule = existingSchedules?.find((item) => {
+    if (!date || !startTime) return false;
+    if (initialData?.id && item.id === initialData.id) return false;
+    const itemTime = (item.startTime || item.classTime || '').slice(0, 5);
+    const targetTime = startTime.slice(0, 5);
+    return item.date === date && itemTime === targetTime;
+  });
 
   // ESC 키로 모달 닫기 지원
   useEffect(() => {
@@ -112,6 +119,13 @@ export const ScheduleModal = ({
       return;
     }
 
+    if (conflictSchedule) {
+      const confirmDup = window.confirm(
+        `[수업 시간 중복 안내]\n\n같은 시간대(${date} ${startTime})에 이미 [${conflictSchedule.studentName}] 학생의 수업이 등록되어 있습니다.\n\n그래도 이 시간에 등록하시겠습니까?`
+      );
+      if (!confirmDup) return;
+    }
+
     const [y, m, d] = date.split('-').map(Number);
     const dayOfWeek = new Date(y, m - 1, d).getDay() || 7; // 1(월) ~ 7(일)
 
@@ -128,7 +142,6 @@ export const ScheduleModal = ({
       paymentType,
       phoneInfo,
       address,
-      isRecurring,
     };
 
     onSave(scheduleData);
@@ -245,6 +258,27 @@ export const ScheduleModal = ({
                   onChange={(e) => setStartTime(e.target.value)}
                   required
                 />
+                {conflictSchedule && (
+                  <div
+                    style={{
+                      backgroundColor: '#fffbeb',
+                      border: '1px solid #fde047',
+                      color: '#b45309',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11.5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      marginTop: '6px',
+                    }}
+                  >
+                    <AlertTriangle size={14} color="#d97706" style={{ flexShrink: 0 }} />
+                    <span>
+                      ⚠️ <strong>{conflictSchedule.studentName}</strong> 학생과 시간이 겹칩니다!
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -305,32 +339,19 @@ export const ScheduleModal = ({
               />
             </div>
 
-            {/* 기타 정보: 수납 구분 & 정규 반복 */}
-            <div className="form-row-grid-2">
-              <div className="form-group">
-                <label className="form-label">수납 구분</label>
-                <select
-                  className="form-select"
-                  value={paymentType}
-                  onChange={(e) => setPaymentType(e.target.value)}
-                >
-                  <option value="지사입금">지사입금</option>
-                  <option value="직접결제">직접결제</option>
-                  <option value="계좌이체">계좌이체</option>
-                  <option value="기타">기타</option>
-                </select>
-              </div>
-
-              <div className="form-group schedule-recurring-group">
-                <label className="schedule-recurring-label">
-                  <input
-                    type="checkbox"
-                    checked={isRecurring}
-                    onChange={(e) => setIsRecurring(e.target.checked)}
-                  />
-                  <span>매주 이 요일에 정규 반복</span>
-                </label>
-              </div>
+            {/* 수납 구분 */}
+            <div className="form-group">
+              <label className="form-label">수납 구분</label>
+              <select
+                className="form-select"
+                value={paymentType}
+                onChange={(e) => setPaymentType(e.target.value)}
+              >
+                <option value="지사입금">지사입금</option>
+                <option value="직접결제">직접결제</option>
+                <option value="계좌이체">계좌이체</option>
+                <option value="기타">기타</option>
+              </select>
             </div>
           </div>
 

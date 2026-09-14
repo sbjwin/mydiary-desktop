@@ -678,64 +678,7 @@ export const Database = {
         return plan;
       }
 
-      // 저장된 주간 계획이 없다면 학생들의 기본 일정(default_schedules)을 바탕으로 초기 데이터 생성
-      const students = await Database.getAllStudents();
-      const defaultScheduleItems = [];
-
-      students.forEach((student) => {
-        // 휴회 상태(paused)인 학생은 주간 시간표 자동 생성에서 제외
-        if (student.status === 'paused') {
-          return;
-        }
-
-        if (Array.isArray(student.default_schedules)) {
-          student.default_schedules.forEach((sched) => {
-            const dayOfWeek = sched.dayOfWeek || 1; // 1:월 ~ 7:일
-            const offset = dayOfWeek - 1;
-            const dateStr = getDateFromMondayOffset(weekKey, offset);
-
-            const parentPhone = student.parent_mobile_phone || student.parentMobilePhone;
-            const studentPhone = student.mobile_phone || student.mobilePhone;
-            const homePhone = student.phone_number || student.phoneNumber;
-
-            const phoneList = [];
-            if (studentPhone) {
-              phoneList.push(`(본)${studentPhone}`);
-            }
-            if (parentPhone) {
-              phoneList.push(`(모)${parentPhone}`);
-            }
-            if (homePhone) {
-              phoneList.push(`(전화)${homePhone}`);
-            }
-
-            defaultScheduleItems.push({
-              id: generateUUID(),
-              studentId: student.id,
-              studentName: student.name || '무명',
-              paymentType: student.payment_type || '지사입금',
-              subject: sched.subject || '',
-              address: student.address || '',
-              phoneInfo: formatPhoneInfo(phoneList.join('\n')),
-              dayOfWeek: dayOfWeek,
-              date: dateStr,
-              startTime: sched.startTime || '10:00',
-              duration: sched.duration || 60,
-              statusTag: '정규',
-              statusNote: '',
-              isDefault: true,
-              isRecurring: true,
-            });
-          });
-        }
-      });
-
-      // 시간 순서대로 정렬
-      defaultScheduleItems.sort((a, b) => {
-        if (a.dayOfWeek !== b.dayOfWeek) return a.dayOfWeek - b.dayOfWeek;
-        return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
-      });
-
+      // 저장된 주간 계획이 없다면 깨끗한 초기 주간 계획 반환 (선생님 수동 등록 기본)
       const initialPlan = {
         weekKey: weekKey,
         startDate: weekKey,
@@ -743,7 +686,7 @@ export const Database = {
         mainNotes: '',
         prevAbsentNotes: '',
         specialNotes: '',
-        scheduleItems: defaultScheduleItems,
+        scheduleItems: [],
         callItems: [],
         updatedAt: new Date().toISOString(),
       };
@@ -761,6 +704,62 @@ export const Database = {
         scheduleItems: [],
         callItems: [],
       };
+    }
+  },
+
+  // 이전 주 시간표를 현재 주차로 복사해오기 (선생님 수동 복사 지원)
+  copyPreviousWeekPlan: async (targetMonday) => {
+    try {
+      const prevMonday = getDateFromMondayOffset(targetMonday, -7);
+      const prevPlan = await Database.getWeeklyPlan(prevMonday);
+      const prevItems = Array.isArray(prevPlan.scheduleItems) ? prevPlan.scheduleItems : [];
+
+      if (prevItems.length === 0) {
+        throw new Error('이전 주에 복사할 등록 수업 일정이 없습니다.');
+      }
+
+      // 이전 주 수업 항목들을 이번 주 날짜로 오프셋 변환하여 신규 ID로 복사
+      const copiedItems = prevItems.map((item) => {
+        const dayOfWeek = item.dayOfWeek || 1;
+        const offset = dayOfWeek - 1;
+        const newDate = getDateFromMondayOffset(targetMonday, offset);
+        return {
+          ...item,
+          id: generateUUID(),
+          date: newDate,
+          statusNote: '', // 복사 시 이전 주 특이사항 메모는 초기화
+        };
+      });
+
+      const currentPlan = await Database.getWeeklyPlan(targetMonday);
+      const mergedPlan = {
+        ...currentPlan,
+        scheduleItems: copiedItems,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await Database.saveWeeklyPlan(targetMonday, mergedPlan);
+      return mergedPlan;
+    } catch (e) {
+      console.error('Failed to copy previous week plan:', e);
+      throw e;
+    }
+  },
+
+  // 특정 주차의 등록된 수업 일정 전체 비우기
+  clearWeeklyPlan: async (weekKey) => {
+    try {
+      const plan = await Database.getWeeklyPlan(weekKey);
+      const clearedPlan = {
+        ...plan,
+        scheduleItems: [],
+        updatedAt: new Date().toISOString(),
+      };
+      await Database.saveWeeklyPlan(weekKey, clearedPlan);
+      return clearedPlan;
+    } catch (e) {
+      console.error('Failed to clear weekly plan:', e);
+      throw e;
     }
   },
 
