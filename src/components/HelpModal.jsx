@@ -147,32 +147,32 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
     backup: {
       id: 'backup',
       title: '백업 및 설정 (Backup & Settings)',
-      badge: '데이터 안전 보관',
-      desc: 'PC 로컬에 저장된 모든 학생 정보, 수업 일지, 주간 계획 데이터를 JSON 파일로 원클릭 백업하고 모바일 앱과 데이터를 상호 교환합니다.',
+      badge: '데이터 안전 보관 & 클라우드',
+      desc: '구글 드라이브를 통해 스마트폰과 PC 간에 원클릭으로 데이터를 동기화하고, PC 로컬 JSON 파일 백업으로 소중한 교육 데이터를 안전하게 이중 보관합니다.',
       image: '/guide/guide_backup.png',
       features: [
         {
           num: '①',
+          title: '구글 드라이브 원클릭 클라우드 동기화 (v0.3.0)',
+          desc: '구글 계정으로 로그인한 뒤, 스마트폰 MyDiary 앱이 업로드한 mydiary_backup.json을 데스크톱으로 원클릭 복원하거나 현재 데스크톱 데이터를 클라우드에 백업할 수 있습니다.',
+          tip: '스마트폰 ↔ 데스크톱 무선 데이터 동기화',
+        },
+        {
+          num: '②',
           title: '보관 데이터 요약 통계',
           desc: '현재 컴퓨터 로컬 데이터베이스에 보관 중인 등록 학생 수, 작성된 누적 수업 일지 수, 관리 중인 주간 계획 수를 직관적인 카드로 한눈에 확인합니다.',
           tip: '데이터베이스 상태 실시간 점검',
         },
         {
-          num: '②',
+          num: '③',
           title: 'PC 로컬 백업 파일 생성 (.json)',
           desc: '[원클릭 백업 파일 저장] 버튼을 클릭하면 컴퓨터의 파일 탐색기가 열리며 원하는 폴더에 날짜가 명시된 JSON 백업 파일로 즉시 안전하게 저장됩니다.',
           tip: 'PC 로컬 영구 보관용 백업',
         },
         {
-          num: '③',
-          title: '백업 불러오기 & 모바일 앱 호환',
-          desc: 'PC에서 백업한 파일은 물론, 모바일 스마트폰 MyDiary 앱에서 내보낸 백업 JSON 파일도 데스크톱에서 완벽하게 호환 복원되어 기기 간 데이터 이전이 편리합니다.',
-          tip: '모바일 MyDiary JSON 100% 호환',
-        },
-        {
           num: '④',
           title: '오프라인 독립형 스토리지 보장',
-          desc: '인터넷 연결이 전혀 없어도 로컬 IndexedDB를 통해 모든 기능이 100% 독립적으로 작동하며, 외부 유출 걱정 없이 데이터 무결성을 보호합니다.',
+          desc: '인터넷 연결이 전혀 없어도 로컬 스토리지를 통해 모든 기능이 100% 독립적으로 작동하며, 외부 유출 걱정 없이 데이터 무결성을 보호합니다.',
           tip: '100% 오프라인 동작 및 프라이버시',
         },
       ],
@@ -182,12 +182,20 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
   // FAQ 데이터 (데스크톱 특화)
   const faqs = [
     {
+      q: '스마트폰 MyDiary 앱 데이터를 구글 드라이브로 어떻게 연동하나요?',
+      a: '[백업 및 설정] 탭에서 [구글 계정으로 로그인]을 진행하신 후 [스마트폰 백업 다운로드 복원]을 클릭하시면, 스마트폰 앱에서 구글 드라이브로 올린 mydiary_backup.json 데이터를 데스크톱으로 즉시 안전하게 복원할 수 있습니다.',
+    },
+    {
+      q: '과거에 작성했던 수업 일지를 어떻게 수정(편집)하나요?',
+      a: '[수업 일지] 탭의 좌측 사이드바 목록에서 수정하고자 하는 과거 일지 카드를 마우스로 클릭하시면, 우측 화면이 [수업 일지 상세 및 수정] 모드로 전환되며 기존 내용이 채워져 자유롭게 수정 후 [저장하기]를 누르시면 됩니다.',
+    },
+    {
       q: '주간 시간표에서 빈 시간에 새 수업 일정을 어떻게 추가하나요?',
       a: '[▦ 주간 전체 표] 화면에서 원하는 요일과 시간대 칸에 마우스를 올리면 나타나는 [+] 버튼을 누르시면, 해당 날짜와 시작 시간이 자동으로 채워진 수업 일정 등록 모달이 열립니다. 학생을 선택하거나 직접 입력하고 [등록]을 누르면 즉시 시간표에 반영됩니다.',
     },
     {
       q: '주간 시간표에서 수업 일지로 어떻게 연결되나요?',
-      a: '주간 시간표에서 배치되어 있는 학생의 수업 카드를 마우스로 클릭하시면, 상세 수정 모달에서 [수업 일지 작성] 버튼을 눌러 해당 학생과 일자의 수업 일지 탭으로 즉시 이동하여 편리하게 작성하실 수 있습니다.',
+      a: '주간 시간표에서 배치되어 있는 학생의 수업 카드를 마우스로 클릭하시면, 상세 수정 모달에서 [수업 일지 작성] 버튼을 눌러 해당 학생과 일자의 수업 일지 탭으로 즉시 이동합니다. 이미 일지가 작성된 수업인 경우 기존 일지 내용이 자동으로 열립니다.',
     },
     {
       q: '주간 시간표를 종이로 인쇄하거나 문서 파일로 내보낼 수 있나요?',
@@ -198,7 +206,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
       a: '[수업 일지] 탭에서 [한글 문서(HWPX) 저장] 버튼을 누르면 컴퓨터의 파일 탐색기 저장 창이 열립니다. 저장된 .hwpx 파일은 한글과컴퓨터 한글 오피스 2014/2020/2024, 한글 뷰어, 폴라리스 오피스 등에서 원본 서식 그대로 열어 편집하실 수 있습니다.',
     },
     {
-      q: '모바일 스마트폰 MyDiary 앱 데이터를 가져올 수 있나요?',
+      q: '모바일 스마트폰 MyDiary 앱 데이터를 파일로도 가져올 수 있나요?',
       a: '네, 완벽하게 지원합니다! 모바일 MyDiary 앱의 [설정] 메뉴에서 생성한 백업 JSON 파일을 PC로 전송한 후, 데스크톱의 [백업 및 설정] 탭에서 [백업 파일 불러오기 (.json)]를 실행하시면 모든 학생 정보와 수업 일지가 그대로 이전됩니다.',
     },
     {
@@ -244,7 +252,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
             <div>
               <div className="help-title-row">
                 <h3 className="help-title">MyDiary Desktop 도움말 및 사용 가이드</h3>
-                <span className="help-version-tag">Desktop v0.2.0</span>
+                <span className="help-version-tag">Desktop v0.3.0</span>
               </div>
               <p className="help-subtitle">
                 선생님을 위한 스마트 수업 다이어리 핵심 기능과 화면별 사용법을 확인하세요.
@@ -427,7 +435,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
                 <h4 className="about-app-name">MyDiary Desktop</h4>
                 <p className="about-app-slogan">선생님을 위한 스마트 수업 다이어리 및 학생 성장 관리 시스템</p>
                 <div className="about-badges-row">
-                  <span className="about-badge">Desktop v0.2.0</span>
+                  <span className="about-badge">Desktop v0.3.0</span>
                   <span className="about-badge">Electron + React</span>
                   <span className="about-badge">HWPX 표준 지원</span>
                 </div>
