@@ -10,6 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "package:win": "vite build && electron-builder --win",
+    "package:win:signed": "powershell -ExecutionPolicy Bypass -File ./scripts/build-signed.ps1",
     "package:mac": "vite build && electron-builder --mac",
     "package:linux": "vite build && electron-builder --linux"
   },
