@@ -190,7 +190,9 @@ ipcMain.handle('save-hwpx-file', async (event, { defaultFileName, base64Data }) 
 // ==========================================
 // Google OAuth 2.0 Loopback Authentication (Desktop App / PKCE)
 // ==========================================
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+// 데스크톱 앱의 Client ID는 공개 식별자이므로, 패키징된(.exe) 독립 실행 환경을 위해 기본값을 제공합니다.
+const DEFAULT_CLIENT_ID = '877273732682-va98800gm7ba2tqvsorv8dp8fusbq7ku.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
 const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.appdata',
   'https://www.googleapis.com/auth/userinfo.email',
@@ -204,7 +206,7 @@ ipcMain.handle('google-auth-login', async () => {
       if (!GOOGLE_CLIENT_ID) {
         return resolve({
           success: false,
-          error: '.env 파일에 GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.',
+          error: 'GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.',
         });
       }
 
@@ -351,7 +353,7 @@ ipcMain.handle('google-auth-login', async () => {
 ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
   try {
     if (!GOOGLE_CLIENT_ID) {
-      return { success: false, error: '.env 파일에 GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.' };
+      return { success: false, error: 'GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.' };
     }
     if (!refreshToken) {
       return { success: false, error: '리프레시 토큰이 없습니다.' };
