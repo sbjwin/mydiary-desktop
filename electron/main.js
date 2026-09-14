@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const crypto = require('crypto');
 
 let mainWindow = null;
 
@@ -167,3 +169,140 @@ ipcMain.handle('save-file-dialog', async (event, { defaultFileName, base64Data, 
 ipcMain.handle('save-hwpx-file', async (event, { defaultFileName, base64Data }) => {
   return await ipcMain.handlers['save-file-dialog'](event, { defaultFileName, base64Data, filterType: 'hwpx' });
 });
+
+// ==========================================
+// Google OAuth 2.0 Loopback Authentication
+// ==========================================
+const GOOGLE_CLIENT_ID = '877273732682-9ov4h8o5i8a0ru5kmfaag3gvnmgnsane.apps.googleusercontent.com';
+const GOOGLE_SCOPES = [
+  'https://www.googleapis.com/auth/drive.appdata',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'openid',
+].join(' ');
+
+ipcMain.handle('google-auth-login', async () => {
+  return new Promise((resolve) => {
+    try {
+      // 1. PKCE code_verifier & code_challenge (S256) 생성
+      const codeVerifier = crypto.randomBytes(32).toString('base64url');
+      const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+
+      // 2. 임시 로컬 루프백 서버 구동 (포트 0 -> 사용 가능한 빈 포트 자동 바인딩)
+      const server = http.createServer(async (req, res) => {
+        try {
+          const reqUrl = new URL(req.url, `http://127.0.0.1:${server.address().port}`);
+          const authCode = reqUrl.searchParams.get('code');
+          const authError = reqUrl.searchParams.get('error');
+
+          if (authError) {
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
+            res.end(`
+              <!DOCTYPE html>
+              <html>
+              <head><meta charset="UTF-8"><title>로그인 취소</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#0f172a;color:#f8fafc;}.card{background:#1e293b;padding:40px;border-radius:16px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.5);}h2{color:#f87171;}p{color:#94a3b8;}</style></head>
+              <body><div class="card"><h2>❌ 로그인 취소 또는 오류</h2><p>${authError}</p></div></body>
+              </html>
+            `);
+            server.close();
+            return resolve({ success: false, error: authError });
+          }
+
+          if (authCode) {
+            // 브라우저에 성공 화면 렌더링
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
+            res.end(`
+              <!DOCTYPE html>
+              <html>
+              <head><meta charset="UTF-8"><title>MyDiary 로그인 성공</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#0f172a;color:#f8fafc;}.card{background:#1e293b;padding:40px;border-radius:16px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.5);}h2{color:#38bdf8;margin-bottom:12px;}p{color:#94a3b8;line-height:1.6;}</style></head>
+              <body><div class="card"><h2>✅ MyDiary 로그인 성공</h2><p>구글 계정 인증이 완료되었습니다.<br>이 창을 닫고 <strong>MyDiary 데스크톱 앱</strong>으로 돌아가세요.</p></div><script>setTimeout(() => window.close(), 3000);</script></body>
+              </html>
+            `);
+
+            // 3. 인가 코드로 액세스 토큰 교환 (PKCE)
+            const tokenParams = new URLSearchParams({
+              client_id: GOOGLE_CLIENT_ID,
+              code: authCode,
+              code_verifier: codeVerifier,
+              grant_type: 'authorization_code',
+              redirect_uri: `http://127.0.0.1:${server.address().port}`,
+            });
+
+            const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: tokenParams.toString(),
+            });
+
+            const tokenData = await tokenRes.json();
+            if (tokenData.error) {
+              server.close();
+              return resolve({ success: false, error: tokenData.error_description || tokenData.error });
+            }
+
+            // 4. 사용자 기본 프로필 정보 조회
+            let userInfo = null;
+            try {
+              const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                headers: { Authorization: `Bearer ${tokenData.access_token}` },
+              });
+              userInfo = await userRes.json();
+            } catch (uErr) {
+              console.warn('Failed to fetch userinfo:', uErr);
+            }
+
+            server.close();
+            return resolve({
+              success: true,
+              accessToken: tokenData.access_token,
+              refreshToken: tokenData.refresh_token,
+              expiresIn: tokenData.expires_in,
+              user: userInfo
+                ? {
+                    id: userInfo.id,
+                    email: userInfo.email,
+                    name: userInfo.name,
+                    photo: userInfo.picture,
+                  }
+                : null,
+            });
+          }
+        } catch (serverErr) {
+          console.error('OAuth loopback server error:', serverErr);
+          server.close();
+          resolve({ success: false, error: serverErr.message });
+        }
+      });
+
+      server.listen(0, '127.0.0.1', () => {
+        const port = server.address().port;
+        const redirectUri = `http://127.0.0.1:${port}`;
+
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=code` +
+          `&scope=${encodeURIComponent(GOOGLE_SCOPES)}` +
+          `&code_challenge=${encodeURIComponent(codeChallenge)}` +
+          `&code_challenge_method=S256` +
+          `&access_type=offline` +
+          `&prompt=consent`;
+
+        // 기본 시스템 브라우저로 구글 로그인 화면 열기
+        shell.openExternal(authUrl);
+      });
+
+      // 5분 타임아웃 방어
+      setTimeout(() => {
+        try {
+          server.close();
+        } catch (_) {}
+        resolve({ success: false, error: '로그인 시간이 초과되었습니다 (타임아웃).' });
+      }, 300000);
+    } catch (err) {
+      console.error('google-auth-login handler failed:', err);
+      resolve({ success: false, error: err.message });
+    }
+  });
+});
+

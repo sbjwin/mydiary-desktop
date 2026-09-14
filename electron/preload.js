@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveHwpxFile: (defaultFileName, base64Data) =>
     ipcRenderer.invoke('save-file-dialog', { defaultFileName, base64Data, filterType: 'hwpx' }),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  googleLogin: () => ipcRenderer.invoke('google-auth-login'),
   onOpenHelp: (callback) => {
     const handler = (event, tab) => callback(tab);
     ipcRenderer.on('open-help', handler);
