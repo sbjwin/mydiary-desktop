@@ -197,6 +197,8 @@ export const ScheduleModal = ({
                   <option value="">-- 등록된 학생에서 선택 --</option>
                   {students
                     .filter((s) => s.status !== 'paused')
+                    .slice()
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'))
                     .map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name} ({s.course || s.subject || '과목미지정'})

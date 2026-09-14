@@ -228,6 +228,9 @@ export const Database = {
         );
       }
 
+      // 기본적으로 한국어 가나다순(이름 오름차순) 정렬 제공
+      normalizedStudents.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+
       return normalizedStudents;
     } catch (e) {
       console.error('Failed to get students:', e);
