@@ -39,6 +39,7 @@ export const StudentManageTab = () => {
   const [formData, setFormData] = useState({
     name: '',
     school_grade: '',
+    course: '',
     status: 'active',
     first_enrolled_date: getTodayDateString(),
     payment_type: '지사입금',
@@ -76,9 +77,15 @@ export const StudentManageTab = () => {
   }, []);
 
   const populateForm = (st) => {
+    const resolvedCourse =
+      st.course ||
+      st.subject ||
+      (Array.isArray(st.default_schedules) && st.default_schedules[0]?.subject) ||
+      '';
     setFormData({
       name: st.name || '',
       school_grade: st.school_grade || st.grade || '',
+      course: resolvedCourse,
       status: st.status || 'active',
       first_enrolled_date: st.first_enrolled_date || st.start_date || getTodayDateString(),
       payment_type: st.payment_type || '지사입금',
@@ -104,6 +111,7 @@ export const StudentManageTab = () => {
     setFormData({
       name: '',
       school_grade: '',
+      course: '',
       status: 'active',
       first_enrolled_date: getTodayDateString(),
       payment_type: '지사입금',
@@ -126,11 +134,17 @@ export const StudentManageTab = () => {
     }
 
     try {
+      const payload = {
+        ...formData,
+        course: formData.course.trim(),
+        subject: formData.course.trim(),
+      };
+
       if (selectedStudentId) {
-        await Database.updateStudent(selectedStudentId, formData);
+        await Database.updateStudent(selectedStudentId, payload);
         alert('학생 정보가 수정되었습니다.');
       } else {
-        const newSt = await Database.addStudent(formData);
+        const newSt = await Database.addStudent(payload);
         setSelectedStudentId(newSt.id);
         alert('새 학생이 등록되었습니다.');
       }
@@ -307,7 +321,12 @@ export const StudentManageTab = () => {
                   </div>
                   <div className="student-sub-info">
                     <span>{st.school_grade || st.grade || '학교/학년 미지정'}</span>
-                    <span>{st.mobile_phone || st.parent_mobile_phone || '연락처 없음'}</span>
+                    <span>
+                      {st.course ||
+                        st.subject ||
+                        (Array.isArray(st.default_schedules) && st.default_schedules[0]?.subject) ||
+                        '과목미지정'}
+                    </span>
                   </div>
                 </div>
               );
@@ -380,6 +399,17 @@ export const StudentManageTab = () => {
                   placeholder="예: 중앙초 3학년"
                   value={formData.school_grade}
                   onChange={(e) => setFormData({ ...formData, school_grade: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">수업 과목 / 과정</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="예: 수학, 영어, 독서 등"
+                  value={formData.course || ''}
+                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                 />
               </div>
 

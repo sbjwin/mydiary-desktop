@@ -149,7 +149,14 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
 
   // 모달 열기: 기존 일정 수정
   const handleOpenEditSchedule = (item) => {
-    setModalInitialData(item);
+    const rawData = item.planItem ? { ...item.planItem, record: item.record } : item;
+    const targetData = {
+      ...rawData,
+      subject: rawData.subject || rawData.course || '',
+      course: rawData.course || rawData.subject || '',
+      startTime: rawData.startTime || rawData.classTime || '10:00',
+    };
+    setModalInitialData(targetData);
     setIsModalOpen(true);
   };
 

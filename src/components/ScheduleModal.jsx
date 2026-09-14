@@ -35,7 +35,7 @@ export const ScheduleModal = ({
       setDate(initialData.date || new Date().toISOString().slice(0, 10));
       setStartTime(initialData.startTime || '10:00');
       setDuration(initialData.duration || 60);
-      setSubject(initialData.subject || '');
+      setSubject(initialData.subject || initialData.course || '');
       setStatusNote(initialData.statusNote || '');
       setPaymentType(initialData.paymentType || '지사입금');
       setPhoneInfo(initialData.phoneInfo || '');
@@ -89,7 +89,12 @@ export const ScheduleModal = ({
     const student = students.find((s) => s.id === selectedId);
     if (student) {
       setStudentName(student.name || '');
-      setSubject(student.subject || student.course || '');
+      const studentCourse =
+        student.subject ||
+        student.course ||
+        (Array.isArray(student.default_schedules) && student.default_schedules[0]?.subject) ||
+        '';
+      setSubject(studentCourse);
       setPaymentType(student.payment_type || '지사입금');
       setAddress(student.address || '');
 
@@ -138,6 +143,7 @@ export const ScheduleModal = ({
       startTime,
       duration: Number(duration) || 60,
       subject: subject.trim(),
+      course: subject.trim(),
       statusNote: statusNote.trim(),
       paymentType,
       phoneInfo,
@@ -212,11 +218,18 @@ export const ScheduleModal = ({
                     .filter((s) => s.status !== 'paused')
                     .slice()
                     .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'))
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.course || s.subject || '과목미지정'})
-                      </option>
-                    ))}
+                    .map((s) => {
+                      const displayCourse =
+                        s.subject ||
+                        s.course ||
+                        (Array.isArray(s.default_schedules) && s.default_schedules[0]?.subject) ||
+                        '과목미지정';
+                      return (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({displayCourse})
+                        </option>
+                      );
+                    })}
                 </select>
                 <input
                   type="text"
@@ -307,7 +320,7 @@ export const ScheduleModal = ({
                   type="text"
                   className="form-input"
                   placeholder="예: 수학, 영어, 독서 등"
-                  value={subject}
+                  value={subject || ''}
                   onChange={(e) => setSubject(e.target.value)}
                 />
               </div>

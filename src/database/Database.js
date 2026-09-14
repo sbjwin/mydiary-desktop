@@ -534,7 +534,8 @@ export const Database = {
             studentId: planItem.studentId || matchedRecord.student_id,
             studentName: planItem.studentName,
             classTime: planItem.startTime || matchedRecord.class_time,
-            course: planItem.subject || matchedRecord.course,
+            course: planItem.subject || planItem.course || matchedRecord.course || '',
+            subject: planItem.subject || planItem.course || matchedRecord.course || '',
             status: 'completed', // 일지 작성 완료
             statusNote: planItem.statusNote,
             paymentType: planItem.paymentType,
@@ -550,7 +551,8 @@ export const Database = {
             studentId: planItem.studentId,
             studentName: planItem.studentName,
             classTime: planItem.startTime,
-            course: planItem.subject,
+            course: planItem.subject || planItem.course || '',
+            subject: planItem.subject || planItem.course || '',
             status: 'planned', // 예정 (일지 미작성)
             statusNote: planItem.statusNote,
             paymentType: planItem.paymentType,
@@ -571,7 +573,8 @@ export const Database = {
             studentId: rec.student_id,
             studentName: rec.studentName,
             classTime: rec.class_time,
-            course: rec.course,
+            course: rec.course || '',
+            subject: rec.course || '',
             status: 'completed_extra', // 계획 외 추가 수업 일지
             statusNote: '',
             paymentType: rec.studyMethod || '지사입금',
