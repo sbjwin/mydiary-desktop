@@ -44,21 +44,35 @@ export const ClassDiaryTab = ({ initialParams }) => {
 
     if (initialParams?.studentId) {
       setSelectedStudentId(initialParams.studentId);
-      setFormData({
-        studentId: initialParams.studentId,
-        classDate: initialParams.date || getTodayDateString(),
-        classTime: initialParams.classTime || '10:00',
-        course: initialParams.course || '수학',
-        content: '',
-        homework: '',
-        notes: '',
-      });
+
+      // 1순위: diaryId가 전달된 경우
+      let found = null;
       if (initialParams.diaryId) {
-        const found = allRecords.find((r) => r.id === initialParams.diaryId);
-        if (found) {
-          setSelectedRecordId(found.id);
-          populateForm(found);
-        }
+        found = allRecords.find((r) => r.id === initialParams.diaryId);
+      }
+      // 2순위: diaryId가 없더라도 해당 날짜 + 학생 조합의 일지가 이미 존재하는 경우 자동 연동
+      if (!found && initialParams.date) {
+        found = allRecords.find(
+          (r) =>
+            (r.student_id === initialParams.studentId || r.studentId === initialParams.studentId) &&
+            (r.class_date === initialParams.date || r.date === initialParams.date)
+        );
+      }
+
+      if (found) {
+        setSelectedRecordId(found.id);
+        populateForm(found);
+      } else {
+        setSelectedRecordId(null);
+        setFormData({
+          studentId: initialParams.studentId,
+          classDate: initialParams.date || getTodayDateString(),
+          classTime: initialParams.classTime || '10:00',
+          course: initialParams.course || '수학',
+          content: '',
+          homework: '',
+          notes: '',
+        });
       }
     } else if (allStudents.length > 0 && !selectedStudentId) {
       setSelectedStudentId(allStudents[0].id);
@@ -68,23 +82,23 @@ export const ClassDiaryTab = ({ initialParams }) => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [initialParams]);
 
   const populateForm = (rec) => {
     setFormData({
-      studentId: rec.student_id,
-      classDate: rec.class_date || getTodayDateString(),
-      classTime: rec.class_time || '10:00',
-      course: rec.course || '',
+      studentId: rec.student_id || rec.studentId || '',
+      classDate: rec.class_date || rec.date || getTodayDateString(),
+      classTime: rec.class_time || rec.time || rec.classTime || '10:00',
+      course: rec.course || rec.subject || rec.book_issue_date || '',
       content: rec.content || '',
-      homework: rec.homework || '',
-      notes: rec.notes || '',
+      homework: rec.homework || rec.assignment || '',
+      notes: rec.notes || rec.special_notes || rec.memo || '',
     });
   };
 
   const handleSelectRecord = (rec) => {
     setSelectedRecordId(rec.id);
-    setSelectedStudentId(rec.student_id);
+    setSelectedStudentId(rec.student_id || rec.studentId);
     populateForm(rec);
   };
 
@@ -245,20 +259,21 @@ export const ClassDiaryTab = ({ initialParams }) => {
             <div className="empty-notice">기록된 수업 일지가 없습니다.</div>
           ) : (
             filteredRecords.map((rec) => {
-              const st = students.find((s) => s.id === rec.student_id);
+              const st = students.find((s) => s.id === (rec.student_id || rec.studentId));
               const isSelected = selectedRecordId === rec.id;
               return (
                 <div
                   key={rec.id}
                   className={`diary-item-card ${isSelected ? 'active' : ''}`}
                   onClick={() => handleSelectRecord(rec)}
+                  title="클릭하여 이 수업 일지 수정 및 상세 보기"
                 >
                   <div className="diary-item-header">
-                    <span className="diary-date">{rec.class_date}</span>
-                    <span className="diary-time">{rec.class_time}</span>
+                    <span className="diary-date">{rec.class_date || rec.date}</span>
+                    <span className="diary-time">{rec.class_time || rec.time || rec.classTime}</span>
                   </div>
                   <div className="diary-item-title">
-                    <strong>{st?.name || '학생'}</strong> - {rec.course || '수업'}
+                    <strong>{st?.name || '학생'}</strong> - {rec.course || rec.subject || rec.book_issue_date || '수업'}
                   </div>
                   <p className="diary-item-snippet">{rec.content || '(내용 없음)'}</p>
                 </div>

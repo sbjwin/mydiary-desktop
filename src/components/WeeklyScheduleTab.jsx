@@ -379,7 +379,11 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                                 <div
                                   key={item.id}
                                   className={`matrix-schedule-badge ${isDone ? 'done' : 'pending'}`}
-                                  onClick={() => handleOpenEditSchedule(item.planItem || item)}
+                                  onClick={() =>
+                                    handleOpenEditSchedule(
+                                      item.planItem ? { ...item.planItem, record: item.record } : item
+                                    )
+                                  }
                                   title={`클릭하여 수정 또는 일지 작성 (${item.studentName})`}
                                 >
                                   <div className="badge-header-row">
@@ -454,7 +458,11 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                         <div
                           key={item.id}
                           className={`schedule-card ${isDone ? 'done' : 'pending'}`}
-                          onClick={() => handleOpenEditSchedule(item.planItem || item)}
+                          onClick={() =>
+                            handleOpenEditSchedule(
+                              item.planItem ? { ...item.planItem, record: item.record } : item
+                            )
+                          }
                         >
                           <div className="card-time-row">
                             <span className="card-time">
