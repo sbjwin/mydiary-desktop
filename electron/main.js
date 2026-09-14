@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 let mainWindow = null;
 
@@ -97,6 +98,17 @@ function createWindow() {
     },
   });
 
+  // 보안: 새 창(window.open / target="_blank") 생성 차단 및 안전한 외부 링크만 기본 브라우저로 위임
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsed = new URL(url);
+      if (['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
+        shell.openExternal(url);
+      }
+    } catch (_) {}
+    return { action: 'deny' };
+  });
+
   const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
   createApplicationMenu(isDev);
 
@@ -121,9 +133,14 @@ app.on('window-all-closed', () => {
   }
 });
 
-// IPC: 외부 링크/메일 열기
+// IPC: 외부 링크/메일 열기 (보안 프로토콜 화이트리스트 검증)
 ipcMain.handle('open-external', async (event, url) => {
   try {
+    const parsed = new URL(url);
+    const allowedProtocols = ['http:', 'https:', 'mailto:'];
+    if (!allowedProtocols.includes(parsed.protocol)) {
+      return { success: false, error: `보안상 허용되지 않는 프로토콜입니다: ${parsed.protocol}` };
+    }
     await shell.openExternal(url);
     return { success: true };
   } catch (err) {
@@ -171,9 +188,9 @@ ipcMain.handle('save-hwpx-file', async (event, { defaultFileName, base64Data }) 
 });
 
 // ==========================================
-// Google OAuth 2.0 Loopback Authentication
+// Google OAuth 2.0 Loopback Authentication (Desktop App / PKCE)
 // ==========================================
-const GOOGLE_CLIENT_ID = '877273732682-9ov4h8o5i8a0ru5kmfaag3gvnmgnsane.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.appdata',
   'https://www.googleapis.com/auth/userinfo.email',
@@ -184,9 +201,17 @@ const GOOGLE_SCOPES = [
 ipcMain.handle('google-auth-login', async () => {
   return new Promise((resolve) => {
     try {
-      // 1. PKCE code_verifier & code_challenge (S256) 생성
+      if (!GOOGLE_CLIENT_ID) {
+        return resolve({
+          success: false,
+          error: '.env 파일에 GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.',
+        });
+      }
+
+      // 1. PKCE code_verifier & code_challenge (S256) 및 CSRF 방어용 state 토큰 생성
       const codeVerifier = crypto.randomBytes(32).toString('base64url');
       const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+      const oauthState = crypto.randomBytes(16).toString('hex');
 
       // 2. 임시 로컬 루프백 서버 구동 (포트 0 -> 사용 가능한 빈 포트 자동 바인딩)
       const server = http.createServer(async (req, res) => {
@@ -194,6 +219,7 @@ ipcMain.handle('google-auth-login', async () => {
           const reqUrl = new URL(req.url, `http://127.0.0.1:${server.address().port}`);
           const authCode = reqUrl.searchParams.get('code');
           const authError = reqUrl.searchParams.get('error');
+          const returnedState = reqUrl.searchParams.get('state');
 
           if (authError) {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
@@ -208,6 +234,20 @@ ipcMain.handle('google-auth-login', async () => {
             return resolve({ success: false, error: authError });
           }
 
+          // RFC 6749 보안: CSRF 방어 state 토큰 일치 여부 검증
+          if (returnedState !== oauthState) {
+            res.writeHead(400, { 'Content-Type': 'text/html; charset=UTF-8' });
+            res.end(`
+              <!DOCTYPE html>
+              <html>
+              <head><meta charset="UTF-8"><title>보안 오류</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#0f172a;color:#f8fafc;}.card{background:#1e293b;padding:40px;border-radius:16px;text-align:center;}h2{color:#f87171;}p{color:#94a3b8;}</style></head>
+              <body><div class="card"><h2>⚠️ 보안 검증 실패</h2><p>OAuth CSRF 보안 토큰이 일치하지 않습니다.</p></div></body>
+              </html>
+            `);
+            server.close();
+            return resolve({ success: false, error: 'OAuth CSRF state 검증에 실패했습니다.' });
+          }
+
           if (authCode) {
             // 브라우저에 성공 화면 렌더링
             res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
@@ -219,7 +259,7 @@ ipcMain.handle('google-auth-login', async () => {
               </html>
             `);
 
-            // 3. 인가 코드로 액세스 토큰 교환 (PKCE)
+            // 3. 인가 코드로 액세스 토큰 교환 (RFC 7636 PKCE 표준 - 데스크톱 전용)
             const tokenParams = new URLSearchParams({
               client_id: GOOGLE_CLIENT_ID,
               code: authCode,
@@ -285,6 +325,7 @@ ipcMain.handle('google-auth-login', async () => {
           `&scope=${encodeURIComponent(GOOGLE_SCOPES)}` +
           `&code_challenge=${encodeURIComponent(codeChallenge)}` +
           `&code_challenge_method=S256` +
+          `&state=${encodeURIComponent(oauthState)}` +
           `&access_type=offline` +
           `&prompt=consent`;
 
@@ -304,5 +345,43 @@ ipcMain.handle('google-auth-login', async () => {
       resolve({ success: false, error: err.message });
     }
   });
+});
+
+// IPC: 구글 액세스 토큰 갱신 (리프레시 토큰 활용)
+ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
+  try {
+    if (!GOOGLE_CLIENT_ID) {
+      return { success: false, error: '.env 파일에 GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.' };
+    }
+    if (!refreshToken) {
+      return { success: false, error: '리프레시 토큰이 없습니다.' };
+    }
+
+    const refreshParams = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    });
+
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: refreshParams.toString(),
+    });
+
+    const data = await res.json();
+    if (data.error) {
+      return { success: false, error: data.error_description || data.error };
+    }
+
+    return {
+      success: true,
+      accessToken: data.access_token,
+      expiresIn: data.expires_in,
+    };
+  } catch (err) {
+    console.error('google-auth-refresh failed:', err);
+    return { success: false, error: err.message };
+  }
 });
 

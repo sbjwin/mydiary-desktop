@@ -81,10 +81,41 @@ export const GoogleDriveService = {
         isLoggedIn: !!parsed.accessToken,
         user: parsed.user || null,
         accessToken: parsed.accessToken || null,
+        refreshToken: parsed.refreshToken || null,
       };
     } catch (err) {
       console.error('Failed to get auth state:', err);
       return { isLoggedIn: false, user: null, accessToken: null };
+    }
+  },
+
+  getValidAccessToken: async () => {
+    try {
+      const raw = localStorage.getItem(GOOGLE_AUTH_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed.accessToken) return null;
+
+      // 만료 확인 (기본 1시간 만료 기준 5분 전이면 갱신 시도)
+      const savedAt = parsed.savedAt ? new Date(parsed.savedAt).getTime() : 0;
+      const expiresInMs = (parsed.expiresIn || 3600) * 1000;
+      const isExpired = Date.now() - savedAt > expiresInMs - 300000;
+
+      if (isExpired && parsed.refreshToken && window.electronAPI?.googleRefresh) {
+        const refreshRes = await window.electronAPI.googleRefresh(parsed.refreshToken);
+        if (refreshRes && refreshRes.success) {
+          parsed.accessToken = refreshRes.accessToken;
+          parsed.expiresIn = refreshRes.expiresIn || 3600;
+          parsed.savedAt = new Date().toISOString();
+          localStorage.setItem(GOOGLE_AUTH_KEY, JSON.stringify(parsed));
+          return parsed.accessToken;
+        }
+      }
+
+      return parsed.accessToken;
+    } catch (err) {
+      console.error('Failed to get or refresh access token:', err);
+      return null;
     }
   },
 
@@ -127,8 +158,9 @@ export const GoogleDriveService = {
   // 스마트폰 앱이 업로드한 mydiary_backup.json 다운로드 및 복원
   downloadCloudBackup: async () => {
     try {
+      const accessToken = await GoogleDriveService.getValidAccessToken();
       const auth = GoogleDriveService.getAuthState();
-      if (!auth.isLoggedIn || !auth.accessToken) {
+      if (!accessToken || !auth.isLoggedIn) {
         throw new Error('구글 계정 로그인이 필요합니다.');
       }
 
@@ -137,7 +169,7 @@ export const GoogleDriveService = {
       const searchRes = await fetch(
         `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${q}&fields=files(id,name,size,modifiedTime)`,
         {
-          headers: { Authorization: `Bearer ${auth.accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
 
@@ -162,7 +194,7 @@ export const GoogleDriveService = {
       const downloadRes = await fetch(
         `https://www.googleapis.com/drive/v3/files/${backupFile.id}?alt=media`,
         {
-          headers: { Authorization: `Bearer ${auth.accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
 
@@ -193,8 +225,9 @@ export const GoogleDriveService = {
   // 데스크톱 데이터를 구글 드라이브 appDataFolder에 업로드
   uploadCloudBackup: async () => {
     try {
+      const accessToken = await GoogleDriveService.getValidAccessToken();
       const auth = GoogleDriveService.getAuthState();
-      if (!auth.isLoggedIn || !auth.accessToken) {
+      if (!accessToken || !auth.isLoggedIn) {
         throw new Error('구글 계정 로그인이 필요합니다.');
       }
 
@@ -205,7 +238,7 @@ export const GoogleDriveService = {
       const searchRes = await fetch(
         `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${q}&fields=files(id,name)`,
         {
-          headers: { Authorization: `Bearer ${auth.accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
 
@@ -250,7 +283,7 @@ export const GoogleDriveService = {
       const uploadRes = await fetch(uploadUrl, {
         method,
         headers: {
-          Authorization: `Bearer ${auth.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
           'Content-Type': `multipart/related; boundary=${boundary}`,
         },
         body: body,
