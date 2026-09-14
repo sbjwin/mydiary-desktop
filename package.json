@@ -40,6 +40,12 @@
       "electron/**/*",
       "build/**/*"
     ],
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": ".env"
+      }
+    ],
     "win": {
       "target": [
         "nsis",

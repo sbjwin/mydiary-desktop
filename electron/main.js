@@ -3,7 +3,19 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const crypto = require('crypto');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+// 환경 변수 (.env) 로드: 패키징된 실행 파일(resources/.env) 및 개발 환경(프로젝트 루트/.env) 모두 지원
+const candidateEnvPaths = [
+  path.join(__dirname, '../.env'),
+  path.join(process.resourcesPath, '.env'),
+  path.join(process.resourcesPath, 'app.asar/.env'),
+];
+for (const envPath of candidateEnvPaths) {
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+    break;
+  }
+}
 
 let mainWindow = null;
 
@@ -190,9 +202,8 @@ ipcMain.handle('save-hwpx-file', async (event, { defaultFileName, base64Data }) 
 // ==========================================
 // Google OAuth 2.0 Loopback Authentication (Desktop App / PKCE)
 // ==========================================
-// 데스크톱 앱의 Client ID는 공개 식별자이므로, 패키징된(.exe) 독립 실행 환경을 위해 기본값을 제공합니다.
-const DEFAULT_CLIENT_ID = '877273732682-va98800gm7ba2tqvsorv8dp8fusbq7ku.apps.googleusercontent.com';
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.appdata',
   'https://www.googleapis.com/auth/userinfo.email',
@@ -203,10 +214,10 @@ const GOOGLE_SCOPES = [
 ipcMain.handle('google-auth-login', async () => {
   return new Promise((resolve) => {
     try {
-      if (!GOOGLE_CLIENT_ID) {
+      if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
         return resolve({
           success: false,
-          error: 'GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.',
+          error: '.env 파일에 GOOGLE_CLIENT_ID 또는 GOOGLE_CLIENT_SECRET이 설정되어 있지 않습니다.',
         });
       }
 
@@ -277,9 +288,10 @@ ipcMain.handle('google-auth-login', async () => {
               </html>
             `);
 
-            // 3. 인가 코드로 액세스 토큰 교환 (RFC 7636 PKCE 표준 - 데스크톱 전용)
+            // 3. 인가 코드로 액세스 토큰 교환 (PKCE + Client Secret)
             const tokenParams = new URLSearchParams({
               client_id: GOOGLE_CLIENT_ID,
+              client_secret: GOOGLE_CLIENT_SECRET,
               code: authCode,
               code_verifier: codeVerifier,
               grant_type: 'authorization_code',
@@ -368,8 +380,8 @@ ipcMain.handle('google-auth-login', async () => {
 // IPC: 구글 액세스 토큰 갱신 (리프레시 토큰 활용)
 ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
   try {
-    if (!GOOGLE_CLIENT_ID) {
-      return { success: false, error: 'GOOGLE_CLIENT_ID가 설정되어 있지 않습니다.' };
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return { success: false, error: 'GOOGLE_CLIENT_ID 또는 GOOGLE_CLIENT_SECRET 설정이 누락되었습니다.' };
     }
     if (!refreshToken) {
       return { success: false, error: '리프레시 토큰이 없습니다.' };
@@ -377,6 +389,7 @@ ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
 
     const refreshParams = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
       refresh_token: refreshToken,
       grant_type: 'refresh_token',
     });
