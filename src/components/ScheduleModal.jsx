@@ -57,6 +57,19 @@ export const ScheduleModal = ({
     }
   }, [isOpen, initialData]);
 
+  // ESC 키로 모달 닫기 지원
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const isEditMode = !!(initialData && initialData.id);
@@ -144,35 +157,42 @@ export const ScheduleModal = ({
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop schedule-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div
         className="modal-content schedule-modal"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '520px', width: '92%' }}
       >
-        <div className="modal-header">
+        <div className="modal-header schedule-modal-header">
           <div className="modal-title-group">
-            <Calendar className="modal-title-icon" size={20} />
-            <h3 className="modal-title">{isEditMode ? '수업 일정 수정' : '새 수업 일정 등록'}</h3>
+            <div className="modal-icon-badge">
+              {isEditMode ? <Edit3 size={18} /> : <Calendar size={18} />}
+            </div>
+            <div>
+              <h3 className="modal-title">{isEditMode ? '수업 일정 수정' : '새 수업 일정 등록'}</h3>
+              <p className="modal-subtitle">
+                {isEditMode
+                  ? '수업 날짜와 시간을 조정하거나 일지 작성으로 바로 이동할 수 있습니다.'
+                  : '주간 시간표에 새로운 수업 일정을 등록합니다.'}
+              </p>
+            </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose} title="닫기">
+          <button type="button" className="modal-close-btn" onClick={onClose} title="닫기 (ESC)">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleSubmit} className="modal-form schedule-modal-form">
+          <div className="modal-body schedule-modal-body">
             {/* 학생 선택 */}
             <div className="form-group">
               <label className="form-label">
                 <User size={14} className="mr-1 inline-icon" /> 학생 선택
               </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="schedule-student-select-row">
                 <select
-                  className="form-select"
+                  className="form-select schedule-student-select"
                   value={studentId}
                   onChange={handleStudentSelect}
-                  style={{ flex: 1 }}
                 >
                   <option value="">-- 등록된 학생에서 선택 --</option>
                   {students
@@ -185,21 +205,20 @@ export const ScheduleModal = ({
                 </select>
                 <input
                   type="text"
-                  className="form-input"
+                  className="form-input schedule-student-input"
                   placeholder="직접 학생명 입력"
                   value={studentName}
                   onChange={(e) => {
                     setStudentName(e.target.value);
                     if (studentId) setStudentId('');
                   }}
-                  style={{ flex: 1 }}
                   required
                 />
               </div>
             </div>
 
             {/* 일자 및 시작 시간 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div className="form-row-grid-2">
               <div className="form-group">
                 <label className="form-label">
                   <Calendar size={14} className="mr-1 inline-icon" /> 수업 일자
@@ -228,7 +247,7 @@ export const ScheduleModal = ({
             </div>
 
             {/* 수업 시간 & 과목 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div className="form-row-grid-2">
               <div className="form-group">
                 <label className="form-label">수업 시간 (분)</label>
                 <select
@@ -263,7 +282,7 @@ export const ScheduleModal = ({
               <label className="form-label">
                 <Tag size={14} className="mr-1 inline-icon" /> 특이사항 메모 / 태그
               </label>
-              <div className="tag-quick-buttons" style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+              <div className="tag-quick-buttons">
                 {QUICK_TAGS.map((tag) => (
                   <button
                     key={tag}
@@ -284,8 +303,8 @@ export const ScheduleModal = ({
               />
             </div>
 
-            {/* 기타 정보: 연락처 및 주소 (접이식 혹은 간소) */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            {/* 기타 정보: 수납 구분 & 정규 반복 */}
+            <div className="form-row-grid-2">
               <div className="form-group">
                 <label className="form-label">수납 구분</label>
                 <select
@@ -300,8 +319,8 @@ export const ScheduleModal = ({
                 </select>
               </div>
 
-              <div className="form-group" style={{ display: 'flex', alignItems: 'center', marginTop: '22px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}>
+              <div className="form-group schedule-recurring-group">
+                <label className="schedule-recurring-label">
                   <input
                     type="checkbox"
                     checked={isRecurring}
@@ -313,18 +332,8 @@ export const ScheduleModal = ({
             </div>
           </div>
 
-          <div
-            className="modal-footer"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginTop: '18px',
-              paddingTop: '12px',
-              borderTop: '1px solid var(--border-color, #e2e8f0)',
-            }}
-          >
-            <div>
+          <div className="modal-footer schedule-modal-footer">
+            <div className="footer-left-actions">
               {isEditMode && (
                 <button
                   type="button"
@@ -338,13 +347,13 @@ export const ScheduleModal = ({
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="footer-right-actions">
               {isEditMode && onNavigateToDiary && (
                 <button
                   type="button"
-                  className="btn-secondary sm"
+                  className="btn-secondary sm btn-diary-direct"
                   onClick={handleGoToDiary}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#e0f2fe', color: '#0369a1' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
                   <ArrowRight size={14} /> 수업 일지 작성
                 </button>
