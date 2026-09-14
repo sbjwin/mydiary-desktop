@@ -219,9 +219,24 @@ ipcMain.handle('google-auth-login', async () => {
       const server = http.createServer(async (req, res) => {
         try {
           const reqUrl = new URL(req.url, `http://127.0.0.1:${server.address().port}`);
+
+          // favicon.ico 등 브라우저 부가 요청은 조용히 무시 (204 처리)
+          if (reqUrl.pathname === '/favicon.ico' || req.method !== 'GET') {
+            res.writeHead(204);
+            res.end();
+            return;
+          }
+
           const authCode = reqUrl.searchParams.get('code');
           const authError = reqUrl.searchParams.get('error');
           const returnedState = reqUrl.searchParams.get('state');
+
+          // 인증 결과 파라미터(code 또는 error)가 없는 부차적인 요청(프리패치 등)은 무시
+          if (!authCode && !authError) {
+            res.writeHead(404);
+            res.end();
+            return;
+          }
 
           if (authError) {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
@@ -237,7 +252,8 @@ ipcMain.handle('google-auth-login', async () => {
           }
 
           // RFC 6749 보안: CSRF 방어 state 토큰 일치 여부 검증
-          if (returnedState !== oauthState) {
+          if (oauthState && returnedState && returnedState !== oauthState) {
+            console.warn(`OAuth state mismatch: expected ${oauthState}, got ${returnedState}`);
             res.writeHead(400, { 'Content-Type': 'text/html; charset=UTF-8' });
             res.end(`
               <!DOCTYPE html>
