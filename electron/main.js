@@ -76,12 +76,17 @@ function createApplicationMenu(isDev) {
 }
 
 function createWindow() {
+  const icoPath = path.join(__dirname, '../build/icon.ico');
+  const pngPath = path.join(__dirname, '../build/icon.png');
+  const iconPath = fs.existsSync(icoPath) ? icoPath : (fs.existsSync(pngPath) ? pngPath : null);
+
   mainWindow = new BrowserWindow({
     width: 1360,
     height: 880,
     minWidth: 1024,
     minHeight: 700,
     title: 'MyDiary Desktop',
+    ...(iconPath ? { icon: iconPath } : {}),
     backgroundColor: '#0f172a',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
