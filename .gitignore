@@ -20,6 +20,7 @@ build/
 .vite/
 .eslintcache
 .cache/
+.playwright-mcp/
 
 # 환경 변수 및 보안/인증서 (Environment Variables & Secrets)
 .env

@@ -1,8 +1,79 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 let mainWindow = null;
+
+function createApplicationMenu(isDev) {
+  const template = [
+    {
+      label: '파일 (&F)',
+      submenu: [
+        { label: '새로고침 (&R)', accelerator: 'CmdOrCtrl+R', click: () => mainWindow?.reload() },
+        { type: 'separator' },
+        { label: '창 닫기 (&W)', role: 'close' },
+        { label: '종료 (&X)', role: 'quit' },
+      ],
+    },
+    {
+      label: '편집 (&E)',
+      submenu: [
+        { label: '실행 취소 (&U)', role: 'undo' },
+        { label: '다시 실행 (&R)', role: 'redo' },
+        { type: 'separator' },
+        { label: '잘라내기 (&T)', role: 'cut' },
+        { label: '복사 (&C)', role: 'copy' },
+        { label: '붙여넣기 (&P)', role: 'paste' },
+        { label: '모두 선택 (&A)', role: 'selectAll' },
+      ],
+    },
+    {
+      label: '보기 (&V)',
+      submenu: [
+        { label: '실제 크기', role: 'resetZoom' },
+        { label: '확대', role: 'zoomIn' },
+        { label: '축소', role: 'zoomOut' },
+        { type: 'separator' },
+        { label: '전체 화면 토글', role: 'togglefullscreen' },
+        ...(isDev ? [{ label: '개발자 도구 토글', role: 'toggleDevTools' }] : []),
+      ],
+    },
+    {
+      label: '도움말 (&H)',
+      submenu: [
+        {
+          label: '📖 화면별 사용 가이드',
+          accelerator: 'F1',
+          click: () => {
+            mainWindow?.webContents.send('open-help', 'guide');
+          },
+        },
+        {
+          label: '❓ 자주 묻는 질문 (FAQ)',
+          click: () => {
+            mainWindow?.webContents.send('open-help', 'faq');
+          },
+        },
+        {
+          label: '✉️ 개발자 문의 및 지원',
+          click: () => {
+            shell.openExternal('mailto:sbjwin4271@gmail.com');
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'ℹ️ MyDiary Desktop 정보',
+          click: () => {
+            mainWindow?.webContents.send('open-help', 'about');
+          },
+        },
+      ],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -20,6 +91,7 @@ function createWindow() {
   });
 
   const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
+  createApplicationMenu(isDev);
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
@@ -39,6 +111,16 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+// IPC: 외부 링크/메일 열기
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 });
 

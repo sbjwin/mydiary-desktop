@@ -1,7 +1,7 @@
 import React from 'react';
-import { Calendar, BookOpen, Users, HardDrive, Laptop } from 'lucide-react';
+import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle } from 'lucide-react';
 
-export const Header = ({ activeTab, onSelectTab }) => {
+export const Header = ({ activeTab, onSelectTab, onOpenHelp }) => {
   const tabs = [
     { id: 'weekly', label: '주간 시간표', icon: Calendar },
     { id: 'diary', label: '수업 일지', icon: BookOpen },
@@ -39,6 +39,15 @@ export const Header = ({ activeTab, onSelectTab }) => {
       </nav>
 
       <div className="header-actions">
+        <button
+          className="header-help-btn"
+          onClick={onOpenHelp}
+          title="도움말 및 사용 가이드 (단축키: F1)"
+        >
+          <HelpCircle size={15} />
+          <span>도움말 (F1)</span>
+        </button>
+
         <div className="user-profile-badge">
           <Laptop size={14} />
           <span>성백진 선생님 (교실 모드)</span>

@@ -4,12 +4,15 @@ import { WeeklyScheduleTab } from './components/WeeklyScheduleTab';
 import { ClassDiaryTab } from './components/ClassDiaryTab';
 import { StudentManageTab } from './components/StudentManageTab';
 import { BackupSettingTab } from './components/BackupSettingTab';
+import { HelpModal } from './components/HelpModal';
 import { Database, getTodayDateString } from './database/Database';
 import './styles/app.css';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('weekly'); // 'weekly' | 'diary' | 'students' | 'backup'
   const [diaryParams, setDiaryParams] = useState(null);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [helpInitialTab, setHelpInitialTab] = useState('guide');
 
   // 초기 실행 시 학생 데이터가 전혀 없는 경우 기본 가이드 학생 생성
   useEffect(() => {
@@ -44,15 +47,50 @@ export function App() {
     initDefaultStudents();
   }, []);
 
+  // F1 단축키 및 Electron 네이티브 메뉴 IPC 리스너 등록
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'F1') {
+        e.preventDefault();
+        setHelpInitialTab('guide');
+        setHelpModalOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Electron 상단 도움말 메뉴 클릭 수신
+    let cleanupIpc = null;
+    if (window.electronAPI?.onOpenHelp) {
+      cleanupIpc = window.electronAPI.onOpenHelp((tab) => {
+        setHelpInitialTab(tab || 'guide');
+        setHelpModalOpen(true);
+      });
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (cleanupIpc) cleanupIpc();
+    };
+  }, []);
+
   // 주간 시간표에서 수업 카드를 클릭했을 때 해당 일지 작성 화면으로 바로 이동
   const handleNavigateToDiary = (params) => {
     setDiaryParams(params);
     setActiveTab('diary');
   };
 
+  const handleOpenHelp = (tab = 'guide') => {
+    setHelpInitialTab(tab);
+    setHelpModalOpen(true);
+  };
+
   return (
     <div className="app-container">
-      <Header activeTab={activeTab} onSelectTab={setActiveTab} />
+      <Header
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        onOpenHelp={() => handleOpenHelp('guide')}
+      />
       <main className="app-main-content">
         {activeTab === 'weekly' && (
           <WeeklyScheduleTab onNavigateToDiary={handleNavigateToDiary} />
@@ -67,6 +105,13 @@ export function App() {
           <BackupSettingTab />
         )}
       </main>
+
+      {/* 종합 시각적 도움말 모달 */}
+      <HelpModal
+        isOpen={helpModalOpen}
+        onClose={() => setHelpModalOpen(false)}
+        initialTab={helpInitialTab}
+      />
     </div>
   );
 }
