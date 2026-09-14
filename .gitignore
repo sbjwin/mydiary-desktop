@@ -73,6 +73,11 @@ $RECYCLE.BIN/
 *.hwpx
 *.docx
 *.pdf
+*.db
+*.sqlite
+*.sqlite3
+mobile_backup/
+*backup*.json
 
 # AI 에이전트 설정 (AI Agent Governance & Local Skills)
 .agents/
