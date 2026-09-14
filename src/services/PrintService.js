@@ -953,35 +953,24 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
 };
 
 /**
- * 주간 업무 보고서 인쇄 실행
+ * 주간 업무 보고서 인쇄 실행 (데스크톱/웹 인쇄 및 PDF 저장)
  */
 export const printWeeklyReport = async (weeklyPlan) => {
   try {
     const html = generateWeeklyReportHtml(weeklyPlan);
-    await Print.printAsync({ html });
+    const title = weeklyPlan?.weekKey ? `${weeklyPlan.weekKey} 주간 업무 보고서` : '주간 업무 보고서';
+    await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print weekly report:', error);
-    alert('인쇄 오류' + "\n" + '주간 업무 보고서를 인쇄하는 도중 오류가 발생했습니다.');
+    alert('인쇄 오류\n주간 업무 보고서를 인쇄하는 도중 오류가 발생했습니다: ' + error.message);
   }
 };
 
 /**
- * 주간 업무 보고서 PDF 파일 공유 (카톡/메일 등)
+ * 주간 업무 보고서 PDF 인쇄/저장
  */
 export const shareWeeklyReport = async (weeklyPlan) => {
-  try {
-    const isAvailable = await Sharing.isAvailableAsync();
-    if (!isAvailable) {
-      alert('공유 불가' + "\n" + '현재 기기에서 파일 공유 기능을 지원하지 않습니다.');
-      return;
-    }
-
-    const html = generateWeeklyReportHtml(weeklyPlan);
-    await executePrintOrPdf(html, title);
-  } catch (error) {
-    console.error('Failed to share weekly report PDF:', error);
-    alert('공유 오류' + "\n" + '주간 업무 보고서 PDF를 공유하는 도중 오류가 발생했습니다.');
-  }
+  return printWeeklyReport(weeklyPlan);
 };
 
 export { shareWeeklyReportDocx } from './DocxExportService';
