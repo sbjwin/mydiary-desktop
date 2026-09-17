@@ -83,7 +83,7 @@ npm run dev:electron
 # Windows 일반 빌드 (x64 NSIS 설치 파일 및 포터블 .exe)
 npm run package:win
 
-# Windows 자체 서명 코드사이닝 포함 빌드 (로컬 전용 추천)
+# Windows 자체 서명 코드사이닝 포함 빌드 (로컬/테스트 전용 추천)
 npm run package:win:signed
 
 # macOS (.dmg)
@@ -92,6 +92,9 @@ npm run package:mac
 # Linux (.AppImage 및 .deb)
 npm run package:linux
 ```
+
+> 💡 **Windows SmartScreen 경고 대처 및 테스트 방법**:  
+> 패키징 후 실행 시 윈도우 보안 경고(SmartScreen) 차단 해제 및 자체 서명 인증서 활용법은 [docs/WINDOWS_SMARTSCREEN_TEST_GUIDE.md](docs/WINDOWS_SMARTSCREEN_TEST_GUIDE.md) 문서를 참고하십시오.
 
 ---
 
