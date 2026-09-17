@@ -99,14 +99,14 @@ const createParagraph = (runs = [], paraPrIDRef = 0) => {
 const createCell = ({
   paragraphs = [],
   width = 6600,
-  height = 500,
+  height = 480,
   colAddr = 0,
   rowAddr = 0,
   colSpan = 1,
   rowSpan = 1,
   borderFillIDRef = 1,
   vertAlign = 'CENTER',
-  margin = { left: 160, right: 160, top: 100, bottom: 100 },
+  margin = { left: 100, right: 100, top: 60, bottom: 60 },
 }) => {
   const content = Array.isArray(paragraphs) ? paragraphs.join('') : paragraphs;
   const textWidth = Math.max(800, width - (margin.left + margin.right));
@@ -506,29 +506,29 @@ export const buildHeaderXml = () => {
       <hh:paraPr id="1" align="center">
         <hh:lineSpacing type="percent" value="130"/>
       </hh:paraPr>
-      <!-- 2: 문서 대제목/부제목 중앙 정렬 (줄간격 120%) -->
+      <!-- 2: 문서 대제목/부제목 중앙 정렬 (줄간격 115%) -->
       <hh:paraPr id="2" align="center">
-        <hh:lineSpacing type="percent" value="120"/>
+        <hh:lineSpacing type="percent" value="115"/>
       </hh:paraPr>
-      <!-- 3: 표 내부 컴팩트 좌측 정렬 (줄간격 120%) -->
+      <!-- 3: 표 내부 컴팩트 좌측 정렬 (줄간격 110%) -->
       <hh:paraPr id="3" align="left">
-        <hh:lineSpacing type="percent" value="120"/>
+        <hh:lineSpacing type="percent" value="110"/>
       </hh:paraPr>
-      <!-- 4: 표 내부 컴팩트 중앙 정렬 (줄간격 120%) -->
+      <!-- 4: 표 내부 컴팩트 중앙 정렬 (줄간격 110%) -->
       <hh:paraPr id="4" align="center">
-        <hh:lineSpacing type="percent" value="120"/>
+        <hh:lineSpacing type="percent" value="110"/>
       </hh:paraPr>
-      <!-- 5: 하단 섹션 소제목 좌측 정렬 (줄간격 125%) -->
+      <!-- 5: 하단 섹션 소제목 좌측 정렬 (줄간격 115%) -->
       <hh:paraPr id="5" align="left">
-        <hh:lineSpacing type="percent" value="125"/>
+        <hh:lineSpacing type="percent" value="115"/>
       </hh:paraPr>
-      <!-- 6: 제목 하단 미세 여백 문단 (줄간격 60%) -->
+      <!-- 6: 제목 하단 미세 여백 문단 (줄간격 20%) -->
       <hh:paraPr id="6" align="center">
-        <hh:lineSpacing type="percent" value="60"/>
+        <hh:lineSpacing type="percent" value="20"/>
       </hh:paraPr>
-      <!-- 7: 표 사이 여백 문단 (줄간격 80%) -->
+      <!-- 7: 표 사이 여백 문단 (줄간격 30%) -->
       <hh:paraPr id="7" align="center">
-        <hh:lineSpacing type="percent" value="80"/>
+        <hh:lineSpacing type="percent" value="30"/>
       </hh:paraPr>
     </hh:paraProperties>
 
@@ -648,7 +648,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     createCell({
       paragraphs: [createParagraph([createRun('구 분', 3)], 4)],
       width: TIME_COL_WIDTH,
-      height: 480,
+      height: 380,
       colAddr: 0,
       rowAddr: 0,
       borderFillIDRef: 2,
@@ -657,7 +657,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
       createCell({
         paragraphs: [createParagraph([createRun(dh, 3)], 4)],
         width: DAY_COL_WIDTH,
-        height: 480,
+        height: 380,
         colAddr: idx + 1,
         rowAddr: 0,
         borderFillIDRef: 2,
@@ -675,7 +675,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         createCell({
           paragraphs: [createParagraph([createRun(slot.label, 13)], 4)],
           width: TIME_COL_WIDTH,
-          height: 380,
+          height: 260,
           colAddr: 0,
           rowAddr: currentRow,
           borderFillIDRef: 3,
@@ -683,7 +683,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         createCell({
           paragraphs: [createParagraph([createRun('☕ 12:00 ~ 13:00 점심 및 이동 시간', 8)], 4)],
           width: DAY_COL_WIDTH * 6,
-          height: 380,
+          height: 260,
           colAddr: 1,
           rowAddr: currentRow,
           colSpan: 6,
@@ -698,7 +698,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
       createCell({
         paragraphs: [createParagraph([createRun(slot.label, 13)], 4)],
         width: TIME_COL_WIDTH,
-        height: 600,
+        height: 480,
         colAddr: 0,
         rowAddr: currentRow,
         borderFillIDRef: 3,
@@ -712,10 +712,11 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
           createCell({
             paragraphs: [createParagraph([], 3)],
             width: DAY_COL_WIDTH,
-            height: 600,
+            height: 480,
             colAddr: colIdx + 1,
             rowAddr: currentRow,
             borderFillIDRef: 1,
+            margin: { left: 100, right: 100, top: 50, bottom: 50 },
           })
         );
       } else {
@@ -730,11 +731,11 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
           createCell({
             paragraphs: cellPars,
             width: DAY_COL_WIDTH,
-            height: 600,
+            height: 480,
             colAddr: colIdx + 1,
             rowAddr: currentRow,
             borderFillIDRef: 1,
-            margin: { left: 160, right: 160, top: 120, bottom: 120 },
+            margin: { left: 100, right: 100, top: 60, bottom: 60 },
           })
         );
       }
@@ -792,22 +793,22 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     createCell({
       paragraphs: colLeftPars,
       width: BOTTOM_LEFT_WIDTH,
-      height: 1800,
+      height: 1500,
       colAddr: 0,
       rowAddr: 0,
       borderFillIDRef: 7,
       vertAlign: 'TOP',
-      margin: { left: 240, right: 240, top: 180, bottom: 180 },
+      margin: { left: 160, right: 160, top: 100, bottom: 100 },
     }),
     createCell({
       paragraphs: colRightPars,
       width: BOTTOM_RIGHT_WIDTH,
-      height: 1800,
+      height: 1500,
       colAddr: 1,
       rowAddr: 0,
       borderFillIDRef: 7,
       vertAlign: 'TOP',
-      margin: { left: 240, right: 240, top: 180, bottom: 180 },
+      margin: { left: 160, right: 160, top: 100, bottom: 100 },
     }),
   ]);
 
@@ -827,16 +828,16 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         xmlns:hwpunitchar="http://www.hancom.co.kr/hwpml/2016/HwpUnitChar"
         xmlns:epub="http://www.idpf.org/2007/ops"
         xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0">
-  <!-- 첫 번째 문단: 구역(섹션) 속성 정의 (A4 세로형 표준 1장 최적화, 쪽 테두리 제거) -->
-  <hp:p id="1000000001" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
+  <!-- 첫 번째 문단: 구역(섹션) 속성 정의 및 문서 대제목 (A4 세로형 표준 1장 최적화) -->
+  <hp:p id="1000000001" paraPrIDRef="2" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
     <hp:run charPrIDRef="0">
       <hp:secPr id="" textDirection="HORIZONTAL" spaceColumns="1134" tabStop="8000" tabStopVal="4000" tabStopUnit="HWPUNIT" outlineShapeIDRef="1" memoShapeIDRef="0" textVerticalWidthHead="0" masterPageCnt="0">
         <hp:grid lineGrid="0" charGrid="0" wonggojiFormat="0"/>
         <hp:startNum pageStartsOn="BOTH" page="0" pic="0" tbl="0" equation="0"/>
         <hp:visibility hideFirstHeader="0" hideFirstFooter="0" hideFirstMasterPage="0" border="HIDE_ALL" fill="HIDE_ALL" hideFirstPageNum="0" hideFirstEmptyLine="0" showLineNumber="0"/>
         <hp:lineNumberShape restartType="0" countBy="0" distance="0" startNumber="0"/>
-        <hp:pagePr landscape="NARROWLY" width="59528" height="84188" gutterType="LEFT_ONLY">
-          <hp:margin header="1417" footer="1417" gutter="0" left="8504" right="8504" top="4252" bottom="4252"/>
+        <hp:pagePr landscape="WIDELY" width="59528" height="84188" gutterType="LEFT_ONLY">
+          <hp:margin header="0" footer="0" gutter="0" left="8504" right="8504" top="2834" bottom="2834"/>
         </hp:pagePr>
         <hp:footNotePr>
           <hp:autoNumFormat type="DIGIT" userChar="" prefixChar="" suffixChar=")" supscript="0"/>
@@ -857,11 +858,10 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         <hp:colPr id="0" type="NEWSPAPER" layout="LEFT" colCount="1" sameSz="1" sameGap="0"/>
       </hp:ctrl>
     </hp:run>
-    <hp:run charPrIDRef="0"><hp:t/></hp:run>
+    <hp:run charPrIDRef="1"><hp:t xml:space="preserve">${escapeXml(docTitle)}</hp:t></hp:run>
   </hp:p>
 
-  <!-- 문서 제목 및 부제목 (품격 있는 헤더) -->
-  ${createParagraph([createRun(docTitle, 1)], 2)}
+  <!-- 문서 부제목 -->
   ${createParagraph([createRun(docSubTitle, 2)], 2)}
   ${createParagraph([createRun('', 0)], 6)}
 
@@ -872,7 +872,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     rowCnt: timeSlots.length + 1,
     colCnt: 7,
     width: TOTAL_TABLE_WIDTH,
-    height: (timeSlots.length + 1) * 580,
+    height: (timeSlots.length + 1) * 480,
     borderFillIDRef: 1,
   })}
 
@@ -886,7 +886,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     rowCnt: 1,
     colCnt: 2,
     width: TOTAL_TABLE_WIDTH,
-    height: 1800,
+    height: 1500,
     borderFillIDRef: 7,
   })}
 </hs:sec>`;
@@ -1027,8 +1027,8 @@ export const exportDiaryToHwpx = async (student, diary) => {
   <hp:p paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
     <hp:run charPrIDRef="0">
       <hp:secPr textDirection="HORIZONTAL" outlineShapeIDRef="1">
-        <hp:pagePr landscape="NARROWLY" width="59528" height="84188">
-          <hp:margin header="1417" footer="1417" left="8504" right="8504" top="5669" bottom="5669"/>
+        <hp:pagePr landscape="WIDELY" width="59528" height="84188">
+          <hp:margin header="0" footer="0" left="8504" right="8504" top="4252" bottom="4252"/>
         </hp:pagePr>
       </hp:secPr>
     </hp:run>
