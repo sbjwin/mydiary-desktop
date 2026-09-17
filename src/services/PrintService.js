@@ -470,30 +470,19 @@ export const generateClassRecordsHtml = (student, records = [], periodTitle = '�
 export const printStudentProfile = async (student) => {
   try {
     const html = generateStudentProfileHtml(student);
-    await Print.printAsync({ html });
+    const title = `${student?.name || '학생'}_학생기록카드`;
+    await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print student profile:', error);
-    alert('인쇄 오류' + "\n" + '학생 정보를 인쇄하는 도중 오류가 발생했습니다.');
+    alert('인쇄 오류\n학생 정보를 인쇄하는 도중 오류가 발생했습니다: ' + error.message);
   }
 };
 
 /**
- * 학생 정보 PDF 공유 (카톡/메시지 등)
+ * 학생 정보 PDF 인쇄/저장
  */
 export const shareStudentProfile = async (student) => {
-  try {
-    const isAvailable = await Sharing.isAvailableAsync();
-    if (!isAvailable) {
-      alert('공유 불가' + "\n" + '현재 기기에서 파일 공유 기능을 지원하지 않습니다.');
-      return;
-    }
-
-    const html = generateStudentProfileHtml(student);
-    await executePrintOrPdf(html, title);
-  } catch (error) {
-    console.error('Failed to share student profile PDF:', error);
-    alert('공유 오류' + "\n" + '학생 정보 PDF를 공유하는 도중 오류가 발생했습니다.');
-  }
+  return printStudentProfile(student);
 };
 
 /**
@@ -502,30 +491,19 @@ export const shareStudentProfile = async (student) => {
 export const printClassRecords = async (student, records, periodTitle = '전체 기간') => {
   try {
     const html = generateClassRecordsHtml(student, records, periodTitle);
-    await Print.printAsync({ html });
+    const title = `${student?.name || '학생'}_수업일지`;
+    await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print class records:', error);
-    alert('인쇄 오류' + "\n" + '수업 일지를 인쇄하는 도중 오류가 발생했습니다.');
+    alert('인쇄 오류\n수업 일지를 인쇄하는 도중 오류가 발생했습니다: ' + error.message);
   }
 };
 
 /**
- * 수업 일지 보고서 PDF 공유 (카톡/메시지 등)
+ * 수업 일지 보고서 PDF 인쇄/저장
  */
 export const shareClassRecords = async (student, records, periodTitle = '전체 기간') => {
-  try {
-    const isAvailable = await Sharing.isAvailableAsync();
-    if (!isAvailable) {
-      alert('공유 불가' + "\n" + '현재 기기에서 파일 공유 기능을 지원하지 않습니다.');
-      return;
-    }
-
-    const html = generateClassRecordsHtml(student, records, periodTitle);
-    await executePrintOrPdf(html, title);
-  } catch (error) {
-    console.error('Failed to share class records PDF:', error);
-    alert('공유 오류' + "\n" + '수업 일지 PDF를 공유하는 도중 오류가 발생했습니다.');
-  }
+  return printClassRecords(student, records, periodTitle);
 };
 
 /**

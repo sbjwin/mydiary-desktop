@@ -897,12 +897,6 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
  */
 export const shareWeeklyReportHwpx = async (weeklyPlan) => {
   try {
-    const isAvailable = await Sharing.isAvailableAsync();
-    if (!isAvailable) {
-      alert('공유 불가' + "\n" + '현재 기기에서 파일 공유 기능을 지원하지 않습니다.');
-      return;
-    }
-
     const startDate = weeklyPlan?.startDate || '2026-08-17';
     const [year, month, day] = startDate.split('-').map(Number);
     const fileName = `주간업무보고서_${year}년_${month}월_${day}일.hwpx`;
@@ -976,12 +970,10 @@ export const shareWeeklyReportHwpx = async (weeklyPlan) => {
       compressionOptions: { level: 6 },
     });
 
-    
     return await saveOrDownloadHwpx(fileName, base64Data);
-
   } catch (error) {
     console.error('Failed to export HWPX:', error);
-    Alert.alert('문서 생성 오류', `한글 문서(.hwpx) 생성 중 오류가 발생했습니다.\n(${error?.message || error})`);
+    alert(`한글 문서(.hwpx) 생성 중 오류가 발생했습니다.\n(${error?.message || error})`);
   }
 };
 
