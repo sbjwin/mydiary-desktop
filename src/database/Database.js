@@ -749,6 +749,78 @@ export const Database = {
     }
   },
 
+  // 학생 원장에 등록된 정규 기본 시간표(default_schedules)를 이번 주로 일괄 불러오기
+  loadWeeklyPlanFromStudentDefaults: async (targetMonday) => {
+    try {
+      const allStudents = await Database.getAllStudents();
+      const activeStudents = (allStudents || []).filter((s) => s.status !== 'paused');
+
+      const defaultScheduleItems = [];
+      const seenKeySet = new Set(); // 학생ID-요일-시작시간 중복 방지
+
+      activeStudents.forEach((student) => {
+        if (Array.isArray(student.default_schedules) && student.default_schedules.length > 0) {
+          const phoneList = [];
+          const parentPhone = student.parent_mobile_phone || student.parentMobilePhone;
+          const studentPhone = student.mobile_phone || student.mobilePhone;
+          const homePhone = student.phone_number || student.phoneNumber;
+          if (studentPhone) phoneList.push(`(본)${studentPhone}`);
+          if (parentPhone) phoneList.push(`(모)${parentPhone}`);
+          if (homePhone) phoneList.push(`(전화)${homePhone}`);
+          const formattedPhone = formatPhoneInfo(phoneList.join('\n'));
+
+          student.default_schedules.forEach((sched) => {
+            const dayOfWeek = Number(sched.dayOfWeek) || 1;
+            const startTime = sched.startTime || '10:00';
+            const dedupeKey = `${student.id || student.name}_${dayOfWeek}_${startTime}`;
+
+            if (!seenKeySet.has(dedupeKey)) {
+              seenKeySet.add(dedupeKey);
+              const dateStr = getDateFromMondayOffset(targetMonday, dayOfWeek - 1);
+              defaultScheduleItems.push({
+                id: generateUUID(),
+                studentId: student.id,
+                studentName: student.name || '무명',
+                paymentType: student.payment_type || '지사입금',
+                subject: sched.subject || '',
+                course: sched.subject || '',
+                address: student.address || '',
+                phoneInfo: formattedPhone,
+                dayOfWeek: dayOfWeek,
+                date: dateStr,
+                startTime: startTime,
+                duration: Number(sched.duration) || 60,
+                statusTag: '정규',
+                statusNote: '',
+                isDefault: true,
+                isRecurring: true,
+              });
+            }
+          });
+        }
+      });
+
+      // 요일 및 시작 시간 순서대로 정렬
+      defaultScheduleItems.sort((a, b) => {
+        if (a.dayOfWeek !== b.dayOfWeek) return a.dayOfWeek - b.dayOfWeek;
+        return (a.startTime || '00:00').localeCompare(b.startTime || '00:00');
+      });
+
+      const currentPlan = await Database.getWeeklyPlan(targetMonday);
+      const updatedPlan = {
+        ...currentPlan,
+        scheduleItems: defaultScheduleItems,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await Database.saveWeeklyPlan(targetMonday, updatedPlan);
+      return updatedPlan;
+    } catch (e) {
+      console.error('Failed to load weekly plan from student defaults:', e);
+      throw e;
+    }
+  },
+
   // 특정 주차의 등록된 수업 일정 전체 비우기
   clearWeeklyPlan: async (weekKey) => {
     try {

@@ -1003,30 +1003,6 @@
   gap: 12px;
 }
 
-.schedule-recurring-group {
-  display: flex;
-  align-items: center;
-  padding-top: 20px;
-}
-
-.schedule-recurring-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main);
-  user-select: none;
-}
-
-.schedule-recurring-label input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--primary, #0284c7);
-  cursor: pointer;
-}
-
 .modal-footer.schedule-modal-footer {
   display: flex;
   justify-content: space-between;

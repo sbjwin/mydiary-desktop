@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag, AlertTriangle } from 'lucide-react';
 import { formatPhoneInfo } from '../database/Database';
 
-const QUICK_TAGS = ['=> 이번주만', '=> 보강', '=> 시간변경', '휴강'];
+const QUICK_TAGS = ['=> 보강', '=> 시간변경', '=> 임시수업', '휴강'];
 const DURATION_OPTIONS = [30, 40, 50, 60, 80, 90, 120];
 
 export const ScheduleModal = ({
@@ -62,6 +62,15 @@ export const ScheduleModal = ({
     const itemTime = (item.startTime || item.classTime || '').slice(0, 5);
     const targetTime = startTime.slice(0, 5);
     return item.date === date && itemTime === targetTime;
+  });
+
+  // 동일 날짜에 같은 학생이 이미 등록되어 있는지 감지 (현재 수정 중인 대상 제외)
+  const sameStudentOnDate = existingSchedules?.find((item) => {
+    if (!date || !studentName?.trim()) return false;
+    if (initialData?.id && item.id === initialData.id) return false;
+    const isSameId = studentId && item.studentId && item.studentId === studentId;
+    const isSameName = item.studentName && item.studentName.trim() === studentName.trim();
+    return item.date === date && (isSameId || isSameName);
   });
 
   // ESC 키로 모달 닫기 지원
@@ -129,6 +138,13 @@ export const ScheduleModal = ({
         `[수업 시간 중복 안내]\n\n같은 시간대(${date} ${startTime})에 이미 [${conflictSchedule.studentName}] 학생의 수업이 등록되어 있습니다.\n\n그래도 이 시간에 등록하시겠습니까?`
       );
       if (!confirmDup) return;
+    }
+
+    if (sameStudentOnDate) {
+      const confirmStudentDup = window.confirm(
+        `[동일 학생 중복 안내]\n\n[${studentName.trim()}] 학생은 같은 날(${date})에 이미 다른 수업(${sameStudentOnDate.startTime || sameStudentOnDate.classTime || ''})이 등록되어 있습니다.\n\n해당 학생의 수업을 추가로 등록하시겠습니까?`
+      );
+      if (!confirmStudentDup) return;
     }
 
     const [y, m, d] = date.split('-').map(Number);
@@ -289,6 +305,27 @@ export const ScheduleModal = ({
                     <AlertTriangle size={14} color="#d97706" style={{ flexShrink: 0 }} />
                     <span>
                       ⚠️ <strong>{conflictSchedule.studentName}</strong> 학생과 시간이 겹칩니다!
+                    </span>
+                  </div>
+                )}
+                {sameStudentOnDate && !conflictSchedule && (
+                  <div
+                    style={{
+                      backgroundColor: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      color: '#1e40af',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      fontSize: '11.5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      marginTop: '6px',
+                    }}
+                  >
+                    <AlertTriangle size={14} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    <span>
+                      ℹ️ <strong>{studentName}</strong> 학생의 수업이 같은 날({sameStudentOnDate.startTime || sameStudentOnDate.classTime})에 이미 등록되어 있습니다.
                     </span>
                   </div>
                 )}

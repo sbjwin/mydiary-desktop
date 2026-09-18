@@ -222,6 +222,21 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
     }
   };
 
+  // 학생 기본 시간표 불러오기 핸들러 (학생 원장의 정규 수업 시간표를 이번 주로 일괄 가져오기)
+  const handleLoadDefaultSchedule = async () => {
+    const confirmMsg = `학생 원장에 등록된 정규 수업 시간표를 이번 주(${currentMonday} ~ ${sundayDate})로 불러오시겠습니까?\n\n※ 중복 시간은 1건으로 정제되며, 기존에 등록된 이번 주 수업 일정이 있다면 기본 시간표로 새로 대체됩니다.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const updatedPlan = await Database.loadWeeklyPlanFromStudentDefaults(currentMonday);
+      await loadWeekData(currentMonday);
+      const count = updatedPlan?.scheduleItems?.length || 0;
+      alert(`학생 기본 시간표 ${count}건을 성공적으로 불러왔습니다.`);
+    } catch (err) {
+      alert('기본 시간표 불러오기 실패: ' + err.message);
+    }
+  };
+
   // 이번 주 시간표 전체 비우기 핸들러 (잘못 등록되거나 겹친 일정 일괄 정리)
   const handleClearWeek = async () => {
     const confirmMsg = `이번 주(${currentMonday} ~ ${sundayDate})에 등록된 모든 수업 일정을 비우시겠습니까?\n\n※ 작성 완료된 과거 수업 일지는 안전하게 보관되며, 시간표의 수업 배치만 깨끗이 비워집니다.`;
@@ -329,6 +344,13 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
             title="이전 주의 수업 일정들을 이번 주로 한 번에 복사합니다"
           >
             <Copy size={15} /> 이전 주 복사
+          </button>
+          <button
+            className="btn-secondary sm"
+            onClick={handleLoadDefaultSchedule}
+            title="학생 원장에 등록된 정규 기본 시간표를 이번 주로 일괄 불러옵니다"
+          >
+            <Sparkles size={15} /> 기본 시간표 불러오기
           </button>
           <button
             className="btn-secondary sm"
