@@ -6,34 +6,56 @@ node_modules/
 # 빌드 및 패키징 산출물 (Build Outputs & Packaging)
 dist/
 dist-electron/
+dist-ssr/
 release/
+out/
 build/*
 !build/icon.*
+win-unpacked/
+mac/
+mac-arm64/
+linux-unpacked/
 *.exe
+*.msi
 *.dmg
 *.AppImage
 *.deb
 *.rpm
 *.snap
 *.blockmap
+*.zip
+*.tar.gz
+*.7z
 
 # Vite 번들러 및 도구 캐시 (Cache)
 .vite/
 .eslintcache
 .cache/
 .playwright-mcp/
+*.tsbuildinfo
+.turbo/
+
+# 테스트 커버리지 (Testing & Coverage)
+coverage/
+*.lcov
+.nyc_output/
 
 # 환경 변수 및 보안/인증서 (Environment Variables & Secrets)
 .env
 .env.local
 .env.*.local
+credentials.json
+client_secret*.json
 certs/
-scripts/
 *.pem
 *.key
 *.cert
+*.crt
+*.der
 *.p12
 *.pfx
+*.keystore
+*.jks
 
 # 로그 파일 (Logs)
 logs/
@@ -50,10 +72,13 @@ lerna-debug.log*
 ._*
 .Spotlight-V100
 .Trashes
-Thumbs.db
+[Tt]humbs.db
 ehthumbs.db
-Desktop.ini
+ehthumbs_vista.db
+[Dd]esktop.ini
 $RECYCLE.BIN/
+*.lnk
+.directory
 
 # IDE 및 에디터 (Editor & IDE)
 .idea/
@@ -62,13 +87,18 @@ $RECYCLE.BIN/
 *.njsproj
 *.sln
 *.sw?
+.history/
+*.orig
+*.rej
+*.sublime-project
+*.sublime-workspace
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# 테스트 및 임시 내보내기 파일 (Temp & Export Artifacts)
+# 테스트 및 임시 내보내기/백업 파일 (Temp & Export Artifacts)
 *.tmp
 *.temp
 *.bak
@@ -78,8 +108,18 @@ $RECYCLE.BIN/
 *.db
 *.sqlite
 *.sqlite3
+*.csv
+*.xlsx
+*.xls
+backup/
+backups/
 mobile_backup/
 *backup*.json
+export/
+exports/
+userData/
 
 # AI 에이전트 설정 (AI Agent Governance & Local Skills)
 .agents/
+.claude/
+.gemini/
