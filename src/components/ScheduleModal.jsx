@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag, AlertTriangle } from 'lucide-react';
 import { formatPhoneInfo } from '../database/Database';
 
-const QUICK_TAGS = ['=> 보강', '=> 시간변경', '=> 임시수업', '휴강'];
+const QUICK_TAGS = ['이번주만', '휴일', '아픔', '(30분 수업)', '보강', '시간변경'];
 const DURATION_OPTIONS = [30, 40, 50, 60, 80, 90, 120];
 
 export const ScheduleModal = ({
@@ -203,7 +203,7 @@ export const ScheduleModal = ({
               {isEditMode ? <Edit3 size={18} /> : <Calendar size={18} />}
             </div>
             <div>
-              <h3 className="modal-title">{isEditMode ? '수업 일정 수정' : '새 수업 일정 등록'}</h3>
+              <h3 className="modal-title">{isEditMode ? '수업 일정 변경 / 메모' : '새 주간 수업 등록'}</h3>
               <p className="modal-subtitle">
                 {isEditMode
                   ? '수업 날짜와 시간을 조정하거나 일지 작성으로 바로 이동할 수 있습니다.'
