@@ -99,7 +99,7 @@ const createParagraph = (runs = [], paraPrIDRef = 0) => {
 const createCell = ({
   paragraphs = [],
   width = 6600,
-  height = 5670,
+  height = 5102,
   colAddr = 0,
   rowAddr = 0,
   colSpan = 1,
@@ -687,7 +687,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         createCell({
           paragraphs: [createParagraph([createRun(slot.label, 13)], 4)],
           width: TIME_COL_WIDTH,
-        height: 5670,
+        height: 5102,
         colAddr: 0,
         rowAddr: currentRow,
         borderFillIDRef: 4,
@@ -713,7 +713,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
       createCell({
         paragraphs: [createParagraph([createRun(slot.label, 13)], 4)],
         width: TIME_COL_WIDTH,
-        height: 5670,
+        height: 5102,
         colAddr: 0,
         rowAddr: currentRow,
         borderFillIDRef: 4,
@@ -728,7 +728,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
           createCell({
             paragraphs: [createParagraph([], 3)],
             width: DAY_COL_WIDTH,
-            height: 5670,
+            height: 5102,
             colAddr: colIdx + 1,
             rowAddr: currentRow,
             borderFillIDRef: 2,
@@ -747,7 +747,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
           createCell({
             paragraphs: cellPars,
             width: DAY_COL_WIDTH,
-            height: 5670,
+            height: 5102,
             colAddr: colIdx + 1,
             rowAddr: currentRow,
             borderFillIDRef: 2,
@@ -890,7 +890,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     rowCnt: timeSlots.length + 1,
     colCnt: 7,
     width: TOTAL_TABLE_WIDTH,
-    height: 2268 + 1417 + (timeSlots.length - 1) * 5670,
+    height: 2268 + 1417 + (timeSlots.length - 1) * 5102,
     borderFillIDRef: 2,
   })}
 
