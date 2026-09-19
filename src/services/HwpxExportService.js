@@ -621,12 +621,12 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
 
     // 2) 과목
     if (item.subject) {
-      pars.push(createParagraph([createRun(`  [${item.subject}]`, 5)], 3));
+      pars.push(createParagraph([createRun(`[${item.subject}]`, 5)], 3));
     }
 
     // 3) 주소
     if (item.address) {
-      pars.push(createParagraph([createRun(`  ${item.address}`, 6)], 3));
+      pars.push(createParagraph([createRun(item.address, 6)], 3));
     }
 
     // 4) 전화번호
@@ -634,7 +634,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
       const phones = formatPhoneInfo(item.phoneInfo).split('\n');
       phones.forEach((p) => {
         if (p.trim()) {
-          pars.push(createParagraph([createRun(`  ${p.trim()}`, 6)], 3));
+          pars.push(createParagraph([createRun(p.trim(), 6)], 3));
         }
       });
     }
@@ -642,7 +642,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     // 5) 특이사항 / 메모
     if (item.statusNote) {
       const noteText = item.statusNote.startsWith('=>') ? item.statusNote : `=> ${item.statusNote}`;
-      pars.push(createParagraph([createRun(`  ※ ${noteText}`, 7)], 3));
+      pars.push(createParagraph([createRun(`※ ${noteText}`, 7)], 3));
     }
 
     return pars;
@@ -658,19 +658,21 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     createCell({
       paragraphs: [createParagraph([createRun('구 분', 3)], 4)],
       width: TIME_COL_WIDTH,
-      height: 480,
+      height: 1200,
       colAddr: 0,
       rowAddr: 0,
-      borderFillIDRef: 2,
+      borderFillIDRef: 3,
+      margin: { left: 120, right: 120, top: 120, bottom: 120 },
     }),
     ...dayHeaders.map((dh, idx) =>
       createCell({
         paragraphs: [createParagraph([createRun(dh, 3)], 4)],
         width: DAY_COL_WIDTH,
-        height: 480,
+        height: 1200,
         colAddr: idx + 1,
         rowAddr: 0,
-        borderFillIDRef: 2,
+        borderFillIDRef: 3,
+        margin: { left: 120, right: 120, top: 120, bottom: 120 },
       })
     ),
   ];
@@ -685,19 +687,21 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         createCell({
           paragraphs: [createParagraph([createRun(slot.label, 13)], 4)],
           width: TIME_COL_WIDTH,
-          height: 380,
+          height: 520,
           colAddr: 0,
-        rowAddr: currentRow,
-        borderFillIDRef: 4,
+          rowAddr: currentRow,
+          borderFillIDRef: 4,
+          margin: { left: 120, right: 120, top: 50, bottom: 50 },
       }),
         createCell({
           paragraphs: [createParagraph([createRun('☕ 12:00 ~ 13:00 점심 및 이동 시간', 8)], 4)],
           width: DAY_COL_WIDTH * 6,
-          height: 380,
+          height: 520,
           colAddr: 1,
           rowAddr: currentRow,
           colSpan: 6,
-          borderFillIDRef: 4,
+          borderFillIDRef: 5,
+          margin: { left: 120, right: 120, top: 50, bottom: 50 },
         }),
       ];
       tableRows.push(createRow(lunchCells));
