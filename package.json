@@ -12,7 +12,8 @@
     "package:win": "vite build && electron-builder --win",
     "package:win:signed": "powershell -ExecutionPolicy Bypass -File ./scripts/build-signed.ps1",
     "package:mac": "vite build && electron-builder --mac",
-    "package:linux": "vite build && electron-builder --linux"
+    "package:linux": "vite build && electron-builder --linux",
+    "sync-version": "node scripts/sync-readme-version.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
