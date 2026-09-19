@@ -104,7 +104,7 @@ const createCell = ({
   rowAddr = 0,
   colSpan = 1,
   rowSpan = 1,
-  borderFillIDRef = 1,
+  borderFillIDRef = 2,
   vertAlign = 'CENTER',
   margin = { left: 100, right: 100, top: 60, bottom: 60 },
 }) => {
@@ -141,7 +141,7 @@ const createTableParagraph = ({
   colCnt = 1,
   width = 42520,
   height = 4000,
-  borderFillIDRef = 1,
+  borderFillIDRef = 2,
 }) => {
   return `
   <hp:p paraPrIDRef="1" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
@@ -209,8 +209,18 @@ export const buildHeaderXml = () => {
 
     <!-- 테두리 / 배경 스타일 목록 (OWPML 표준 테두리/채우기 정의) -->
     <hh:borderFills itemCnt="8">
-      <!-- 1: 기본 데이터 셀 (단선 #D1D5DB, 흰색 배경) -->
+      <!-- 1: 테두리 없음 / 투명 (기본 글자 모양 charPr 및 일반 텍스트용) -->
       <hh:borderFill id="1" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
+        <hh:slash type="NONE" Crooked="0" isCounter="0"/>
+        <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
+        <hh:leftBorder type="NONE"/>
+        <hh:rightBorder type="NONE"/>
+        <hh:topBorder type="NONE"/>
+        <hh:bottomBorder type="NONE"/>
+        <hh:diagonal type="NONE"/>
+      </hh:borderFill>
+      <!-- 2: 기본 데이터 셀 (단선 #D1D5DB, 흰색 배경) -->
+      <hh:borderFill id="2" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
         <hh:slash type="NONE" Crooked="0" isCounter="0"/>
         <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
         <hh:leftBorder type="SOLID" width="0.12 mm" color="#D1D5DB"/>
@@ -222,8 +232,8 @@ export const buildHeaderXml = () => {
           <hc:winBrush faceColor="#FFFFFF" hatchColor="#FFFFFF" alpha="0"/>
         </hc:fillBrush>
       </hh:borderFill>
-      <!-- 2: 표 헤더 셀 (단선 #94A3B8, 소프트 슬레이트 배경 #F1F5F9) -->
-      <hh:borderFill id="2" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
+      <!-- 3: 표 헤더 셀 (단선 #94A3B8, 소프트 슬레이트 배경 #F1F5F9) -->
+      <hh:borderFill id="3" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
         <hh:slash type="NONE" Crooked="0" isCounter="0"/>
         <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
         <hh:leftBorder type="SOLID" width="0.12 mm" color="#94A3B8"/>
@@ -235,8 +245,8 @@ export const buildHeaderXml = () => {
           <hc:winBrush faceColor="#F1F5F9" hatchColor="#FFFFFF" alpha="0"/>
         </hc:fillBrush>
       </hh:borderFill>
-      <!-- 3: 시간 열 셀 (단선 #D1D5DB, 연회색 배경 #F8FAFC) -->
-      <hh:borderFill id="3" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
+      <!-- 4: 시간 열 셀 (단선 #D1D5DB, 연회색 배경 #F8FAFC) -->
+      <hh:borderFill id="4" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
         <hh:slash type="NONE" Crooked="0" isCounter="0"/>
         <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
         <hh:leftBorder type="SOLID" width="0.12 mm" color="#94A3B8"/>
@@ -248,8 +258,8 @@ export const buildHeaderXml = () => {
           <hc:winBrush faceColor="#F8FAFC" hatchColor="#FFFFFF" alpha="0"/>
         </hc:fillBrush>
       </hh:borderFill>
-      <!-- 4: 점심시간 셀 (단선 #E2E8F0, 은은한 파스텔 크림 옐로우 #FEF9C3) -->
-      <hh:borderFill id="4" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
+      <!-- 5: 점심시간 셀 (단선 #E2E8F0, 은은한 파스텔 크림 옐로우 #FEF9C3) -->
+      <hh:borderFill id="5" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
         <hh:slash type="NONE" Crooked="0" isCounter="0"/>
         <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
         <hh:leftBorder type="SOLID" width="0.12 mm" color="#E2E8F0"/>
@@ -261,8 +271,8 @@ export const buildHeaderXml = () => {
           <hc:winBrush faceColor="#FEF9C3" hatchColor="#FFFFFF" alpha="0"/>
         </hc:fillBrush>
       </hh:borderFill>
-      <!-- 5: 하단 정보 패널 헤더 (단선 #94A3B8, 배경 #F1F5F9) -->
-      <hh:borderFill id="5" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
+      <!-- 6: 하단 정보 패널 헤더 (단선 #94A3B8, 배경 #F1F5F9) -->
+      <hh:borderFill id="6" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
         <hh:slash type="NONE" Crooked="0" isCounter="0"/>
         <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
         <hh:leftBorder type="SOLID" width="0.15 mm" color="#94A3B8"/>
@@ -274,8 +284,8 @@ export const buildHeaderXml = () => {
           <hc:winBrush faceColor="#F1F5F9" hatchColor="#FFFFFF" alpha="0"/>
         </hc:fillBrush>
       </hh:borderFill>
-      <!-- 6: 하단 정보 패널 본문 (단선 #94A3B8, 배경 #FFFFFF) -->
-      <hh:borderFill id="6" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
+      <!-- 7: 하단 정보 패널 본문 (단선 #94A3B8, 배경 #FFFFFF) -->
+      <hh:borderFill id="7" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
         <hh:slash type="NONE" Crooked="0" isCounter="0"/>
         <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
         <hh:leftBorder type="SOLID" width="0.15 mm" color="#94A3B8"/>
@@ -287,8 +297,8 @@ export const buildHeaderXml = () => {
           <hc:winBrush faceColor="#FFFFFF" hatchColor="#FFFFFF" alpha="0"/>
         </hc:fillBrush>
       </hh:borderFill>
-      <!-- 7: 하단 전체 통합 박스 셀 (외곽선 #94A3B8, 내부 #FFFFFF) -->
-      <hh:borderFill id="7" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
+      <!-- 8: 하단 전체 통합 박스 셀 (외곽선 #94A3B8, 내부 #FFFFFF) -->
+      <hh:borderFill id="8" threeD="0" shadow="0" centerLine="NONE" breakCellSeparateLine="0">
         <hh:slash type="NONE" Crooked="0" isCounter="0"/>
         <hh:backSlash type="NONE" Crooked="0" isCounter="0"/>
         <hh:leftBorder type="SOLID" width="0.15 mm" color="#94A3B8"/>
@@ -607,7 +617,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     const pars = [];
     // 1) 시간 + 이름
     const timeAndName = `${item.startTime || ''} ${item.studentName || ''}`.trim();
-    pars.push(createParagraph([createRun(`● ${timeAndName}`, 4)], 3));
+    pars.push(createParagraph([createRun(timeAndName, 4)], 3));
 
     // 2) 과목
     if (item.subject) {
@@ -677,9 +687,9 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
           width: TIME_COL_WIDTH,
           height: 380,
           colAddr: 0,
-          rowAddr: currentRow,
-          borderFillIDRef: 3,
-        }),
+        rowAddr: currentRow,
+        borderFillIDRef: 4,
+      }),
         createCell({
           paragraphs: [createParagraph([createRun('☕ 12:00 ~ 13:00 점심 및 이동 시간', 8)], 4)],
           width: DAY_COL_WIDTH * 6,
@@ -701,7 +711,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         height: 600,
         colAddr: 0,
         rowAddr: currentRow,
-        borderFillIDRef: 3,
+        borderFillIDRef: 4,
       }),
     ];
 
@@ -715,7 +725,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
             height: 600,
             colAddr: colIdx + 1,
             rowAddr: currentRow,
-            borderFillIDRef: 1,
+            borderFillIDRef: 2,
           })
         );
       } else {
@@ -733,7 +743,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
             height: 600,
             colAddr: colIdx + 1,
             rowAddr: currentRow,
-            borderFillIDRef: 1,
+            borderFillIDRef: 2,
             margin: { left: 160, right: 160, top: 120, bottom: 120 },
           })
         );
@@ -795,7 +805,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
       height: 1800,
       colAddr: 0,
       rowAddr: 0,
-      borderFillIDRef: 7,
+      borderFillIDRef: 8,
       vertAlign: 'TOP',
       margin: { left: 240, right: 240, top: 180, bottom: 180 },
     }),
@@ -805,7 +815,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
       height: 1800,
       colAddr: 1,
       rowAddr: 0,
-      borderFillIDRef: 7,
+      borderFillIDRef: 8,
       vertAlign: 'TOP',
       margin: { left: 240, right: 240, top: 180, bottom: 180 },
     }),
@@ -873,7 +883,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     colCnt: 7,
     width: TOTAL_TABLE_WIDTH,
     height: (timeSlots.length + 1) * 580,
-    borderFillIDRef: 1,
+    borderFillIDRef: 2,
   })}
 
   <!-- 표 사이 미세 간격 -->
@@ -887,7 +897,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
     colCnt: 2,
     width: TOTAL_TABLE_WIDTH,
     height: 1800,
-    borderFillIDRef: 7,
+    borderFillIDRef: 8,
   })}
 </hs:sec>`;
 };
@@ -1041,26 +1051,26 @@ export const exportDiaryToHwpx = async (student, diary) => {
     rows: [
       createRow([
         createCell({ paragraphs: [createParagraph([createRun('학생 성명', 3)], 1)], width: 8504, borderFillIDRef: 2, rowAddr: 0, colAddr: 0 }),
-        createCell({ paragraphs: [createParagraph([createRun(`${student.name} (${student.grade || '기본'})`, 0)], 0)], width: 34016, borderFillIDRef: 1, rowAddr: 0, colAddr: 1 }),
+        createCell({ paragraphs: [createParagraph([createRun(`${student.name} (${student.grade || '기본'})`, 0)], 0)], width: 34016, borderFillIDRef: 2, rowAddr: 0, colAddr: 1 }),
       ]),
       createRow([
         createCell({ paragraphs: [createParagraph([createRun('일지 일자', 3)], 1)], width: 8504, borderFillIDRef: 2, rowAddr: 1, colAddr: 0 }),
-        createCell({ paragraphs: [createParagraph([createRun(diary.date, 0)], 0)], width: 34016, borderFillIDRef: 1, rowAddr: 1, colAddr: 1 }),
+        createCell({ paragraphs: [createParagraph([createRun(diary.date, 0)], 0)], width: 34016, borderFillIDRef: 2, rowAddr: 1, colAddr: 1 }),
       ]),
       createRow([
         createCell({ paragraphs: [createParagraph([createRun('일지 제목', 3)], 1)], width: 8504, borderFillIDRef: 2, rowAddr: 2, colAddr: 0 }),
-        createCell({ paragraphs: [createParagraph([createRun(diary.title, 4)], 0)], width: 34016, borderFillIDRef: 1, rowAddr: 2, colAddr: 1 }),
+        createCell({ paragraphs: [createParagraph([createRun(diary.title, 4)], 0)], width: 34016, borderFillIDRef: 2, rowAddr: 2, colAddr: 1 }),
       ]),
       createRow([
         createCell({ paragraphs: [createParagraph([createRun('관찰 및 기록', 3)], 1)], width: 8504, borderFillIDRef: 2, rowAddr: 3, colAddr: 0 }),
-        createCell({ paragraphs: contentParagraphs, width: 34016, borderFillIDRef: 1, rowAddr: 3, colAddr: 1, margin: { left: 160, right: 160, top: 120, bottom: 120 } }),
+        createCell({ paragraphs: contentParagraphs, width: 34016, borderFillIDRef: 2, rowAddr: 3, colAddr: 1, margin: { left: 160, right: 160, top: 120, bottom: 120 } }),
       ]),
     ],
     rowCnt: 4,
     colCnt: 2,
     width: 42520,
     height: 12000,
-    borderFillIDRef: 1,
+    borderFillIDRef: 2,
   })}
 </hs:sec>`;
 
