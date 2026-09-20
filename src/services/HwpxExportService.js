@@ -563,7 +563,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
   const startDate = weeklyPlan?.startDate || '2026-08-17';
   const [year, month, day] = startDate.split('-').map(Number);
   const docTitle = `${year}년 ${month}월 ${day}일 주간의 ${TEACHER_NAME} 업무 보고서`;
-  const docSubTitle = '방문 수업 (팀별, 개별 마케팅 일정 포함)';
+  const docSubTitle = '학원수업 / 방문수업';
 
   // 요일 헤더 계산
   const getDayHeader = (offset, label) => {
@@ -687,13 +687,12 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
         createCell({
           paragraphs: [createParagraph([createRun(slot.label, 13)], 4)],
           width: TIME_COL_WIDTH,
-        height: 5102,
-        colAddr: 0,
-        rowAddr: currentRow,
-        borderFillIDRef: 4,
-        margin: { left: 280, right: 280, top: 280, bottom: 280 },
+          height: 1417,
+          colAddr: 0,
+          rowAddr: currentRow,
+          borderFillIDRef: 4,
           margin: { left: 280, right: 280, top: 280, bottom: 280 },
-      }),
+        }),
         createCell({
           paragraphs: [createParagraph([createRun('☕ 12:00 ~ 13:00 점심 및 이동 시간', 8)], 4)],
           width: DAY_COL_WIDTH * 6,
@@ -751,7 +750,6 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
             colAddr: colIdx + 1,
             rowAddr: currentRow,
             borderFillIDRef: 2,
-            margin: { left: 280, right: 280, top: 280, bottom: 280 },
             margin: { left: 280, right: 280, top: 280, bottom: 280 },
           })
         );
