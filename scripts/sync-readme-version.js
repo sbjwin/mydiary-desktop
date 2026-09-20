@@ -5,6 +5,7 @@ const rootDir = path.resolve(__dirname, '..');
 const packageJsonPath = path.join(rootDir, 'package.json');
 const readmePath = path.join(rootDir, 'README.md');
 const helpModalPath = path.join(rootDir, 'src', 'components', 'HelpModal.jsx');
+const headerPath = path.join(rootDir, 'src', 'components', 'Header.jsx');
 
 if (!fs.existsSync(packageJsonPath)) {
   console.error('[sync-version] package.json을 찾을 수 없습니다.');
@@ -43,3 +44,12 @@ if (fs.existsSync(helpModalPath)) {
   fs.writeFileSync(helpModalPath, modal, 'utf8');
   console.log(`[sync-version] HelpModal.jsx 버전이 Desktop v${currentVersion}(으)로 동기화되었습니다.`);
 }
+
+// 3. src/components/Header.jsx 동기화
+if (fs.existsSync(headerPath)) {
+  let header = fs.readFileSync(headerPath, 'utf8');
+  header = header.replace(/(Desktop\s+v)\d+\.\d+\.\d+/g, `$1${currentVersion}`);
+  fs.writeFileSync(headerPath, header, 'utf8');
+  console.log(`[sync-version] Header.jsx 버전이 Desktop v${currentVersion}(으)로 동기화되었습니다.`);
+}
+

@@ -175,12 +175,22 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
           desc: '인터넷 연결이 전혀 없어도 로컬 스토리지를 통해 모든 기능이 100% 독립적으로 작동하며, 외부 유출 걱정 없이 데이터 무결성을 보호합니다.',
           tip: '100% 오프라인 동작 및 프라이버시',
         },
+        {
+          num: '⑤',
+          title: '🎨 사용자 맞춤형 5대 테마 설정 (v0.4.0)',
+          desc: '오션 블루, 포레스트 세이지, 로열 라벤더, 웜 선셋, 미드나잇 다크 5가지 테마 중 원하는 테마를 선택할 수 있으며, 헤더의 [🎨 테마] 버튼으로도 1초 만에 전환됩니다.',
+          tip: '시각적 피로도 감소 & 다크모드 지원',
+        },
       ],
     },
   };
 
   // FAQ 데이터 (데스크톱 특화)
   const faqs = [
+    {
+      q: '화면 테마(색상)와 야간 다크모드는 어떻게 변경하나요? (v0.4.0)',
+      a: '상단 헤더 오른쪽의 [🎨 테마] 버튼을 누르시면 5가지 테마(오션 블루, 포레스트 세이지, 로열 라벤더, 웜 선셋, 미드나잇 다크)를 1클릭으로 즉시 변경할 수 있습니다. 또한 [백업 및 설정] 탭의 [화면 테마 설정]에서 각 테마의 미니 창 미리보기를 보며 선택하실 수도 있습니다. 선택한 테마는 자동으로 저장되어 다음 실행 시에도 유지됩니다.',
+    },
     {
       q: '스마트폰 MyDiary 앱 데이터를 구글 드라이브로 어떻게 연동하나요?',
       a: '[백업 및 설정] 탭에서 [구글 계정으로 로그인]을 진행하신 후 [스마트폰 백업 다운로드 복원]을 클릭하시면, 스마트폰 앱에서 구글 드라이브로 올린 mydiary_backup.json 데이터를 데스크톱으로 즉시 안전하게 복원할 수 있습니다.',
@@ -252,7 +262,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
             <div>
               <div className="help-title-row">
                 <h3 className="help-title">MyDiary Desktop 도움말 및 사용 가이드</h3>
-                <span className="help-version-tag">Desktop v0.3.0</span>
+                <span className="help-version-tag">Desktop v0.4.0</span>
               </div>
               <p className="help-subtitle">
                 선생님을 위한 스마트 수업 다이어리 핵심 기능과 화면별 사용법을 확인하세요.
@@ -435,7 +445,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
                 <h4 className="about-app-name">MyDiary Desktop</h4>
                 <p className="about-app-slogan">선생님을 위한 스마트 수업 다이어리 및 학생 성장 관리 시스템</p>
                 <div className="about-badges-row">
-                  <span className="about-badge">Desktop v0.3.0</span>
+                  <span className="about-badge">Desktop v0.4.0</span>
                   <span className="about-badge">Electron + React</span>
                   <span className="about-badge">HWPX 표준 지원</span>
                 </div>
