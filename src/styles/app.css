@@ -96,6 +96,13 @@
   box-shadow: var(--shadow-sm);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .user-profile-badge {
   display: flex;
   align-items: center;
@@ -1936,24 +1943,25 @@
    5. 헤더 도움말 버튼 및 도움말 모달 (HelpModal)
    ========================================================================== */
 .header-help-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
+  background-color: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .header-help-btn:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
+  background-color: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .header-help-btn:active {
