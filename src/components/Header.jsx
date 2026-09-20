@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check } from 'lucide-react';
+import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check, Settings } from 'lucide-react';
 import { THEME_PRESETS } from '../theme';
 
-export const Header = ({ activeTab, onSelectTab, onOpenHelp, currentTheme, onSelectTheme }) => {
+export const Header = ({ activeTab, onSelectTab, onOpenHelp, onOpenSettings, currentTheme, onSelectTheme }) => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const paletteRef = useRef(null);
 
@@ -10,7 +10,7 @@ export const Header = ({ activeTab, onSelectTab, onOpenHelp, currentTheme, onSel
     { id: 'weekly', label: '주간 시간표', icon: Calendar },
     { id: 'diary', label: '수업 일지', icon: BookOpen },
     { id: 'students', label: '학생 관리', icon: Users },
-    { id: 'backup', label: '백업 및 설정', icon: HardDrive },
+    { id: 'backup', label: '백업 및 복원', icon: HardDrive },
   ];
 
   // 외부 클릭 시 테마 팝오버 닫기
@@ -110,6 +110,15 @@ export const Header = ({ activeTab, onSelectTab, onOpenHelp, currentTheme, onSel
         >
           <HelpCircle size={15} />
           <span>도움말 (F1)</span>
+        </button>
+
+        <button
+          className="header-settings-btn"
+          onClick={onOpenSettings}
+          title="환경 설정 (테마, 작업 환경, 앱 정보)"
+        >
+          <Settings size={15} />
+          <span>설정</span>
         </button>
 
         <div className="user-profile-badge">

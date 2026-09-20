@@ -5,6 +5,7 @@ import { ClassDiaryTab } from './components/ClassDiaryTab';
 import { StudentManageTab } from './components/StudentManageTab';
 import { BackupSettingTab } from './components/BackupSettingTab';
 import { HelpModal } from './components/HelpModal';
+import { SettingsModal } from './components/SettingsModal';
 import { Database, getTodayDateString } from './database/Database';
 import { getStoredTheme, applyTheme } from './theme';
 import './styles/app.css';
@@ -14,6 +15,7 @@ export function App() {
   const [diaryParams, setDiaryParams] = useState(null);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [helpInitialTab, setHelpInitialTab] = useState('guide');
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => getStoredTheme());
 
   // 앱 마운트 시 저장된 테마 적용
@@ -102,6 +104,7 @@ export function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenHelp={() => handleOpenHelp('guide')}
+        onOpenSettings={() => setSettingsModalOpen(true)}
         currentTheme={currentTheme}
         onSelectTheme={handleSelectTheme}
       />
@@ -116,10 +119,7 @@ export function App() {
           <StudentManageTab />
         )}
         {activeTab === 'backup' && (
-          <BackupSettingTab
-            currentTheme={currentTheme}
-            onSelectTheme={handleSelectTheme}
-          />
+          <BackupSettingTab />
         )}
       </main>
 
@@ -128,6 +128,14 @@ export function App() {
         isOpen={helpModalOpen}
         onClose={() => setHelpModalOpen(false)}
         initialTab={helpInitialTab}
+      />
+
+      {/* 독립된 환경 설정 모달 */}
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        currentTheme={currentTheme}
+        onSelectTheme={handleSelectTheme}
       />
     </div>
   );

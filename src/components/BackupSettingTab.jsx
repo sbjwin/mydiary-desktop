@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Database } from '../database/Database';
 import { GoogleDriveService } from '../services/GoogleDriveService';
-import { THEME_PRESETS } from '../theme';
 import {
   HardDrive,
   Download,
@@ -19,11 +18,9 @@ import {
   LogOut,
   LogIn,
   RefreshCw,
-  Palette,
-  Check,
 } from 'lucide-react';
 
-export const BackupSettingTab = ({ currentTheme, onSelectTheme }) => {
+export const BackupSettingTab = () => {
   const [stats, setStats] = useState({
     studentsCount: 0,
     recordsCount: 0,
@@ -175,7 +172,7 @@ export const BackupSettingTab = ({ currentTheme, onSelectTheme }) => {
             <HardDrive size={24} color="#ffffff" />
           </div>
           <div>
-            <h2>데이터 백업 및 복원 설정</h2>
+            <h2>데이터 백업 및 복원</h2>
             <p>스마트폰 MyDiary(구글 드라이브)와의 클라우드 동기화 및 PC 로컬 백업을 관리하세요.</p>
           </div>
         </div>
@@ -210,75 +207,6 @@ export const BackupSettingTab = ({ currentTheme, onSelectTheme }) => {
               <span className="stat-label">관리 중인 주간 계획</span>
               <strong className="stat-val">{stats.plansCount}주차</strong>
             </div>
-          </div>
-        </div>
-
-        {/* 🎨 화면 테마 설정 섹션 */}
-        <div className="theme-setting-card">
-          <div className="theme-setting-header">
-            <div className="theme-header-title-box">
-              <div className="theme-icon-badge">
-                <Palette size={20} />
-              </div>
-              <div>
-                <h3>화면 테마 설정 (Theme Preferences)</h3>
-                <p className="theme-subtitle">
-                  작업 환경과 눈의 편안함에 맞게 테마를 선택하세요. 변경 사항은 즉시 화면에 반영되고 자동 저장됩니다.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="theme-cards-grid">
-            {THEME_PRESETS.map((t) => {
-              const isSelected = currentTheme === t.id;
-              return (
-                <div
-                  key={t.id}
-                  className={`theme-preset-card ${isSelected ? 'active' : ''}`}
-                  onClick={() => onSelectTheme(t.id)}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="theme-card-preview" style={{ backgroundColor: t.previewBg }}>
-                    <div className="mini-preview-header" style={{ backgroundColor: t.previewHeader }}>
-                      <span className="mini-dot red" />
-                      <span className="mini-dot yellow" />
-                      <span className="mini-dot green" />
-                      <span className="mini-header-bar" style={{ backgroundColor: t.primary }} />
-                    </div>
-                    <div className="mini-preview-body">
-                      <div className="mini-preview-sidebar">
-                        <span className="mini-line" style={{ backgroundColor: t.primary }} />
-                        <span className="mini-line muted" />
-                        <span className="mini-line muted" />
-                      </div>
-                      <div className="mini-preview-main">
-                        <div className="mini-card-chip" style={{ backgroundColor: t.primaryLight }}>
-                          <span className="mini-chip-text" style={{ color: t.primary }}>MyDiary</span>
-                        </div>
-                        <div className="mini-badge-btn" style={{ backgroundColor: t.primary }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="theme-card-info">
-                    <div className="theme-card-title-row">
-                      <span className="theme-card-name">{t.name}</span>
-                      {isSelected ? (
-                        <span className="theme-active-tag">
-                          <Check size={12} />
-                          사용 중
-                        </span>
-                      ) : (
-                        <span className="theme-sub-badge">{t.subtitle}</span>
-                      )}
-                    </div>
-                    <span className="theme-card-desc">{t.description}</span>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
 
