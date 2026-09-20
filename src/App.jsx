@@ -6,6 +6,7 @@ import { StudentManageTab } from './components/StudentManageTab';
 import { BackupSettingTab } from './components/BackupSettingTab';
 import { HelpModal } from './components/HelpModal';
 import { Database, getTodayDateString } from './database/Database';
+import { getStoredTheme, applyTheme } from './theme';
 import './styles/app.css';
 
 export function App() {
@@ -13,6 +14,17 @@ export function App() {
   const [diaryParams, setDiaryParams] = useState(null);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [helpInitialTab, setHelpInitialTab] = useState('guide');
+  const [currentTheme, setCurrentTheme] = useState(() => getStoredTheme());
+
+  // 앱 마운트 시 저장된 테마 적용
+  useEffect(() => {
+    applyTheme(currentTheme);
+  }, [currentTheme]);
+
+  const handleSelectTheme = (themeId) => {
+    const applied = applyTheme(themeId);
+    setCurrentTheme(applied);
+  };
 
   // 초기 실행 시 학생 데이터가 전혀 없는 경우 기본 가이드 학생 생성
   useEffect(() => {
@@ -90,6 +102,8 @@ export function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenHelp={() => handleOpenHelp('guide')}
+        currentTheme={currentTheme}
+        onSelectTheme={handleSelectTheme}
       />
       <main className="app-main-content">
         {activeTab === 'weekly' && (
@@ -102,7 +116,10 @@ export function App() {
           <StudentManageTab />
         )}
         {activeTab === 'backup' && (
-          <BackupSettingTab />
+          <BackupSettingTab
+            currentTheme={currentTheme}
+            onSelectTheme={handleSelectTheme}
+          />
         )}
       </main>
 

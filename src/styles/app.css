@@ -2616,3 +2616,349 @@
   font-weight: 700;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
+
+/* ==========================================================================
+   🎨 화면 테마 선택 UI 및 프리뷰 카드 시스템
+   ========================================================================== */
+
+/* 1. 상단 헤더 퀵 테마 팔레트 */
+.header-theme-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.header-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background-color: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.header-theme-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.header-theme-btn.active {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.theme-popover-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 230px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  z-index: 100;
+  animation: fadeInPopover 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInPopover {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.theme-popover-header {
+  padding: 6px 8px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 6px;
+}
+
+.theme-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.theme-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+
+.theme-popover-item:hover {
+  background-color: var(--bg-input);
+}
+
+.theme-popover-item.selected {
+  background-color: var(--primary-light);
+}
+
+.theme-color-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+  border: 2px solid #ffffff;
+}
+
+.theme-item-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.theme-item-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.theme-item-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.theme-check-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+/* 2. [백업 및 설정] 탭 내 테마 설정 카드 그리드 */
+.theme-setting-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-setting-header {
+  margin-bottom: 20px;
+}
+
+.theme-header-title-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.theme-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.theme-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 16px;
+}
+
+.theme-preset-card {
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--bg-card);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+.theme-preset-card:hover {
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-preset-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.theme-card-preview {
+  height: 84px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.mini-preview-header {
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.mini-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.mini-dot.red {
+  background-color: #ef4444;
+}
+
+.mini-dot.yellow {
+  background-color: #f59e0b;
+}
+
+.mini-dot.green {
+  background-color: #10b981;
+}
+
+.mini-header-bar {
+  margin-left: auto;
+  width: 32px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.mini-preview-body {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+}
+
+.mini-preview-sidebar {
+  width: 28px;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.mini-line {
+  height: 3px;
+  border-radius: 2px;
+  width: 85%;
+}
+
+.mini-line.muted {
+  background-color: var(--border-color);
+  width: 60%;
+}
+
+.mini-preview-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2px;
+}
+
+.mini-card-chip {
+  border-radius: 4px;
+  padding: 2px 6px;
+  align-self: flex-start;
+}
+
+.mini-chip-text {
+  font-size: 8.5px;
+  font-weight: 800;
+}
+
+.mini-badge-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  align-self: flex-end;
+}
+
+.theme-card-info {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.theme-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.theme-card-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.theme-active-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: var(--primary-light);
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.theme-sub-badge {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  background-color: var(--bg-input);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.theme-card-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+

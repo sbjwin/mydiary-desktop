@@ -1,13 +1,32 @@
-import React from 'react';
-import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check } from 'lucide-react';
+import { THEME_PRESETS } from '../theme';
 
-export const Header = ({ activeTab, onSelectTab, onOpenHelp }) => {
+export const Header = ({ activeTab, onSelectTab, onOpenHelp, currentTheme, onSelectTheme }) => {
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const paletteRef = useRef(null);
+
   const tabs = [
     { id: 'weekly', label: '주간 시간표', icon: Calendar },
     { id: 'diary', label: '수업 일지', icon: BookOpen },
     { id: 'students', label: '학생 관리', icon: Users },
     { id: 'backup', label: '백업 및 설정', icon: HardDrive },
   ];
+
+  // 외부 클릭 시 테마 팝오버 닫기
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (paletteRef.current && !paletteRef.current.contains(e.target)) {
+        setIsPaletteOpen(false);
+      }
+    };
+    if (isPaletteOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isPaletteOpen]);
 
   return (
     <header className="app-header">
@@ -39,6 +58,51 @@ export const Header = ({ activeTab, onSelectTab, onOpenHelp }) => {
       </nav>
 
       <div className="header-actions">
+        {/* 🎨 퀵 테마 팔레트 선택기 */}
+        <div className="header-theme-wrapper" ref={paletteRef}>
+          <button
+            className={`header-theme-btn ${isPaletteOpen ? 'active' : ''}`}
+            onClick={() => setIsPaletteOpen(!isPaletteOpen)}
+            title="화면 테마 색상 변경"
+          >
+            <Palette size={15} />
+            <span>테마</span>
+          </button>
+
+          {isPaletteOpen && (
+            <div className="theme-popover-dropdown">
+              <div className="theme-popover-header">
+                <span>🎨 화면 테마 선택</span>
+              </div>
+              <div className="theme-popover-list">
+                {THEME_PRESETS.map((t) => {
+                  const isSelected = currentTheme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      className={`theme-popover-item ${isSelected ? 'selected' : ''}`}
+                      onClick={() => {
+                        onSelectTheme(t.id);
+                        setIsPaletteOpen(false);
+                      }}
+                    >
+                      <span
+                        className="theme-color-chip"
+                        style={{ backgroundColor: t.primary }}
+                      />
+                      <div className="theme-item-text">
+                        <span className="theme-item-name">{t.name}</span>
+                        <span className="theme-item-sub">{t.subtitle}</span>
+                      </div>
+                      {isSelected && <Check size={15} className="theme-check-icon" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         <button
           className="header-help-btn"
           onClick={onOpenHelp}
