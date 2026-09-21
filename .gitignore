@@ -104,6 +104,7 @@ $RECYCLE.BIN/
 *.bak
 *.hwpx
 *.docx
+!public/templates/docs-template.docx
 *.pdf
 *.db
 *.sqlite
