@@ -508,48 +508,22 @@ export const shareClassRecords = async (student, records, periodTitle = '전체 
 
 /**
  * 3. 주간 업무 보고서 (시간표 & 기타 업무) HTML 생성
+ * (docs-template.docx 양식과 100% 동일한 A4 1장 19개 행 일체형 규격)
  */
 export const generateWeeklyReportHtml = (weeklyPlan) => {
-  const startDate = weeklyPlan?.startDate || '2026-08-17';
+  const startDate = weeklyPlan?.startDate || '2026-09-14';
   const [year, month, day] = startDate.split('-').map(Number);
   const title = `${year}년 ${month}월 ${day}일 주간의 ${TEACHER_NAME} 업무 보고서`;
 
-  // 날짜 계산 (월:0 ~ 일:6)
-  const getDayHeader = (offset, label) => {
+  // 요일 날짜 계산 (월: 0 ~ 일: 6)
+  const getDayLabel = (offset, label) => {
     const d = new Date(year, month - 1, day + offset);
-    return `${label}(${d.getMonth() + 1}/${d.getDate()})`;
+    return `${label} (${d.getMonth() + 1}/${d.getDate()})`;
   };
-
-  const dayHeaders = [
-    getDayHeader(0, '월'),
-    getDayHeader(1, '화'),
-    getDayHeader(2, '수'),
-    getDayHeader(3, '목'),
-    getDayHeader(4, '금'),
-    getDayHeader(5, '토'),
-  ];
-
-  const sundayHeader = getDayHeader(6, '일요일 시간표');
 
   const scheduleItems = weeklyPlan?.scheduleItems || [];
 
-  // 시간대 목록 (10시, 11시, 12시[점심], 13시, 14시, 15시, 16시, 17시, 18시, 19시, 20시)
-  const timeSlots = [
-    { label: '오전', hour: 9 },
-    { label: '10시', hour: 10 },
-    { label: '11시', hour: 11 },
-    { label: '12시', hour: 12, isLunch: true },
-    { label: '1시', hour: 13 },
-    { label: '2시', hour: 14 },
-    { label: '3시', hour: 15 },
-    { label: '4시', hour: 16 },
-    { label: '5시', hour: 17 },
-    { label: '6시', hour: 18 },
-    { label: '7시', hour: 19 },
-    { label: '8시', hour: 20 },
-  ];
-
-  // 특정 요일(1~6)과 특정 시간에 해당하는 수업 찾기
+  // 평일/토요일(1~6) 슬롯 필터
   const getItemsForSlot = (dayOfWeek, hour) => {
     return scheduleItems.filter((item) => {
       if (Number(item.dayOfWeek) !== dayOfWeek) return false;
@@ -562,124 +536,198 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
     });
   };
 
-  // 셀 내부 수업 카드 HTML 렌더링
+  // 일요일(7) 슬롯 필터
+  const sundayItems = scheduleItems.filter((item) => Number(item.dayOfWeek) === 7);
+  const getSundayItemsForSlot = (hour) => {
+    return sundayItems.filter((item) => {
+      const rawHour = (item.startTime || '').match(/\d{1,2}/);
+      if (!rawHour) return false;
+      const startH = parseInt(rawHour[0], 10);
+      if (hour === 10) return startH <= 10;
+      if (hour === 13) return startH === 12 || startH === 13;
+      if (hour === 18) return startH >= 18;
+      return startH === hour;
+    });
+  };
+
+  // 수업 카드 HTML 렌더링 (docs-template.docx 정밀 폰트 및 컬러 일치)
   const renderCellCard = (item) => {
     const studentName = escapeHtml(item.studentName || '');
+    const startTime = escapeHtml(item.startTime || '');
     const subject = escapeHtml(item.subject || '');
     const address = escapeHtml(item.address || '');
-    const phoneInfo = escapeHtml(formatPhoneInfo(item.phoneInfo || '')).replace(/\n/g, '<br/>');
-    const note = escapeHtml(item.statusNote || '');
+    const phoneLines = formatPhoneInfo(item.phoneInfo || '')
+      .split('\n')
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const noteClean = item.statusNote
+      ? item.statusNote.replace(/^※\s*=>\s*|^=>\s*/, '').trim()
+      : '';
 
     return `
-      <div class="class-card">
-        <div class="card-title"><strong>${item.startTime || ''} ${studentName}</strong></div>
-        ${subject ? `<div class="card-subject">${subject}</div>` : ''}
+      <div class="schedule-card">
+        <div class="card-header">
+          <span class="card-time">${startTime}</span>
+          <span class="card-name">${studentName}</span>
+        </div>
+        ${subject ? `<div class="card-subject">[${subject}]</div>` : ''}
         ${address ? `<div class="card-addr">${address}</div>` : ''}
-        ${phoneInfo ? `<div class="card-phone">${phoneInfo}</div>` : ''}
-        ${note ? `<div class="card-note">${note.startsWith('=>') ? note : `=> ${note}`}</div>` : ''}
+        ${phoneLines.map((p) => `<div class="card-phone">${escapeHtml(p)}</div>`).join('')}
+        ${noteClean ? `<div class="card-note">※ =&gt; ${escapeHtml(noteClean)}</div>` : ''}
       </div>
     `;
   };
 
-  // 월~토 시간표 행 생성
-  const tableRowsHtml = timeSlots
-    .map((slot) => {
-      if (slot.isLunch) {
-        return `
-          <tr class="lunch-row">
-            <td class="time-header-cell">${slot.label}</td>
-            <td colspan="6" class="lunch-cell">즐거운 점심 시간</td>
-          </tr>
-        `;
-      }
-
-      const colsHtml = [1, 2, 3, 4, 5, 6]
-        .map((dayOfWeek) => {
-          const items = getItemsForSlot(dayOfWeek, slot.hour);
-          const cellContent = items.map(renderCellCard).join('');
-          return `<td class="schedule-cell">${cellContent}</td>`;
-        })
-        .join('');
-
-      return `
-        <tr>
-          <td class="time-header-cell">${slot.label}</td>
-          ${colsHtml}
-        </tr>
-      `;
-    })
-    .join('');
-
-  // 일요일(7) 수업들 시간순 정렬
-  const sundayItems = scheduleItems
-    .filter((item) => Number(item.dayOfWeek) === 7)
-    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-
-  // 시간 슬롯 라벨 포맷 함수 (예: 10:00 -> 10시, 13:00 -> 1시)
-  const getSlotLabel = (timeStr) => {
-    if (!timeStr) return '';
-    const h = parseInt(timeStr.split(':')[0], 10);
-    if (isNaN(h)) return timeStr;
-    if (h <= 9) return '오전';
-    if (h === 12) return '12시';
-    if (h > 12) return `${h - 12}시`;
-    return `${h}시`;
+  // 셀 내부 수업 카드 목록 렌더링 (구분선 포함)
+  const renderCellItems = (items) => {
+    if (!items || items.length === 0) return '';
+    return items
+      .map((it, idx) => {
+        const divider = idx > 0 ? '<div class="card-divider">----------------</div>' : '';
+        return divider + renderCellCard(it);
+      })
+      .join('');
   };
 
-  // 일요일 시간 슬롯별 그룹화
-  const groupedSunday = [];
-  sundayItems.forEach((item) => {
-    const slotLabel = getSlotLabel(item.startTime);
-    const existing = groupedSunday.find((g) => g.label === slotLabel);
-    if (existing) {
-      existing.items.push(item);
-    } else {
-      groupedSunday.push({ label: slotLabel, items: [item] });
-    }
-  });
+  // 평일/토요일 시간 슬롯 행 생성
+  const makeTimeRow = (label, hour, rowClass = '') => {
+    const dayConfigs = [
+      { day: 1, span: 1 },
+      { day: 2, span: 1 },
+      { day: 3, span: 2 },
+      { day: 4, span: 1 },
+      { day: 5, span: 2 },
+      { day: 6, span: 1 },
+    ];
 
-  // 일요일 시간표 테이블 행 생성
-  let sundayTableRowsHtml = '';
-  if (groupedSunday.length === 0) {
-    sundayTableRowsHtml = `
-      <tr>
-        <td colspan="2" style="text-align:center; color:#9CA3AF; padding:18px 0; font-size:9px;">일요일 예정된 수업이 없습니다.</td>
-      </tr>
-      <tr>
-        <td class="sunday-time-cell" style="height:22px;"></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td class="sunday-time-cell" style="height:22px;"></td>
-        <td></td>
-      </tr>
-    `;
-  } else {
-    sundayTableRowsHtml = groupedSunday
-      .map((group) => {
-        const cellCards = group.items.map(renderCellCard).join('');
-        return `
-          <tr>
-            <td class="sunday-time-cell">${group.label}</td>
-            <td class="sunday-content-cell">${cellCards}</td>
-          </tr>
-        `;
+    const cellsHtml = dayConfigs
+      .map((dc) => {
+        const items = getItemsForSlot(dc.day, hour);
+        const spanAttr = dc.span > 1 ? ` colspan="${dc.span}"` : '';
+        return `<td class="class-cell"${spanAttr}>${renderCellItems(items)}</td>`;
       })
       .join('');
 
-    // 좌측 '기타 업무' 영역과 높이 균형을 위해 최소 3행 보장
-    if (groupedSunday.length < 3) {
-      const emptyCount = 3 - groupedSunday.length;
-      for (let i = 0; i < emptyCount; i++) {
-        sundayTableRowsHtml += `
-          <tr>
-            <td class="sunday-time-cell" style="height:22px;"></td>
-            <td></td>
-          </tr>
-        `;
-      }
+    return `
+      <tr class="time-row ${rowClass}">
+        <td class="time-label-cell">${label}</td>
+        ${cellsHtml}
+      </tr>
+    `;
+  };
+
+  // 하단 기타 업무 항목 파싱
+  const parseNotesToList = (notesStr, defaultStr) => {
+    const text = (notesStr || defaultStr || '').trim();
+    if (!text) return '';
+    const lines = text
+      .split('\n')
+      .map((l) => l.replace(/^[#•\-\*]\s*/, '').trim())
+      .filter(Boolean);
+    return lines.map((l) => `<div class="note-bullet">• ${escapeHtml(l)}</div>`).join('');
+  };
+
+  // Row 1~14 생성
+  const tableRows = [];
+
+  // Row 1: 최상단 타이틀 행 (학원수업 / 방문수업)
+  tableRows.push(`
+    <tr class="row-top-title">
+      <td colspan="9" class="top-title-cell">학원수업 / 방문수업</td>
+    </tr>
+  `);
+
+  // Row 2: 요일 헤더 행
+  tableRows.push(`
+    <tr class="row-day-header">
+      <th class="time-header-blank"></th>
+      <th class="day-th">${getDayLabel(0, '월')}</th>
+      <th class="day-th">${getDayLabel(1, '화')}</th>
+      <th colspan="2" class="day-th">${getDayLabel(2, '수')}</th>
+      <th class="day-th">${getDayLabel(3, '목')}</th>
+      <th colspan="2" class="day-th">${getDayLabel(4, '금')}</th>
+      <th class="day-th sat-th">${getDayLabel(5, '토')}</th>
+    </tr>
+  `);
+
+  // Row 3: 9시
+  tableRows.push(makeTimeRow('9시', 9, 'time-row-9'));
+  // Row 4: 10시
+  tableRows.push(makeTimeRow('10시', 10));
+  // Row 5: 11시
+  tableRows.push(makeTimeRow('11시', 11));
+
+  // Row 6: 점심시간 (12:00)
+  tableRows.push(`
+    <tr class="row-lunch">
+      <td class="time-label-cell">12:00</td>
+      <td colspan="8" class="lunch-cell">☕ 12:00 ~ 13:00 점심 및 이동 시간</td>
+    </tr>
+  `);
+
+  // Row 7~14: 오후 1시 ~ 8시
+  const pmSlots = [
+    { label: '1시', hour: 13 },
+    { label: '2시', hour: 14 },
+    { label: '3시', hour: 15 },
+    { label: '4시', hour: 16 },
+    { label: '5시', hour: 17 },
+    { label: '6시', hour: 18 },
+    { label: '7시', hour: 19 },
+    { label: '8시', hour: 20 },
+  ];
+  pmSlots.forEach((slot) => {
+    tableRows.push(makeTimeRow(slot.label, slot.hour));
+  });
+
+  // Row 15: 하단 섹션 헤더 (기타 업무 + 일요일 시간표)
+  const sundayHeaderLabel = `■ 일요일 (${new Date(year, month - 1, day + 6).getMonth() + 1}/${new Date(year, month - 1, day + 6).getDate()}) 시간표`;
+  tableRows.push(`
+    <tr class="row-bottom-header">
+      <td colspan="3" class="notes-header-cell">■ 기타 업무 (전달물 / 특이사항)</td>
+      <td colspan="6" class="sunday-header-cell">${sundayHeaderLabel}</td>
+    </tr>
+  `);
+
+  // Row 16~19: 하단 본문 4행 (좌측 기타업무 통합 + 우측 일요일 4행 2열 배치)
+  const sundayRowSlots = [
+    { leftLabel: '10시', leftHour: 10, rightLabel: '3시', rightHour: 15 },
+    { leftLabel: '11시', leftHour: 11, rightLabel: '4시', rightHour: 16 },
+    { leftLabel: '1시', leftHour: 13, rightLabel: '5시', rightHour: 17 },
+    { leftLabel: '2시', leftHour: 14, rightLabel: '6시', rightHour: 18 },
+  ];
+
+  sundayRowSlots.forEach((sSlot, idx) => {
+    const leftItems = getSundayItemsForSlot(sSlot.leftHour);
+    const rightItems = getSundayItemsForSlot(sSlot.rightHour);
+
+    let leftTdHtml = '';
+    if (idx === 0) {
+      // Row 16에서만 rowspan 4로 좌측 통합 셀 생성
+      leftTdHtml = `
+        <td rowspan="4" colspan="3" class="bottom-notes-cell">
+          <div class="note-section-title">▶ 금주 주요사항</div>
+          ${parseNotesToList(weeklyPlan?.mainNotes, '개학 후 시간변동 체크\n마감보고서 제출')}
+          <div class="note-section-spacer"></div>
+          <div class="note-section-title">▶ 전주 결석</div>
+          ${parseNotesToList(weeklyPlan?.prevAbsentNotes, '개인사정 결석')}
+          <div class="note-section-spacer"></div>
+          <div class="note-section-title">▶ 특이사항</div>
+          ${parseNotesToList(weeklyPlan?.specialNotes, '공지사항 확인')}
+        </td>
+      `;
     }
-  }
+
+    tableRows.push(`
+      <tr class="sunday-content-row">
+        ${leftTdHtml}
+        <td class="sunday-slot-label">${sSlot.leftLabel}</td>
+        <td colspan="2" class="sunday-slot-cell">${renderCellItems(leftItems)}</td>
+        <td class="sunday-slot-label">${sSlot.rightLabel}</td>
+        <td colspan="2" class="sunday-slot-cell">${renderCellItems(rightItems)}</td>
+      </tr>
+    `);
+  });
 
   return `
 <!DOCTYPE html>
@@ -690,245 +738,245 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
   <style>
     @page {
       size: A4 portrait;
-      margin: 8mm 7mm 8mm 7mm;
+      margin: 6mm 5.5mm 5.5mm 5.5mm;
     }
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+      font-family: "맑은 고딕", "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     body {
       background: #FFFFFF;
       color: #000000;
-      font-size: 9px;
+      font-size: 8.5px;
       line-height: 1.25;
+      padding: 0;
     }
-    .report-header {
+    
+    /* 상단 타이틀 영역 (docs-template.docx 정밀 일치) */
+    .report-title-container {
       text-align: center;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
+      line-height: 1.2;
     }
-    .report-title {
-      font-size: 16px;
+    .report-title-text {
+      font-size: 15px;
+      color: #0F172A;
+      letter-spacing: -0.4px;
+    }
+    .report-title-text strong {
+      font-size: 17px;
       font-weight: 800;
-      letter-spacing: -0.3px;
-      color: #111827;
-      margin-bottom: 2px;
+      letter-spacing: -0.6px;
     }
-    .report-subtitle {
-      font-size: 10px;
-      font-weight: 600;
-      color: #4B5563;
-    }
-    .main-table {
+
+    /* 19개 행 통합 일체형 테이블 (A4 1장 밀착) */
+    .unified-table {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
+      border: 1.5px solid #000000;
     }
-    .main-table th, .main-table td {
-      border: 1px solid #4B5563;
-      padding: 2px 3px;
+    .unified-table th, .unified-table td {
+      border: 1px solid #475569;
+      padding: 1.5px 2.5px;
       vertical-align: top;
-    }
-    .main-table th {
-      background-color: #E5E7EB;
-      font-size: 9.5px;
-      font-weight: 700;
-      text-align: center;
-      height: 20px;
-    }
-    .time-header-cell {
-      width: 32px;
-      text-align: center;
-      background-color: #F3F4F6;
-      font-weight: 700;
-      font-size: 9px;
-      vertical-align: middle !important;
-    }
-    .schedule-cell {
-      height: 38px;
-      width: 16.1%;
-      background-color: #FFFFFF;
-    }
-    .lunch-row td {
-      height: 18px !important;
-      padding: 0;
-    }
-    .lunch-cell {
-      text-align: center;
-      font-weight: 700;
-      font-size: 9.5px;
-      background-color: #F9FAFB;
-      color: #374151;
-      vertical-align: middle !important;
-    }
-    .class-card {
-      margin-bottom: 3px;
-      font-size: 8px;
-      line-height: 1.2;
-    }
-    .card-title {
-      font-size: 8.5px;
-      color: #000000;
-    }
-    .card-title strong {
-      font-weight: 700;
-    }
-    .payment-tag {
-      font-size: 7.5px;
-      color: #1F2937;
-      margin-left: 2px;
-    }
-    .card-subject {
-      color: #1E40AF;
-      font-weight: 600;
-    }
-    .card-addr {
-      color: #374151;
-      font-size: 7.5px;
       word-break: break-all;
     }
+
+    /* Row 1: 최상단 타이틀 행 */
+    .top-title-cell {
+      background-color: #F1F5F9 !important;
+      text-align: center;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #000000;
+      height: 17px;
+      vertical-align: middle !important;
+      border-bottom: 1.5px solid #000000 !important;
+    }
+
+    /* Row 2: 요일 헤더 행 */
+    .time-header-blank {
+      background-color: #F1F5F9 !important;
+      height: 18px;
+    }
+    .day-th {
+      background-color: #F1F5F9 !important;
+      text-align: center;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #000000;
+      height: 18px;
+      vertical-align: middle !important;
+    }
+    .sat-th {
+      background-color: #EBDEF1 !important; /* 토요일 연보라 배경 */
+    }
+
+    /* 시간대 행 공통 */
+    .time-label-cell {
+      background-color: #F8FAFC !important;
+      text-align: center;
+      font-weight: 700;
+      font-size: 9.5px;
+      color: #000000;
+      vertical-align: middle !important;
+    }
+    .class-cell {
+      background-color: #FFFFFF !important;
+      height: 44px;
+    }
+    .time-row-9 .class-cell {
+      height: 22px;
+    }
+
+    /* Row 6: 점심시간 */
+    .lunch-cell {
+      background-color: #FEF9C3 !important; /* 점심 연노랑 배경 */
+      text-align: center;
+      font-weight: 700;
+      font-size: 9.5px;
+      color: #000000;
+      vertical-align: middle !important;
+      height: 18px;
+    }
+
+    /* Row 15: 하단 섹션 헤더 */
+    .notes-header-cell {
+      background-color: #DFE6F7 !important; /* 기타 업무 연파랑 배경 */
+      text-align: center;
+      font-weight: 700;
+      font-size: 9.5px;
+      color: #000000;
+      vertical-align: middle !important;
+      height: 21px;
+    }
+    .sunday-header-cell {
+      background-color: #EBDEF1 !important; /* 일요일 연보라 배경 */
+      text-align: center;
+      font-weight: 700;
+      font-size: 9.5px;
+      color: #000000;
+      vertical-align: middle !important;
+      height: 21px;
+    }
+
+    /* Row 16~19: 하단 본문 */
+    .bottom-notes-cell {
+      background-color: #F1F5F9 !important;
+      padding: 5px 6px !important;
+      vertical-align: top !important;
+    }
+    .note-section-title {
+      font-size: 9px;
+      font-weight: 700;
+      color: #000000;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+    .note-bullet {
+      font-size: 8px;
+      color: #000000;
+      line-height: 1.35;
+      padding-left: 2px;
+    }
+    .note-section-spacer {
+      height: 6px;
+    }
+
+    .sunday-content-row td {
+      height: 36px;
+    }
+    .sunday-slot-label {
+      background-color: #FFFFFF !important;
+      text-align: center;
+      font-weight: 700;
+      font-size: 9.5px;
+      color: #000000;
+      vertical-align: middle !important;
+    }
+    .sunday-slot-cell {
+      background-color: #FFFFFF !important;
+      vertical-align: top !important;
+    }
+
+    /* 수업 카드 디자인 (docs-template.docx 100% 일치) */
+    .schedule-card {
+      font-size: 7.5px;
+      line-height: 1.25;
+      margin-bottom: 2px;
+    }
+    .card-header {
+      font-size: 8px;
+      font-weight: 700;
+      color: #0F172A;
+      letter-spacing: -0.2px;
+    }
+    .card-time {
+      margin-right: 2px;
+    }
+    .card-name {
+      font-weight: 700;
+    }
+    .card-subject {
+      color: #1D4ED8;
+      font-weight: 700;
+      font-size: 8px;
+    }
+    .card-addr {
+      color: #475569;
+      font-size: 7px;
+    }
     .card-phone {
-      color: #1F2937;
+      color: #475569;
       font-size: 7.5px;
     }
     .card-note {
       color: #DC2626;
-      font-weight: 600;
+      font-weight: 700;
       font-size: 7.5px;
-      margin-top: 1px;
     }
-    
-    /* 하단 2단 영역 */
-    .bottom-container {
-      display: flex;
-      border: 1px solid #4B5563;
-      border-top: none;
-      min-height: 175px;
-    }
-    .bottom-col-left {
-      width: 35%;
-      border-right: 1px solid #4B5563;
-      padding: 5px;
-    }
-    .bottom-col-right {
-      width: 65%;
-      padding: 5px;
-      background-color: #FFFFFF;
-    }
-    .section-title {
-      font-weight: 700;
-      font-size: 9.5px;
-      margin-bottom: 4px;
+    .card-divider {
       text-align: center;
-      background-color: #E5E7EB;
-      padding: 2px 0;
-      border: 1px solid #9CA3AF;
+      color: #CBD5E1;
+      font-size: 7px;
+      line-height: 1;
+      margin: 1px 0;
     }
-    .note-subtitle {
-      font-weight: 700;
-      font-size: 8.5px;
-      color: #1F2937;
-      margin-top: 4px;
-      margin-bottom: 1px;
-    }
-    .note-content {
-      font-size: 8px;
-      color: #374151;
-      white-space: pre-wrap;
-      line-height: 1.3;
-      min-height: 20px;
-    }
-    /* 일요일 시간표 테이블 */
-    .sunday-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-      margin-top: 1px;
-    }
-    .sunday-table th, .sunday-table td {
-      border: 1px solid #4B5563;
-      padding: 2px 4px;
-      vertical-align: middle;
-    }
-    .sunday-table th {
-      background-color: #E5E7EB;
-      font-size: 9px;
-      font-weight: 700;
-      text-align: center;
-      height: 19px;
-    }
-    .sunday-time-cell {
-      width: 36px;
-      text-align: center;
-      background-color: #F3F4F6;
-      font-weight: 700;
-      font-size: 9px;
-      color: #111827;
-      vertical-align: middle !important;
-    }
-    .sunday-content-cell {
-      background-color: #FFFFFF;
-      vertical-align: top !important;
-      padding: 2px 4px;
-    }
-    .font-bold { font-weight: 700; }
-    .text-center { text-align: center; }
   </style>
 </head>
 <body>
-  <div class="report-header">
-    <div class="report-title">${escapeHtml(title)}</div>
-    <div class="report-subtitle">방문 수업 (팀별, 개별 마케팅 일정 포함)</div>
+  <div class="report-title-container">
+    <div class="report-title-text">
+      ${year}년 ${month}월 ${day}일 주간의 <strong>${TEACHER_NAME}</strong> 업무 보고서
+    </div>
   </div>
 
-  <table class="main-table">
-    <thead>
-      <tr>
-        <th style="width:32px;"></th>
-        ${dayHeaders.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}
-      </tr>
-    </thead>
+  <table class="unified-table">
+    <colgroup>
+      <col style="width: 6.18%;">
+      <col style="width: 15.28%;">
+      <col style="width: 15.28%;">
+      <col style="width: 7.26%;">
+      <col style="width: 9.10%;">
+      <col style="width: 15.28%;">
+      <col style="width: 7.26%;">
+      <col style="width: 9.10%;">
+      <col style="width: 15.28%;">
+    </colgroup>
     <tbody>
-      ${tableRowsHtml}
+      ${tableRows.join('')}
     </tbody>
   </table>
-
-  <div class="bottom-container">
-    <!-- 1. 기타 업무 영역 -->
-    <div class="bottom-col-left">
-      <div class="section-title">기타 업무 (시험 관련 및 전달물)</div>
-      
-      <div class="note-subtitle">&lt;금주주요사항&gt;</div>
-      <div class="note-content">${escapeHtml(weeklyPlan?.mainNotes || '#개학후 시간변동 체크\n#마감보고서 제출')}</div>
-
-      <div class="note-subtitle">&lt;전주 결석&gt;</div>
-      <div class="note-content">${escapeHtml(weeklyPlan?.prevAbsentNotes || '#유귀일: 개인사정')}</div>
-
-      <div class="note-subtitle">&lt;특이사항&gt;</div>
-      <div class="note-content">${escapeHtml(weeklyPlan?.specialNotes || '공지사항')}</div>
-    </div>
-
-    <!-- 2. 일요일 시간표 영역 (표 형태) -->
-    <div class="bottom-col-right">
-      <div class="section-title">${escapeHtml(sundayHeader)}</div>
-      <table class="sunday-table">
-        <thead>
-          <tr>
-            <th style="width:36px;">시간</th>
-            <th>수업 내용 (학생 / 과목 / 주소 / 연락처)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sundayTableRowsHtml}
-        </tbody>
-      </table>
-    </div>
-  </div>
 </body>
 </html>
   `;
 };
+
 
 /**
  * 주간 업무 보고서 인쇄 실행 (데스크톱/웹 인쇄 및 PDF 저장)
