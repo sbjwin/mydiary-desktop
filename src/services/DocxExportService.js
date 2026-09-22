@@ -645,7 +645,13 @@ export const buildWeeklyPlanDocxXml = (weeklyPlan) => {
 const tryLoadTemplateZip = async () => {
   try {
     if (typeof window !== 'undefined') {
-      const templateUrls = ['./templates/docs-template.docx', '/templates/docs-template.docx'];
+      const templateUrls = [
+        './templates/docs-template.docx',
+        '/templates/docs-template.docx',
+        'templates/docs-template.docx',
+        (window.location ? new URL('templates/docs-template.docx', window.location.href).href : null)
+      ].filter(Boolean);
+
       for (const url of templateUrls) {
         try {
           const resp = await fetch(url);
@@ -665,60 +671,55 @@ const tryLoadTemplateZip = async () => {
 };
 
 /**
- * 주간 보고서 .docx 파일 생성 및 공유 실행
+ * 주간 보고서 완성된 .docx JSZip 인스턴스 빌드 (템플릿 기반 또는 Fallback)
  */
-export const shareWeeklyReportDocx = async (weeklyPlan) => {
-  try {
-    const startDate = weeklyPlan?.startDate || '2026-09-14';
-    const [year, month, day] = startDate.split('-').map(Number);
-    const fileName = `주간업무보고서_${year}년_${month}월_${day}일.docx`;
+export const buildWeeklyReportDocxZip = async (weeklyPlan) => {
+  const documentXml = buildWeeklyPlanDocxXml(weeklyPlan);
 
-    const documentXml = buildWeeklyPlanDocxXml(weeklyPlan);
+  // 1. 템플릿(docs-template.docx) 기반 생성 시도
+  let zip = await tryLoadTemplateZip();
 
-    // 1. 템플릿(docs-template.docx) 기반 생성 시도
-    let zip = await tryLoadTemplateZip();
+  if (zip) {
+    // 템플릿의 document.xml만 교체하여 원본 서식 100% 보존
+    zip.file('word/document.xml', documentXml);
+  } else {
+    // 2. 자체 ZIP 조립 Fallback (템플릿 파일 부재 시에도 완벽 작동)
+    zip = new JSZip();
 
-    if (zip) {
-      // 템플릿의 document.xml만 교체하여 원본 서식 100% 보존
-      zip.file('word/document.xml', documentXml);
-    } else {
-      // 2. 자체 ZIP 조립 Fallback (템플릿 파일 부재 시에도 완벽 작동)
-      zip = new JSZip();
-
-      // [Content_Types].xml
-      zip.file(
-        '[Content_Types].xml',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    // [Content_Types].xml
+    zip.file(
+      '[Content_Types].xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
 </Types>`
-      );
+    );
 
-      // _rels/.rels
-      zip.folder('_rels').file(
-        '.rels',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    // _rels/.rels
+    zip.folder('_rels').file(
+      '.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
 </Relationships>`
-      );
+    );
 
-      // word/_rels/document.xml.rels
-      zip.folder('word').folder('_rels').file(
-        'document.xml.rels',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    // word/_rels/document.xml.rels
+    zip.folder('word').folder('_rels').file(
+      'document.xml.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>`
-      );
+    );
 
-      // word/styles.xml
-      zip.folder('word').file(
-        'styles.xml',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    // word/styles.xml
+    zip.folder('word').file(
+      'styles.xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:docDefaults>
     <w:rPrDefault>
@@ -742,11 +743,38 @@ export const shareWeeklyReportDocx = async (weeklyPlan) => {
     </w:rPr>
   </w:style>
 </w:styles>`
-      );
+    );
 
-      // word/document.xml
-      zip.folder('word').file('document.xml', documentXml);
-    }
+    // word/document.xml
+    zip.folder('word').file('document.xml', documentXml);
+  }
+
+  return zip;
+};
+
+/**
+ * 주간 보고서 DOCX Blob 생성 (PDF 자동 렌더링 및 미리보기용)
+ */
+export const generateWeeklyReportDocxBlob = async (weeklyPlan) => {
+  const zip = await buildWeeklyReportDocxZip(weeklyPlan);
+  return await zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  });
+};
+
+/**
+ * 주간 보고서 .docx 파일 생성 및 저장
+ */
+export const shareWeeklyReportDocx = async (weeklyPlan) => {
+  try {
+    const startDate = weeklyPlan?.startDate || '2026-09-14';
+    const [year, month, day] = startDate.split('-').map(Number);
+    const fileName = `주간업무보고서_${year}년_${month}월_${day}일_${TEACHER_NAME}.docx`;
+
+    const zip = await buildWeeklyReportDocxZip(weeklyPlan);
 
     // ZIP 생성 (base64)
     const base64Data = await zip.generateAsync({

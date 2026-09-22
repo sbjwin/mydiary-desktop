@@ -40,7 +40,9 @@ const executePrintOrPdf = async (htmlContent, title) => {
   }
 };
 
+import * as docx from 'docx-preview';
 import { formatPhoneInfo } from '../database/Database';
+import { generateWeeklyReportDocxBlob } from './DocxExportService';
 
 const TEACHER_NAME = '성백진';
 
@@ -987,14 +989,86 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
 };
 
 /**
- * 주간 업무 보고서 인쇄 실행 (데스크톱/웹 프린터 인쇄)
+ * DOCX 바이너리를 docx-preview를 통해 A4 1장 최적화 완전한 HTML로 변환
+ * (Word 원본 테마, 표 테두리, 행 높이, 셀 패딩, 맑은 고딕 폰트 100% 보존)
+ */
+export const renderDocxToHtml = async (docxBlob, title = '주간업무보고서') => {
+  const container = document.createElement('div');
+  await docx.renderAsync(docxBlob, container, null, {
+    inWrapper: false,
+    ignoreWidth: false,
+    ignoreHeight: false,
+    renderHeaders: true,
+    renderFooters: true,
+    renderFootnotes: true,
+    renderEndnotes: true,
+  });
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .docx-wrapper {
+      padding: 0 !important;
+      background: #ffffff !important;
+    }
+    section.docx {
+      box-sizing: border-box !important;
+      margin: 0 auto !important;
+      box-shadow: none !important;
+      width: 595.3pt !important;
+      min-height: 841.9pt !important;
+      page-break-after: avoid !important;
+      page-break-inside: avoid !important;
+    }
+    @media print {
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      section.docx {
+        box-shadow: none !important;
+        margin: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  ${container.innerHTML}
+</body>
+</html>`;
+};
+
+/**
+ * 주간 업무 보고서 인쇄 실행 (워드 템플릿 기반 자동 렌더링)
  */
 export const printWeeklyReport = async (weeklyPlan) => {
   try {
     const startDate = weeklyPlan?.startDate || '2026-09-14';
     const [year, month, day] = startDate.split('-').map(Number);
     const title = `주간업무보고서_${year}년_${month}월_${day}일_${TEACHER_NAME}`;
-    const html = generateWeeklyReportHtml(weeklyPlan);
+
+    // 워드 템플릿(docs-template.docx) 기반 DOCX Blob 취득 후 HTML 변환
+    const docxBlob = await generateWeeklyReportDocxBlob(weeklyPlan);
+    const html = await renderDocxToHtml(docxBlob, title);
     await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print weekly report:', error);
@@ -1003,17 +1077,22 @@ export const printWeeklyReport = async (weeklyPlan) => {
 };
 
 /**
- * 주간 업무 보고서 PDF 파일 직접 저장 (A4 1장 밀착 / 자동 파일명 부여)
+ * 주간 업무 보고서 PDF 파일 직접 저장 (docs-template.docx 워드 템플릿 기반 자동 렌더링)
  */
 export const exportWeeklyReportPdf = async (weeklyPlan) => {
   try {
     const startDate = weeklyPlan?.startDate || '2026-09-14';
     const [year, month, day] = startDate.split('-').map(Number);
     const defaultFileName = `주간업무보고서_${year}년_${month}월_${day}일_${TEACHER_NAME}.pdf`;
-    const html = generateWeeklyReportHtml(weeklyPlan);
+
+    // 1. docs-template.docx 기반 완성된 DOCX 바이너리 Blob 취득
+    const docxBlob = await generateWeeklyReportDocxBlob(weeklyPlan);
+
+    // 2. docx-preview를 사용하여 워드 원본 규격 그대로 완벽한 HTML 렌더링
+    const htmlContent = await renderDocxToHtml(docxBlob, defaultFileName.replace('.pdf', ''));
 
     if (typeof window !== 'undefined' && window.electronAPI?.exportPdf) {
-      const result = await window.electronAPI.exportPdf(html, defaultFileName);
+      const result = await window.electronAPI.exportPdf(htmlContent, defaultFileName);
       if (result.success) {
         alert(`PDF 문서가 성공적으로 저장되었습니다.\n경로: ${result.filePath}`);
         return result;
@@ -1024,7 +1103,7 @@ export const exportWeeklyReportPdf = async (weeklyPlan) => {
       return result;
     } else {
       // 웹 환경 브라우저 인쇄 대화상자 fallback (파일명 동기화)
-      await executePrintOrPdf(html, defaultFileName.replace('.pdf', ''));
+      await executePrintOrPdf(htmlContent, defaultFileName.replace('.pdf', ''));
     }
   } catch (error) {
     console.error('Failed to export PDF:', error);
