@@ -1,15 +1,22 @@
 
-// 데스크톱 / 웹 표준 인쇄 헬퍼
+// 데스크톱 / 웹 표준 인쇄 헬퍼 (인쇄 및 PDF 저장 시 파일명 동기화)
 const executePrintOrPdf = async (htmlContent, title) => {
-  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  const originalTitle = typeof document !== 'undefined' ? document.title : '';
+  if (typeof document !== 'undefined' && title) {
+    document.title = title;
+  }
+
+  const printWindow = typeof window !== 'undefined' ? window.open('', '_blank', 'width=900,height=800') : null;
   if (printWindow) {
+    if (title) printWindow.document.title = title;
     printWindow.document.write(htmlContent);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
+      if (typeof document !== 'undefined') document.title = originalTitle;
     }, 500);
-  } else {
+  } else if (typeof document !== 'undefined') {
     // 팝업 차단 시 iframe 방식 fallback
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
@@ -23,10 +30,12 @@ const executePrintOrPdf = async (htmlContent, title) => {
     doc.open();
     doc.write(htmlContent);
     doc.close();
+    if (title) doc.title = title;
     iframe.contentWindow.focus();
     setTimeout(() => {
       iframe.contentWindow.print();
       document.body.removeChild(iframe);
+      document.title = originalTitle;
     }, 500);
   }
 };
@@ -653,13 +662,13 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
   // Row 3: 9시
   tableRows.push(makeTimeRow('9시', 9, 'time-row-9'));
   // Row 4: 10시
-  tableRows.push(makeTimeRow('10시', 10));
+  tableRows.push(makeTimeRow('10시', 10, 'time-row-regular'));
   // Row 5: 11시
-  tableRows.push(makeTimeRow('11시', 11));
+  tableRows.push(makeTimeRow('11시', 11, 'time-row-regular'));
 
   // Row 6: 점심시간 (12:00)
   tableRows.push(`
-    <tr class="row-lunch">
+    <tr class="time-row time-row-lunch">
       <td class="time-label-cell">12:00</td>
       <td colspan="8" class="lunch-cell">☕ 12:00 ~ 13:00 점심 및 이동 시간</td>
     </tr>
@@ -677,7 +686,7 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
     { label: '8시', hour: 20 },
   ];
   pmSlots.forEach((slot) => {
-    tableRows.push(makeTimeRow(slot.label, slot.hour));
+    tableRows.push(makeTimeRow(slot.label, slot.hour, 'time-row-regular'));
   });
 
   // Row 15: 하단 섹션 헤더 (기타 업무 + 일요일 시간표)
@@ -738,82 +747,80 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
   <style>
     @page {
       size: A4 portrait;
-      margin: 6mm 5.5mm 5.5mm 5.5mm;
+      margin: 5mm 5mm 3mm 5mm;
     }
-    * {
-      box-sizing: border-box;
+    html, body {
+      width: 100%;
+      height: 100%;
       margin: 0;
       padding: 0;
+      background: #FFFFFF;
+      color: #000000;
       font-family: "맑은 고딕", "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-    }
-    body {
-      background: #FFFFFF;
-      color: #000000;
-      font-size: 8.5px;
-      line-height: 1.25;
-      padding: 0;
     }
     
     /* 상단 타이틀 영역 (docs-template.docx 정밀 일치) */
     .report-title-container {
       text-align: center;
-      margin-bottom: 4px;
+      margin-bottom: 2mm;
       line-height: 1.2;
     }
     .report-title-text {
-      font-size: 15px;
+      font-size: 14pt;
       color: #0F172A;
       letter-spacing: -0.4px;
     }
     .report-title-text strong {
-      font-size: 17px;
+      font-size: 16pt;
       font-weight: 800;
       letter-spacing: -0.6px;
     }
 
-    /* 19개 행 통합 일체형 테이블 (A4 1장 밀착) */
+    /* 19개 행 통합 일체형 테이블 (A4 1장 꽉 채움: 278mm) */
     .unified-table {
       width: 100%;
+      height: 278mm;
       border-collapse: collapse;
       table-layout: fixed;
-      border: 1.5px solid #000000;
+      border: 1.2px solid #000000;
+      margin: 0 auto;
     }
     .unified-table th, .unified-table td {
-      border: 1px solid #475569;
-      padding: 1.5px 2.5px;
+      border: 0.5px solid #475569;
+      padding: 2px 3px;
       vertical-align: top;
       word-break: break-all;
+      box-sizing: border-box;
     }
 
     /* Row 1: 최상단 타이틀 행 */
-    .top-title-cell {
+    .row-top-title td {
+      height: 5.5mm;
       background-color: #F1F5F9 !important;
       text-align: center;
       font-size: 10.5px;
       font-weight: 700;
       color: #000000;
-      height: 17px;
       vertical-align: middle !important;
-      border-bottom: 1.5px solid #000000 !important;
+      border-bottom: 1.2px solid #000000 !important;
+      padding: 0 !important;
     }
 
     /* Row 2: 요일 헤더 행 */
-    .time-header-blank {
-      background-color: #F1F5F9 !important;
-      height: 18px;
-    }
-    .day-th {
+    .row-day-header th {
+      height: 5.5mm;
       background-color: #F1F5F9 !important;
       text-align: center;
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: 700;
       color: #000000;
-      height: 18px;
       vertical-align: middle !important;
+      border-bottom: 1.2px solid #000000 !important;
+      padding: 0 !important;
     }
-    .sat-th {
+    .row-day-header .sat-th {
       background-color: #EBDEF1 !important; /* 토요일 연보라 배경 */
     }
 
@@ -826,49 +833,55 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
       color: #000000;
       vertical-align: middle !important;
     }
+    .time-row-9 td {
+      height: 7mm;
+    }
+    .time-row-regular td {
+      height: 18.5mm;
+    }
     .class-cell {
       background-color: #FFFFFF !important;
-      height: 44px;
-    }
-    .time-row-9 .class-cell {
-      height: 22px;
+      vertical-align: top !important;
     }
 
     /* Row 6: 점심시간 */
-    .lunch-cell {
+    .time-row-lunch td {
+      height: 6mm;
       background-color: #FEF9C3 !important; /* 점심 연노랑 배경 */
       text-align: center;
       font-weight: 700;
       font-size: 9.5px;
       color: #000000;
       vertical-align: middle !important;
-      height: 18px;
+      padding: 0 !important;
     }
 
     /* Row 15: 하단 섹션 헤더 */
-    .notes-header-cell {
-      background-color: #DFE6F7 !important; /* 기타 업무 연파랑 배경 */
+    .row-bottom-header td {
+      height: 6.5mm;
       text-align: center;
       font-weight: 700;
       font-size: 9.5px;
       color: #000000;
       vertical-align: middle !important;
-      height: 21px;
+      border-top: 1.2px solid #000000 !important;
+      border-bottom: 1px solid #000000 !important;
+      padding: 0 !important;
+    }
+    .notes-header-cell {
+      background-color: #DFE6F7 !important; /* 기타 업무 연파랑 배경 */
     }
     .sunday-header-cell {
       background-color: #EBDEF1 !important; /* 일요일 연보라 배경 */
-      text-align: center;
-      font-weight: 700;
-      font-size: 9.5px;
-      color: #000000;
-      vertical-align: middle !important;
-      height: 21px;
     }
 
     /* Row 16~19: 하단 본문 */
+    .sunday-content-row td {
+      height: 16.5mm;
+    }
     .bottom-notes-cell {
       background-color: #F1F5F9 !important;
-      padding: 5px 6px !important;
+      padding: 4px 6px !important;
       vertical-align: top !important;
     }
     .note-section-title {
@@ -885,11 +898,7 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
       padding-left: 2px;
     }
     .note-section-spacer {
-      height: 6px;
-    }
-
-    .sunday-content-row td {
-      height: 36px;
+      height: 4px;
     }
     .sunday-slot-label {
       background-color: #FFFFFF !important;
@@ -906,12 +915,12 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
 
     /* 수업 카드 디자인 (docs-template.docx 100% 일치) */
     .schedule-card {
-      font-size: 7.5px;
-      line-height: 1.25;
+      font-size: 8px;
+      line-height: 1.3;
       margin-bottom: 2px;
     }
     .card-header {
-      font-size: 8px;
+      font-size: 8.5px;
       font-weight: 700;
       color: #0F172A;
       letter-spacing: -0.2px;
@@ -925,27 +934,27 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
     .card-subject {
       color: #1D4ED8;
       font-weight: 700;
-      font-size: 8px;
+      font-size: 8.5px;
     }
     .card-addr {
       color: #475569;
-      font-size: 7px;
+      font-size: 7.5px;
     }
     .card-phone {
       color: #475569;
-      font-size: 7.5px;
+      font-size: 8px;
     }
     .card-note {
       color: #DC2626;
       font-weight: 700;
-      font-size: 7.5px;
+      font-size: 8px;
     }
     .card-divider {
       text-align: center;
       color: #CBD5E1;
       font-size: 7px;
       line-height: 1;
-      margin: 1px 0;
+      margin: 2px 0;
     }
   </style>
 </head>
@@ -977,14 +986,15 @@ export const generateWeeklyReportHtml = (weeklyPlan) => {
   `;
 };
 
-
 /**
- * 주간 업무 보고서 인쇄 실행 (데스크톱/웹 인쇄 및 PDF 저장)
+ * 주간 업무 보고서 인쇄 실행 (데스크톱/웹 프린터 인쇄)
  */
 export const printWeeklyReport = async (weeklyPlan) => {
   try {
+    const startDate = weeklyPlan?.startDate || '2026-09-14';
+    const [year, month, day] = startDate.split('-').map(Number);
+    const title = `주간업무보고서_${year}년_${month}월_${day}일_${TEACHER_NAME}`;
     const html = generateWeeklyReportHtml(weeklyPlan);
-    const title = weeklyPlan?.weekKey ? `${weeklyPlan.weekKey} 주간 업무 보고서` : '주간 업무 보고서';
     await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print weekly report:', error);
@@ -993,10 +1003,40 @@ export const printWeeklyReport = async (weeklyPlan) => {
 };
 
 /**
- * 주간 업무 보고서 PDF 인쇄/저장
+ * 주간 업무 보고서 PDF 파일 직접 저장 (A4 1장 밀착 / 자동 파일명 부여)
+ */
+export const exportWeeklyReportPdf = async (weeklyPlan) => {
+  try {
+    const startDate = weeklyPlan?.startDate || '2026-09-14';
+    const [year, month, day] = startDate.split('-').map(Number);
+    const defaultFileName = `주간업무보고서_${year}년_${month}월_${day}일_${TEACHER_NAME}.pdf`;
+    const html = generateWeeklyReportHtml(weeklyPlan);
+
+    if (typeof window !== 'undefined' && window.electronAPI?.exportPdf) {
+      const result = await window.electronAPI.exportPdf(html, defaultFileName);
+      if (result.success) {
+        alert(`PDF 문서가 성공적으로 저장되었습니다.\n경로: ${result.filePath}`);
+        return result;
+      } else if (!result.canceled) {
+        alert(`PDF 저장 중 오류 발생: ${result.error}`);
+        return result;
+      }
+      return result;
+    } else {
+      // 웹 환경 브라우저 인쇄 대화상자 fallback (파일명 동기화)
+      await executePrintOrPdf(html, defaultFileName.replace('.pdf', ''));
+    }
+  } catch (error) {
+    console.error('Failed to export PDF:', error);
+    alert(`PDF 문서 생성 중 오류가 발생했습니다.\n(${error?.message || error})`);
+  }
+};
+
+/**
+ * 주간 업무 보고서 PDF 인쇄/저장 (기존 호환)
  */
 export const shareWeeklyReport = async (weeklyPlan) => {
-  return printWeeklyReport(weeklyPlan);
+  return exportWeeklyReportPdf(weeklyPlan);
 };
 
 export { shareWeeklyReportDocx } from './DocxExportService';

@@ -199,6 +199,51 @@ ipcMain.handle('save-hwpx-file', async (event, { defaultFileName, base64Data }) 
   return await ipcMain.handlers['save-file-dialog'](event, { defaultFileName, base64Data, filterType: 'hwpx' });
 });
 
+// IPC: HTML 기반 직접 PDF 생성 및 파일 저장 (A4 1장 최적화)
+ipcMain.handle('export-pdf', async (event, { htmlContent, defaultFileName }) => {
+  let printWin = null;
+  try {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'PDF 문서로 저장',
+      defaultPath: defaultFileName,
+      filters: [{ name: 'PDF 문서 (*.pdf)', extensions: ['pdf'] }],
+    });
+
+    if (canceled || !filePath) {
+      return { success: false, canceled: true };
+    }
+
+    printWin = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+    const pdfBuffer = await printWin.webContents.printToPDF({
+      pageSize: 'A4',
+      printBackground: true,
+      margins: {
+        marginType: 'none',
+      },
+    });
+
+    fs.writeFileSync(filePath, pdfBuffer);
+
+    return { success: true, filePath };
+  } catch (err) {
+    console.error('Error exporting PDF:', err);
+    return { success: false, error: err.message };
+  } finally {
+    if (printWin) {
+      printWin.destroy();
+    }
+  }
+});
+
 // ==========================================
 // Google OAuth 2.0 Loopback Authentication (Desktop App / PKCE)
 // ==========================================

@@ -17,7 +17,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { ScheduleModal } from './ScheduleModal';
-import { printWeeklyReport, shareWeeklyReportHwpx, shareWeeklyReportDocx } from '../services/PrintService';
+import { printWeeklyReport, exportWeeklyReportPdf, shareWeeklyReportHwpx, shareWeeklyReportDocx } from '../services/PrintService';
 
 const DAYS = [
   { dayOfWeek: 1, name: '월요일', short: '월' },
@@ -252,6 +252,11 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
   };
 
   // 인쇄 및 문서 내보내기 핸들러
+  const handleExportPdf = async () => {
+    if (!weeklyPlan) return;
+    await exportWeeklyReportPdf(weeklyPlan);
+  };
+
   const handlePrint = async () => {
     if (!weeklyPlan) return;
     await printWeeklyReport(weeklyPlan);
@@ -359,8 +364,11 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
           >
             <RotateCcw size={15} /> 시간표 비우기
           </button>
-          <button className="btn-secondary sm" onClick={handlePrint} title="A4 인쇄 또는 PDF 저장">
-            <Printer size={15} /> 인쇄 / PDF
+          <button className="btn-secondary sm" onClick={handleExportPdf} title="A4 PDF 문서로 바로 저장합니다 (docs-template 양식)">
+            <FileDown size={15} /> PDF 저장
+          </button>
+          <button className="btn-secondary sm" onClick={handlePrint} title="프린터로 직접 인쇄합니다">
+            <Printer size={15} /> 인쇄
           </button>
           <button className="btn-secondary sm" onClick={handleExportHwpx} title="한글(HWPX) 문서로 내보내기">
             <FileDown size={15} /> 한글(HWPX)
