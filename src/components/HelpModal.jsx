@@ -109,6 +109,12 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
           desc: '상단의 [한글 문서(HWPX) 저장]을 누르면 한글과컴퓨터 표준 공문서 양식(*.hwpx)으로 PC에 저장되며, [인쇄 / 미리보기]로 깔끔한 A4 용지 출력이 가능합니다.',
           tip: 'HWPX 표준 OWPML 포맷 100% 지원',
         },
+        {
+          num: '⑤',
+          title: '포커스 유지 & 토스트 알림 (v0.4.1)',
+          desc: '일지 수정 중 [저장하기]를 누르면 번거로운 팝업 확인창 없이 화면 우측 하단에 부드러운 토스트 알림이 뜨며, 입력 포커스가 그대로 유지되어 연속 편집이 가능합니다.',
+          tip: '끊김 없는 연속 타이핑 보장',
+        },
       ],
     },
     students: {
@@ -196,8 +202,8 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
       a: '[백업 및 설정] 탭에서 [구글 계정으로 로그인]을 진행하신 후 [스마트폰 백업 다운로드 복원]을 클릭하시면, 스마트폰 앱에서 구글 드라이브로 올린 mydiary_backup.json 데이터를 데스크톱으로 즉시 안전하게 복원할 수 있습니다.',
     },
     {
-      q: '과거에 작성했던 수업 일지를 어떻게 수정(편집)하나요?',
-      a: '[수업 일지] 탭의 좌측 사이드바 목록에서 수정하고자 하는 과거 일지 카드를 마우스로 클릭하시면, 우측 화면이 [수업 일지 상세 및 수정] 모드로 전환되며 기존 내용이 채워져 자유롭게 수정 후 [저장하기]를 누르시면 됩니다.',
+      q: '과거에 작성했던 수업 일지를 어떻게 수정(편집)하나요? (v0.4.1)',
+      a: '[수업 일지] 탭의 좌측 사이드바 목록에서 수정하고자 하는 과거 일지 카드를 마우스로 클릭하시면, 우측 화면이 [수업 일지 상세 및 수정] 모드로 전환되며 기존 내용이 채워집니다. 원하는 부분을 수정하고 [저장하기]를 누르시면 팝업 방해 없이 즉각 저장되며, 포커스가 그대로 유지되어 바로 다음 문장을 이어서 편집할 수 있습니다.',
     },
     {
       q: '주간 시간표에서 빈 시간에 새 수업 일정을 어떻게 추가하나요?',
@@ -262,7 +268,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
             <div>
               <div className="help-title-row">
                 <h3 className="help-title">MyDiary Desktop 도움말 및 사용 가이드</h3>
-                <span className="help-version-tag">Desktop v0.4.0</span>
+                <span className="help-version-tag">Desktop v0.4.1</span>
               </div>
               <p className="help-subtitle">
                 선생님을 위한 스마트 수업 다이어리 핵심 기능과 화면별 사용법을 확인하세요.
@@ -445,7 +451,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
                 <h4 className="about-app-name">MyDiary Desktop</h4>
                 <p className="about-app-slogan">선생님을 위한 스마트 수업 다이어리 및 학생 성장 관리 시스템</p>
                 <div className="about-badges-row">
-                  <span className="about-badge">Desktop v0.4.0</span>
+                  <span className="about-badge">Desktop v0.4.1</span>
                   <span className="about-badge">Electron + React</span>
                   <span className="about-badge">HWPX 표준 지원</span>
                 </div>
