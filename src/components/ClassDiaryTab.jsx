@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Database, getTodayDateString } from '../database/Database';
 import { exportDiaryToHwpx } from '../services/HwpxExportService';
 import { generateClassRecordsHtml } from '../services/PrintService';
@@ -14,6 +14,8 @@ import {
   Printer,
   Search,
   CheckCircle,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 
 const COMMON_COURSES = ['국어', '수학', '사회', '과학', '영어', '독서논술', '창의체험'];
@@ -24,6 +26,15 @@ export const ClassDiaryTab = ({ initialParams }) => {
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
+
+  // 포커스 안전 유지 및 1회성 initialParams 처리용 Refs
+  const initialHandledRef = useRef(false);
+  const contentTextareaRef = useRef(null);
+  const lastFocusedFieldRef = useRef(null);
+
+  // 인라인 토스트 및 저장 버튼 피드백 상태
+  const [toastNotice, setToastNotice] = useState(null);
+  const [isSavedRecently, setIsSavedRecently] = useState(false);
 
   // 일지 폼 상태
   const [formData, setFormData] = useState({
@@ -36,13 +47,35 @@ export const ClassDiaryTab = ({ initialParams }) => {
     notes: '',
   });
 
-  const loadData = async () => {
+  const showToast = (message, type = 'success') => {
+    setToastNotice({ message, type });
+    if (window._diaryToastTimer) clearTimeout(window._diaryToastTimer);
+    window._diaryToastTimer = setTimeout(() => {
+      setToastNotice(null);
+    }, 2200);
+  };
+
+  const loadData = async (keepRecordId = null) => {
     const allStudents = await Database.getAllStudents();
     const allRecords = await Database.getAllRecords();
     setStudents(allStudents);
     setRecords(allRecords);
 
-    if (initialParams?.studentId) {
+    // 1순위: 방금 저장했거나 명시적으로 유지를 요청한 recordId가 있는 경우 (최우선 동기화)
+    const targetId = keepRecordId || selectedRecordId;
+    if (targetId) {
+      const existing = allRecords.find((r) => r.id === targetId);
+      if (existing) {
+        setSelectedRecordId(existing.id);
+        setSelectedStudentId(existing.student_id || existing.studentId);
+        populateForm(existing);
+        return;
+      }
+    }
+
+    // 2순위: 최초 진입 시 initialParams가 있고 아직 처리되지 않은 경우 (1회성 소비)
+    if (initialParams?.studentId && !initialHandledRef.current) {
+      initialHandledRef.current = true;
       setSelectedStudentId(initialParams.studentId);
 
       // 1순위: diaryId가 전달된 경우
@@ -81,6 +114,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
   };
 
   useEffect(() => {
+    initialHandledRef.current = false;
     loadData();
   }, [initialParams]);
 
@@ -117,7 +151,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
 
   const handleSave = async () => {
     if (!formData.studentId) {
-      alert('학생을 선택해 주세요.');
+      showToast('학생을 선택해 주세요.', 'warning');
       return;
     }
 
@@ -132,17 +166,35 @@ export const ClassDiaryTab = ({ initialParams }) => {
         notes: formData.notes,
       };
 
+      let targetId = selectedRecordId;
       if (selectedRecordId) {
         await Database.updateClassRecord(selectedRecordId, recordPayload);
-        alert('수업 일지가 수정되었습니다.');
+        showToast('수업 일지가 성공적으로 수정되었습니다.', 'success');
       } else {
         const newRec = await Database.addClassRecord(recordPayload);
+        targetId = newRec.id;
         setSelectedRecordId(newRec.id);
-        alert('새 수업 일지가 등록되었습니다.');
+        showToast('새 수업 일지가 성공적으로 등록되었습니다.', 'success');
       }
-      await loadData();
+
+      setIsSavedRecently(true);
+      setTimeout(() => setIsSavedRecently(false), 2000);
+
+      await loadData(targetId);
+
+      // [2번 포커스 안전 유지]: 윈도우 포커스 보장 및 웹뷰 포커스 유지
+      if (typeof window !== 'undefined' && window.focus) {
+        window.focus();
+      }
+      setTimeout(() => {
+        if (lastFocusedFieldRef.current && typeof lastFocusedFieldRef.current.focus === 'function') {
+          lastFocusedFieldRef.current.focus({ preventScroll: true });
+        } else if (contentTextareaRef.current) {
+          contentTextareaRef.current.focus({ preventScroll: true });
+        }
+      }, 50);
     } catch (err) {
-      alert('저장 실패: ' + err.message);
+      showToast('저장 실패: ' + err.message, 'error');
     }
   };
 
@@ -152,11 +204,15 @@ export const ClassDiaryTab = ({ initialParams }) => {
 
     try {
       await Database.deleteClassRecord(selectedRecordId);
-      alert('삭제되었습니다.');
+      showToast('수업 일지가 삭제되었습니다.', 'info');
       handleNewDiary();
       await loadData();
+
+      if (typeof window !== 'undefined' && window.focus) {
+        window.focus();
+      }
     } catch (err) {
-      alert('삭제 실패: ' + err.message);
+      showToast('삭제 실패: ' + err.message, 'error');
     }
   };
 
@@ -307,8 +363,13 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 <Trash2 size={15} /> 삭제
               </button>
             )}
-            <button className="btn-primary" onClick={handleSave}>
-              <Save size={15} /> 저장하기
+            <button
+              type="button"
+              className={`btn-primary ${isSavedRecently ? 'btn-saved-success' : ''}`}
+              onClick={handleSave}
+            >
+              {isSavedRecently ? <CheckCircle size={15} /> : <Save size={15} />}
+              {isSavedRecently ? '저장 완료!' : '저장하기'}
             </button>
           </div>
         </div>
@@ -322,6 +383,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-select"
                 value={formData.studentId}
                 onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
               >
                 <option value="">학생을 선택하세요</option>
                 {students.map((s) => (
@@ -339,6 +401,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-input"
                 value={formData.classDate}
                 onChange={(e) => setFormData({ ...formData, classDate: e.target.value })}
+                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
               />
             </div>
 
@@ -350,6 +413,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 placeholder="예: 14:00"
                 value={formData.classTime}
                 onChange={(e) => setFormData({ ...formData, classTime: e.target.value })}
+                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
               />
             </div>
 
@@ -361,6 +425,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 placeholder="예: 초등 수학 5-1 디딤돌"
                 value={formData.course}
                 onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
               />
             </div>
           </div>
@@ -371,11 +436,13 @@ export const ClassDiaryTab = ({ initialParams }) => {
               <BookOpen size={14} /> 학습 진도 및 상세 지도 내용
             </label>
             <textarea
+              ref={contentTextareaRef}
               className="form-textarea"
               rows={6}
               placeholder="오늘 진행한 학습 진도, 개념 설명, 문제 풀이 결과 등을 상세히 기록하세요..."
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
             />
           </div>
 
@@ -388,6 +455,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 placeholder="다음 시간까지 완료할 문제집 페이지, 복습 과제 등을 입력하세요..."
                 value={formData.homework}
                 onChange={(e) => setFormData({ ...formData, homework: e.target.value })}
+                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
               />
             </div>
 
@@ -399,11 +467,25 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 placeholder="학생의 집중도, 학습 태도, 다음 수업 준비물 또는 학부모 상담 메모를 기록하세요..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
               />
             </div>
           </div>
         </div>
       </div>
+
+      {/* 인라인 토스트 알림 (OS 다이얼로그로 인한 포커스 유실 원천 차단) */}
+      {toastNotice && (
+        <div className={`diary-toast-notice ${toastNotice.type || 'success'}`}>
+          <span className="toast-icon">
+            {toastNotice.type === 'error' && <AlertCircle size={16} />}
+            {toastNotice.type === 'warning' && <AlertCircle size={16} />}
+            {toastNotice.type === 'info' && <Info size={16} />}
+            {(!toastNotice.type || toastNotice.type === 'success') && <CheckCircle size={16} />}
+          </span>
+          <span>{toastNotice.message}</span>
+        </div>
+      )}
     </div>
   );
 };
