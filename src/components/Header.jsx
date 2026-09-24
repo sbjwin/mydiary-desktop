@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check, Settings } from 'lucide-react';
+import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check } from 'lucide-react';
 import { THEME_PRESETS } from '../theme';
 
-export const Header = ({ activeTab, onSelectTab, onOpenHelp, onOpenSettings, currentTheme, onSelectTheme }) => {
+export const Header = ({ activeTab, onSelectTab, onOpenHelp, currentTheme, onSelectTheme }) => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const paletteRef = useRef(null);
 
@@ -110,15 +110,6 @@ export const Header = ({ activeTab, onSelectTab, onOpenHelp, onOpenSettings, cur
         >
           <HelpCircle size={15} />
           <span>도움말 (F1)</span>
-        </button>
-
-        <button
-          className="header-settings-btn"
-          onClick={onOpenSettings}
-          title="환경 설정 (테마, 작업 환경, 앱 정보)"
-        >
-          <Settings size={15} />
-          <span>설정</span>
         </button>
 
         <div className="user-profile-badge">
