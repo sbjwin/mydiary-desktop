@@ -1,4 +1,4 @@
-# MyDiary Desktop (v0.4.1)
+# MyDiary Desktop (v0.4.2)
 
 선생님들을 위한 스마트 수업 일지 및 학생 성장 기록 관리 크로스 플랫폼 데스크톱 애플리케이션입니다.  
 기존 스마트폰용 MyDiary 모바일 앱의 핵심 편의성과 데이터 호환성을 100% 계승하면서, 넓은 PC 모니터 화면에 특화된 와이드 시간표 매트릭스, 2열 마스터-디테일 에디터, 공문서 표준 한글(HWPX)/워드(DOCX) 내보내기, **스마트폰과 PC 간 구글 드라이브 원클릭 클라우드 데이터 동기화**, 그리고 **사용자 맞춤형 5대 다중 테마 시스템**을 제공합니다.
@@ -7,16 +7,28 @@
 
 ## 📌 프로젝트 정보
 
-- **버전**: `v0.4.1`
+- **버전**: `v0.4.2`
 - **기획 및 개발자**: 성백진 (Sung Baekjin) <sbjwin4271@gmail.com>
 - **지원 운영체제**: Windows 10/11, macOS, Linux (3대 OS 완벽 지원)
 - **핵심 기술 스택**: Electron, React 19, Vite, Lucide-React, JSZip (HWPX OWPML 파서), Google OAuth 2.0 PKCE Loopback
 
 ---
 
-## 🌟 v0.4.1 주요 신규 기능 및 개선 사항
+## 🌟 v0.4.2 주요 신규 기능 및 개선 사항
 
-### 1. 📝 수업 일지 에디터 포커스 안정화 & 인라인 토스트 알림 도입 (신규)
+### 1. 🛡️ 프로젝트 전반 네이티브 다이얼로그 전수 제거 및 전역 인앱 다이얼로그 시스템 구축 (Zero Native Dialogs)
+- **Windows Electron 포커스 잠김 및 키보드 입력 차단 결함 영구 근절**:
+  - `BackupSettingTab.jsx`의 "스마트폰 백업 복원 실행" 등에서 호출되던 브라우저 네이티브 `window.confirm()` 및 `alert()`로 인해 Chromium 렌더러 창(HWND)이 OS 키보드 메시지 수신 권한을 잃어버려 수업 일지 입력창(`ClassDiaryTab.jsx:L433-L489`) 등 텍스트 영역에 글자가 입력되지 않던 결함을 완벽히 해결했습니다.
+  - 전수 조사를 통해 프로젝트 전반 6개 파일에 남아있던 **총 41건의 네이티브 팝업(`alert` 34건, `confirm` 7건)**을 100% 발굴하여 전수 제거했습니다.
+- **인앱 확인 모달(`ConfirmModal.jsx`) & 전역 다이얼로그 유틸리티(`dialog.js`) 신규 도입**:
+  - OS 대화상자를 일절 띄우지 않고 MyDiary 감성 테마(`theme.js`, 다크/라이트 모드)와 조화되는 세련된 인앱 확인 모달(`ConfirmModal`)을 구축했습니다.
+  - 어디서든 `showToast(msg, type)` 및 `showConfirm({ title, message, ... })`를 통해 비차단 방식으로 안전하게 알림 및 사용자 확인을 수행합니다.
+- **Electron Main & Preload 레벨 윈도우 포커스 보장 메커니즘**:
+  - `electron/main.js` 및 `preload.js`에 `focus-window` IPC 핸들러를 등록하여, 모달 닫힘이나 파일 저장 다이얼로그 종료 후에도 OS 차원에서 메인 윈도우와 WebContents 포커스를 강제 복구하도록 이중 안전망을 마련했습니다.
+- **수업 일지 및 입력창 마우스 클릭 시 자동 포커스 복원 (`ensureFieldFocus`)**:
+  - 수업 일지(`ClassDiaryTab.jsx`)의 학습 진도, 과제, 특이사항 textarea 및 상단 메타데이터 필드를 클릭하거나 포커스하는 즉시 창 포커스를 자동 복구하여 끊김 없는 작성 경험을 제공합니다.
+
+### 2. 📝 수업 일지 에디터 포커스 안정화 & 인라인 토스트 알림 도입
 - **Windows Electron 포커스 동결 버그 원천 해결**:
   - 기존 `window.alert()` OS 팝업 대화상자로 인해 저장 완료 후 웹뷰 포커스가 빠져나가 `textarea`에 마우스 클릭 및 키보드 입력이 차단되던 고질적인 포커스 락(Focus Lock) 결함을 완전히 제거했습니다.
   - OS 팝업 대신 부드럽고 세련된 **인라인 플로팅 토스트(`diary-toast-notice`) 알림**으로 전면 교체하여 포커스가 0.1초도 끊기지 않습니다.

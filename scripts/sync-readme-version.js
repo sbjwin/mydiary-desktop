@@ -53,3 +53,21 @@ if (fs.existsSync(headerPath)) {
   console.log(`[sync-version] Header.jsx 버전이 Desktop v${currentVersion}(으)로 동기화되었습니다.`);
 }
 
+// 4. src/components/SettingsModal.jsx 동기화
+const settingsModalPath = path.join(rootDir, 'src', 'components', 'SettingsModal.jsx');
+if (fs.existsSync(settingsModalPath)) {
+  let settingsModal = fs.readFileSync(settingsModalPath, 'utf8');
+  settingsModal = settingsModal.replace(/(about-version-badge">v)\d+\.\d+\.\d+/g, `$1${currentVersion}`);
+  fs.writeFileSync(settingsModalPath, settingsModal, 'utf8');
+  console.log(`[sync-version] SettingsModal.jsx 버전이 v${currentVersion}(으)로 동기화되었습니다.`);
+}
+
+// 5. src/components/BackupSettingTab.jsx 동기화
+const backupSettingTabPath = path.join(rootDir, 'src', 'components', 'BackupSettingTab.jsx');
+if (fs.existsSync(backupSettingTabPath)) {
+  let backupSettingTab = fs.readFileSync(backupSettingTabPath, 'utf8');
+  backupSettingTab = backupSettingTab.replace(/(엔진 버전:\s*<strong>v)\d+\.\d+\.\d+/g, `$1${currentVersion}`);
+  fs.writeFileSync(backupSettingTabPath, backupSettingTab, 'utf8');
+  console.log(`[sync-version] BackupSettingTab.jsx 버전이 v${currentVersion}(으)로 동기화되었습니다.`);
+}
+

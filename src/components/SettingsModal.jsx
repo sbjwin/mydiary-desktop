@@ -248,7 +248,7 @@ export const SettingsModal = ({
                   <div>
                     <h3 className="about-app-title">MyDiary Desktop</h3>
                     <div className="about-version-row">
-                      <span className="about-version-badge">v0.4.0</span>
+                      <span className="about-version-badge">v0.4.2</span>
                       <span className="about-build-badge">Production Release</span>
                     </div>
                     <p className="about-app-desc">
