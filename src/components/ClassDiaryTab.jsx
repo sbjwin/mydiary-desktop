@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Info,
 } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 const COMMON_COURSES = ['국어', '수학', '사회', '과학', '영어', '독서논술', '창의체험'];
 
@@ -32,9 +33,33 @@ export const ClassDiaryTab = ({ initialParams }) => {
   const contentTextareaRef = useRef(null);
   const lastFocusedFieldRef = useRef(null);
 
-  // 인라인 토스트 및 저장 버튼 피드백 상태
+  // 인라인 토스트, 인앱 삭제 확인 모달 및 저장 버튼 피드백 상태
   const [toastNotice, setToastNotice] = useState(null);
   const [isSavedRecently, setIsSavedRecently] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // 필드 포커스 및 윈도우 OS 포커스 강제 복원 헬퍼
+  const ensureFieldFocus = (e) => {
+    if (e && e.target) {
+      lastFocusedFieldRef.current = e.target;
+    }
+    if (typeof window !== 'undefined' && window.focus) {
+      window.focus();
+    }
+    if (window.electronAPI?.focusWindow) {
+      window.electronAPI.focusWindow();
+    }
+  };
+
+  // 탭 마운트 시 즉시 창 포커스 보장
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.focus) {
+      window.focus();
+    }
+    if (window.electronAPI?.focusWindow) {
+      window.electronAPI.focusWindow();
+    }
+  }, []);
 
   // 일지 폼 상태
   const [formData, setFormData] = useState({
@@ -198,10 +223,13 @@ export const ClassDiaryTab = ({ initialParams }) => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
     if (!selectedRecordId) return;
-    if (!confirm('정말 이 수업 일지를 삭제하시겠습니까?')) return;
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
+    setDeleteConfirmOpen(false);
     try {
       await Database.deleteClassRecord(selectedRecordId);
       showToast('수업 일지가 삭제되었습니다.', 'info');
@@ -210,6 +238,9 @@ export const ClassDiaryTab = ({ initialParams }) => {
 
       if (typeof window !== 'undefined' && window.focus) {
         window.focus();
+      }
+      if (window.electronAPI?.focusWindow) {
+        window.electronAPI.focusWindow();
       }
     } catch (err) {
       showToast('삭제 실패: ' + err.message, 'error');
@@ -220,7 +251,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
   const handleExportHwpx = async () => {
     const student = students.find((s) => s.id === formData.studentId);
     if (!student) {
-      alert('학생 정보를 찾을 수 없습니다.');
+      showToast('학생 정보를 찾을 수 없습니다.', 'warning');
       return;
     }
 
@@ -359,7 +390,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
               <Printer size={15} /> 인쇄 / 미리보기
             </button>
             {selectedRecordId && (
-              <button className="btn-danger" onClick={handleDelete}>
+              <button className="btn-danger" onClick={handleDeleteClick}>
                 <Trash2 size={15} /> 삭제
               </button>
             )}
@@ -383,7 +414,8 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-select"
                 value={formData.studentId}
                 onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
+                onFocus={ensureFieldFocus}
+                onClick={ensureFieldFocus}
               >
                 <option value="">학생을 선택하세요</option>
                 {students.map((s) => (
@@ -401,7 +433,8 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-input"
                 value={formData.classDate}
                 onChange={(e) => setFormData({ ...formData, classDate: e.target.value })}
-                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
+                onFocus={ensureFieldFocus}
+                onClick={ensureFieldFocus}
               />
             </div>
 
@@ -413,7 +446,8 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 placeholder="예: 14:00"
                 value={formData.classTime}
                 onChange={(e) => setFormData({ ...formData, classTime: e.target.value })}
-                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
+                onFocus={ensureFieldFocus}
+                onClick={ensureFieldFocus}
               />
             </div>
 
@@ -425,7 +459,8 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 placeholder="예: 초등 수학 5-1 디딤돌"
                 value={formData.course}
                 onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
+                onFocus={ensureFieldFocus}
+                onClick={ensureFieldFocus}
               />
             </div>
           </div>
@@ -440,9 +475,11 @@ export const ClassDiaryTab = ({ initialParams }) => {
               className="form-textarea"
               rows={6}
               placeholder="오늘 진행한 학습 진도, 개념 설명, 문제 풀이 결과 등을 상세히 기록하세요..."
-              value={formData.content}
+              value={formData.content || ''}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
+              onFocus={ensureFieldFocus}
+              onClick={ensureFieldFocus}
+              onMouseDown={ensureFieldFocus}
             />
           </div>
 
@@ -453,9 +490,11 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-textarea"
                 rows={4}
                 placeholder="다음 시간까지 완료할 문제집 페이지, 복습 과제 등을 입력하세요..."
-                value={formData.homework}
+                value={formData.homework || ''}
                 onChange={(e) => setFormData({ ...formData, homework: e.target.value })}
-                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
+                onFocus={ensureFieldFocus}
+                onClick={ensureFieldFocus}
+                onMouseDown={ensureFieldFocus}
               />
             </div>
 
@@ -465,14 +504,28 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-textarea"
                 rows={4}
                 placeholder="학생의 집중도, 학습 태도, 다음 수업 준비물 또는 학부모 상담 메모를 기록하세요..."
-                value={formData.notes}
+                value={formData.notes || ''}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                onFocus={(e) => { lastFocusedFieldRef.current = e.target; }}
+                onFocus={ensureFieldFocus}
+                onClick={ensureFieldFocus}
+                onMouseDown={ensureFieldFocus}
               />
             </div>
           </div>
         </div>
       </div>
+
+      {/* 수업 일지 삭제 확인 모달 (Electron 포커스 유실 원천 차단) */}
+      <ConfirmModal
+        isOpen={deleteConfirmOpen}
+        title="수업 일지 삭제"
+        message="정말 이 수업 일지를 삭제하시겠습니까? 삭제된 일지는 복구할 수 없습니다."
+        type="danger"
+        confirmText="삭제"
+        cancelText="취소"
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteConfirmOpen(false)}
+      />
 
       {/* 인라인 토스트 알림 (OS 다이얼로그로 인한 포커스 유실 원천 차단) */}
       {toastNotice && (

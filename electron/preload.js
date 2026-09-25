@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   googleLogin: () => ipcRenderer.invoke('google-auth-login'),
   googleRefresh: (refreshToken) => ipcRenderer.invoke('google-auth-refresh', refreshToken),
+  focusWindow: () => ipcRenderer.invoke('focus-window'),
   onOpenHelp: (callback) => {
     const handler = (event, tab) => callback(tab);
     ipcRenderer.on('open-help', handler);

@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { formatPhoneInfo } from '../database/Database';
+import { showToast } from '../utils/dialog';
 
 // 개발자 정보 지침 준수: Sung Baekjin (성백진)
 const TEACHER_NAME = '성백진';
@@ -9,10 +10,10 @@ const saveOrDownloadDocx = async (fileName, base64Data) => {
   if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.saveFile) {
     const result = await window.electronAPI.saveFile(fileName, base64Data, 'docx');
     if (result.success) {
-      alert(`워드 문서(.docx)가 성공적으로 저장되었습니다.\n경로: ${result.filePath}`);
+      showToast(`워드 문서(.docx)가 성공적으로 저장되었습니다. (경로: ${result.filePath})`, 'success');
       return result;
     } else if (!result.canceled) {
-      alert(`저장 중 오류 발생: ${result.error}`);
+      showToast(`저장 중 오류 발생: ${result.error}`, 'error');
       return result;
     }
     return result;
@@ -786,6 +787,6 @@ export const shareWeeklyReportDocx = async (weeklyPlan) => {
     return await saveOrDownloadDocx(fileName, base64Data);
   } catch (error) {
     console.error('Failed to export DOCX:', error);
-    alert(`워드 문서(.docx) 생성 중 오류가 발생했습니다.\n(${error?.message || error})`);
+    showToast(`워드 문서(.docx) 생성 중 오류가 발생했습니다: ${error?.message || error}`, 'error');
   }
 };

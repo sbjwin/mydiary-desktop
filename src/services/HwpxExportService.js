@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { showToast } from '../utils/dialog';
 
 // 연락처 정보 정규화 헬퍼 (모바일 Database.js에서 이식)
 export const formatPhoneInfo = (phoneInfo) => {
@@ -36,10 +37,10 @@ export const saveOrDownloadHwpx = async (fileName, base64Data) => {
   if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.saveHwpxFile) {
     const result = await window.electronAPI.saveHwpxFile(fileName, base64Data);
     if (result.success) {
-      alert(`한글 문서(.hwpx)가 성공적으로 저장되었습니다.\n저장 경로: ${result.filePath}`);
+      showToast(`한글 문서(.hwpx)가 성공적으로 저장되었습니다. (저장 경로: ${result.filePath})`, 'success');
       return result;
     } else if (!result.canceled) {
-      alert(`저장 중 오류가 발생했습니다: ${result.error}`);
+      showToast(`저장 중 오류가 발생했습니다: ${result.error}`, 'error');
       return result;
     }
     return result;
@@ -712,7 +713,7 @@ export const shareWeeklyReportHwpx = async (weeklyPlan) => {
     return await saveOrDownloadHwpx(fileName, base64Data);
   } catch (error) {
     console.error('Failed to export HWPX:', error);
-    alert(`한글 문서(.hwpx) 생성 중 오류가 발생했습니다.\n(${error?.message || error})`);
+    showToast(`한글 문서(.hwpx) 생성 중 오류가 발생했습니다: ${error?.message || error}`, 'error');
   }
 };
 
@@ -837,6 +838,6 @@ export const exportDiaryToHwpx = async (student, diary) => {
     return await saveOrDownloadHwpx(fileName, base64Data);
   } catch (error) {
     console.error('Failed to export single diary HWPX:', error);
-    alert('한글 문서 생성 중 오류가 발생했습니다: ' + (error?.message || error));
+    showToast('한글 문서 생성 중 오류가 발생했습니다: ' + (error?.message || error), 'error');
   }
 };

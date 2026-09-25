@@ -1,4 +1,6 @@
 
+import { showToast } from '../utils/dialog';
+
 // 데스크톱 / 웹 표준 인쇄 헬퍼 (인쇄 및 PDF 저장 시 파일명 동기화)
 const executePrintOrPdf = async (htmlContent, title) => {
   const originalTitle = typeof document !== 'undefined' ? document.title : '';
@@ -485,7 +487,7 @@ export const printStudentProfile = async (student) => {
     await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print student profile:', error);
-    alert('인쇄 오류\n학생 정보를 인쇄하는 도중 오류가 발생했습니다: ' + error.message);
+    showToast('학생 정보를 인쇄하는 도중 오류가 발생했습니다: ' + error.message, 'error');
   }
 };
 
@@ -506,7 +508,7 @@ export const printClassRecords = async (student, records, periodTitle = '전체 
     await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print class records:', error);
-    alert('인쇄 오류\n수업 일지를 인쇄하는 도중 오류가 발생했습니다: ' + error.message);
+    showToast('수업 일지를 인쇄하는 도중 오류가 발생했습니다: ' + error.message, 'error');
   }
 };
 
@@ -1072,7 +1074,7 @@ export const printWeeklyReport = async (weeklyPlan) => {
     await executePrintOrPdf(html, title);
   } catch (error) {
     console.error('Failed to print weekly report:', error);
-    alert('인쇄 오류\n주간 업무 보고서를 인쇄하는 도중 오류가 발생했습니다: ' + error.message);
+    showToast('주간 업무 보고서를 인쇄하는 도중 오류가 발생했습니다: ' + error.message, 'error');
   }
 };
 
@@ -1094,10 +1096,10 @@ export const exportWeeklyReportPdf = async (weeklyPlan) => {
     if (typeof window !== 'undefined' && window.electronAPI?.exportPdf) {
       const result = await window.electronAPI.exportPdf(htmlContent, defaultFileName);
       if (result.success) {
-        alert(`PDF 문서가 성공적으로 저장되었습니다.\n경로: ${result.filePath}`);
+        showToast(`PDF 문서가 성공적으로 저장되었습니다. (경로: ${result.filePath})`, 'success');
         return result;
       } else if (!result.canceled) {
-        alert(`PDF 저장 중 오류 발생: ${result.error}`);
+        showToast(`PDF 저장 중 오류 발생: ${result.error}`, 'error');
         return result;
       }
       return result;
@@ -1107,7 +1109,7 @@ export const exportWeeklyReportPdf = async (weeklyPlan) => {
     }
   } catch (error) {
     console.error('Failed to export PDF:', error);
-    alert(`PDF 문서 생성 중 오류가 발생했습니다.\n(${error?.message || error})`);
+    showToast(`PDF 문서 생성 중 오류가 발생했습니다: ${error?.message || error}`, 'error');
   }
 };
 

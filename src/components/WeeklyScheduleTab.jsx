@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ScheduleModal } from './ScheduleModal';
 import { printWeeklyReport, exportWeeklyReportPdf, shareWeeklyReportHwpx, shareWeeklyReportDocx } from '../services/PrintService';
+import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 
 const DAYS = [
   { dayOfWeek: 1, name: '월요일', short: '월' },
@@ -130,9 +131,10 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
         ...weeklyPlan,
         mainNotes: mainNotes,
       });
-      alert('주간 메모가 저장되었습니다.');
+      showToast('주간 메모가 성공적으로 저장되었습니다.', 'success');
+      focusAppWindow();
     } catch (err) {
-      alert('저장 실패: ' + err.message);
+      showToast('저장 실패: ' + err.message, 'error');
     }
   };
 
@@ -182,9 +184,11 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
 
       await Database.saveWeeklyPlan(currentMonday, updatedPlan);
       await loadWeekData(currentMonday);
+      showToast('일정이 저장되었습니다.', 'success');
+      focusAppWindow();
     } catch (err) {
       console.error('Failed to save schedule:', err);
-      alert('일정 저장 중 오류가 발생했습니다: ' + err.message);
+      showToast('일정 저장 중 오류가 발생했습니다: ' + err.message, 'error');
     }
   };
 
@@ -200,55 +204,84 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
 
       await Database.saveWeeklyPlan(currentMonday, updatedPlan);
       await loadWeekData(currentMonday);
+      showToast('일정이 삭제되었습니다.', 'info');
+      focusAppWindow();
     } catch (err) {
       console.error('Failed to delete schedule:', err);
-      alert('일정 삭제 중 오류가 발생했습니다: ' + err.message);
+      showToast('일정 삭제 중 오류가 발생했습니다: ' + err.message, 'error');
     }
   };
 
   // 이전 주 시간표 복사 핸들러 (선생님 수동 선택 복사)
-  const handleCopyPrevWeek = async () => {
+  const handleCopyPrevWeek = () => {
     const prevMonday = getDateFromMondayOffset(currentMonday, -7);
     const prevSunday = getDateFromMondayOffset(currentMonday, -1);
     const confirmMsg = `이전 주(${prevMonday} ~ ${prevSunday})에 등록된 수업 일정들을 이번 주로 복사해 오시겠습니까?\n\n※ 기존에 등록된 이번 주 수업 일정이 있다면 이전 주 일정으로 새로 갱신됩니다.`;
-    if (!window.confirm(confirmMsg)) return;
 
-    try {
-      await Database.copyPreviousWeekPlan(currentMonday);
-      await loadWeekData(currentMonday);
-      alert('이전 주 시간표가 성공적으로 복사되었습니다.');
-    } catch (err) {
-      alert('시간표 복사 실패: ' + err.message);
-    }
+    showConfirm({
+      title: '이전 주 시간표 복사',
+      message: confirmMsg,
+      type: 'primary',
+      confirmText: '복사하기',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await Database.copyPreviousWeekPlan(currentMonday);
+          await loadWeekData(currentMonday);
+          showToast('이전 주 시간표가 성공적으로 복사되었습니다.', 'success');
+          focusAppWindow();
+        } catch (err) {
+          showToast('시간표 복사 실패: ' + err.message, 'error');
+        }
+      },
+    });
   };
 
   // 학생 기본 시간표 불러오기 핸들러 (학생 원장의 정규 수업 시간표를 이번 주로 일괄 가져오기)
-  const handleLoadDefaultSchedule = async () => {
+  const handleLoadDefaultSchedule = () => {
     const confirmMsg = `학생 원장에 등록된 정규 수업 시간표를 이번 주(${currentMonday} ~ ${sundayDate})로 불러오시겠습니까?\n\n※ 중복 시간은 1건으로 정제되며, 기존에 등록된 이번 주 수업 일정이 있다면 기본 시간표로 새로 대체됩니다.`;
-    if (!window.confirm(confirmMsg)) return;
 
-    try {
-      const updatedPlan = await Database.loadWeeklyPlanFromStudentDefaults(currentMonday);
-      await loadWeekData(currentMonday);
-      const count = updatedPlan?.scheduleItems?.length || 0;
-      alert(`학생 기본 시간표 ${count}건을 성공적으로 불러왔습니다.`);
-    } catch (err) {
-      alert('기본 시간표 불러오기 실패: ' + err.message);
-    }
+    showConfirm({
+      title: '기본 시간표 불러오기',
+      message: confirmMsg,
+      type: 'primary',
+      confirmText: '불러오기',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          const updatedPlan = await Database.loadWeeklyPlanFromStudentDefaults(currentMonday);
+          await loadWeekData(currentMonday);
+          const count = updatedPlan?.scheduleItems?.length || 0;
+          showToast(`학생 기본 시간표 ${count}건을 성공적으로 불러왔습니다.`, 'success');
+          focusAppWindow();
+        } catch (err) {
+          showToast('기본 시간표 불러오기 실패: ' + err.message, 'error');
+        }
+      },
+    });
   };
 
   // 이번 주 시간표 전체 비우기 핸들러 (잘못 등록되거나 겹친 일정 일괄 정리)
-  const handleClearWeek = async () => {
+  const handleClearWeek = () => {
     const confirmMsg = `이번 주(${currentMonday} ~ ${sundayDate})에 등록된 모든 수업 일정을 비우시겠습니까?\n\n※ 작성 완료된 과거 수업 일지는 안전하게 보관되며, 시간표의 수업 배치만 깨끗이 비워집니다.`;
-    if (!window.confirm(confirmMsg)) return;
 
-    try {
-      await Database.clearWeeklyPlan(currentMonday);
-      await loadWeekData(currentMonday);
-      alert('이번 주 시간표의 모든 수업 일정이 초기화되었습니다.');
-    } catch (err) {
-      alert('시간표 비우기 실패: ' + err.message);
-    }
+    showConfirm({
+      title: '이번 주 시간표 비우기',
+      message: confirmMsg,
+      type: 'danger',
+      confirmText: '시간표 비우기',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await Database.clearWeeklyPlan(currentMonday);
+          await loadWeekData(currentMonday);
+          showToast('이번 주 시간표의 모든 수업 일정이 초기화되었습니다.', 'info');
+          focusAppWindow();
+        } catch (err) {
+          showToast('시간표 비우기 실패: ' + err.message, 'error');
+        }
+      },
+    });
   };
 
   // 인쇄 및 문서 내보내기 핸들러

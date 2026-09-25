@@ -14,10 +14,11 @@ export const GoogleDriveService = {
   // -------------------------------------------------------------
 
   // PC 로컬 파일로 전체 데이터 백업 (.json 저장)
+  // PC 로컬 파일로 전체 데이터 백업 (.json 저장)
   exportLocalBackup: async () => {
     try {
       const backupData = {
-        version: '0.3.0',
+        version: '0.4.1',
         exportedAt: new Date().toISOString(),
         students: JSON.parse(localStorage.getItem('@mydiary:students') || '[]'),
         records: JSON.parse(localStorage.getItem('@mydiary:records') || '[]'),
@@ -30,10 +31,7 @@ export const GoogleDriveService = {
 
       if (window.electronAPI && window.electronAPI.saveFile) {
         const res = await window.electronAPI.saveFile(fileName, base64Data, 'json');
-        if (res.success) {
-          alert(`백업 파일이 안전하게 저장되었습니다.\n저장 경로: ${res.filePath}`);
-          return res;
-        }
+        return res;
       } else {
         const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -42,10 +40,10 @@ export const GoogleDriveService = {
         a.download = fileName;
         a.click();
         URL.revokeObjectURL(url);
+        return { success: true, fileName };
       }
     } catch (err) {
       console.error('Backup error:', err);
-      alert('백업 파일 생성 중 오류가 발생했습니다: ' + err.message);
       throw err;
     }
   },
@@ -59,11 +57,14 @@ export const GoogleDriveService = {
       }
 
       await Database.importAllData(data);
-      alert('데이터가 성공적으로 복원되었습니다. 페이지를 새로고침합니다.');
-      window.location.reload();
+      return {
+        success: true,
+        studentsCount: (data.students || []).length,
+        recordsCount: (data.records || []).length,
+        plansCount: Object.keys(data.weeklyPlans || {}).length,
+      };
     } catch (err) {
       console.error('Restore error:', err);
-      alert('백업 복원 실패: ' + err.message);
       throw err;
     }
   },

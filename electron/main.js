@@ -191,6 +191,11 @@ ipcMain.handle('save-file-dialog', async (event, { defaultFileName, base64Data, 
   } catch (err) {
     console.error('Error saving file:', err);
     return { success: false, error: err.message };
+  } finally {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.focus();
+      mainWindow.webContents.focus();
+    }
   }
 });
 
@@ -241,7 +246,21 @@ ipcMain.handle('export-pdf', async (event, { htmlContent, defaultFileName }) => 
     if (printWin) {
       printWin.destroy();
     }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.focus();
+      mainWindow.webContents.focus();
+    }
   }
+});
+
+// IPC: 창 및 WebContents 포커스 강제 복원 (다이얼로그/외부 링크 후 포커스 유실 복구)
+ipcMain.handle('focus-window', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+    mainWindow.webContents.focus();
+  }
+  return true;
 });
 
 // ==========================================

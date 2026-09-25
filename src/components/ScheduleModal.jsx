@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag, AlertTriangle } from 'lucide-react';
 import { formatPhoneInfo } from '../database/Database';
+import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 
 const QUICK_TAGS = ['이번주만', '휴일', '아픔', '(30분 수업)', '보강', '시간변경'];
 const DURATION_OPTIONS = [30, 40, 50, 60, 80, 90, 120];
@@ -126,27 +127,7 @@ export const ScheduleModal = ({
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!studentName.trim()) {
-      alert('학생 이름을 입력하거나 선택해 주세요.');
-      return;
-    }
-
-    if (conflictSchedule) {
-      const confirmDup = window.confirm(
-        `[수업 시간 중복 안내]\n\n같은 시간대(${date} ${startTime})에 이미 [${conflictSchedule.studentName}] 학생의 수업이 등록되어 있습니다.\n\n그래도 이 시간에 등록하시겠습니까?`
-      );
-      if (!confirmDup) return;
-    }
-
-    if (sameStudentOnDate) {
-      const confirmStudentDup = window.confirm(
-        `[동일 학생 중복 안내]\n\n[${studentName.trim()}] 학생은 같은 날(${date})에 이미 다른 수업(${sameStudentOnDate.startTime || sameStudentOnDate.classTime || ''})이 등록되어 있습니다.\n\n해당 학생의 수업을 추가로 등록하시겠습니까?`
-      );
-      if (!confirmStudentDup) return;
-    }
-
+  const doSaveSchedule = () => {
     const [y, m, d] = date.split('-').map(Number);
     const dayOfWeek = new Date(y, m - 1, d).getDay() || 7; // 1(월) ~ 7(일)
 
@@ -168,14 +149,70 @@ export const ScheduleModal = ({
 
     onSave(scheduleData);
     onClose();
+    focusAppWindow();
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!studentName.trim()) {
+      showToast('학생 이름을 입력하거나 선택해 주세요.', 'warning');
+      return;
+    }
+
+    if (conflictSchedule) {
+      showConfirm({
+        title: '수업 시간 중복 안내',
+        message: `같은 시간대(${date} ${startTime})에 이미 [${conflictSchedule.studentName}] 학생의 수업이 등록되어 있습니다.\n\n그래도 이 시간에 일정을 등록하시겠습니까?`,
+        type: 'warning',
+        confirmText: '등록 진행',
+        cancelText: '취소',
+        onConfirm: () => {
+          if (sameStudentOnDate) {
+            showConfirm({
+              title: '동일 학생 중복 안내',
+              message: `[${studentName.trim()}] 학생은 같은 날(${date})에 이미 다른 수업(${sameStudentOnDate.startTime || sameStudentOnDate.classTime || ''})이 등록되어 있습니다.\n\n해당 학생의 수업을 추가로 등록하시겠습니까?`,
+              type: 'info',
+              confirmText: '추가 등록',
+              cancelText: '취소',
+              onConfirm: doSaveSchedule,
+            });
+          } else {
+            doSaveSchedule();
+          }
+        },
+      });
+      return;
+    }
+
+    if (sameStudentOnDate) {
+      showConfirm({
+        title: '동일 학생 중복 안내',
+        message: `[${studentName.trim()}] 학생은 같은 날(${date})에 이미 다른 수업(${sameStudentOnDate.startTime || sameStudentOnDate.classTime || ''})이 등록되어 있습니다.\n\n해당 학생의 수업을 추가로 등록하시겠습니까?`,
+        type: 'info',
+        confirmText: '추가 등록',
+        cancelText: '취소',
+        onConfirm: doSaveSchedule,
+      });
+      return;
+    }
+
+    doSaveSchedule();
   };
 
   const handleDelete = () => {
     if (!initialData?.id) return;
-    if (window.confirm(`'${studentName}' 학생의 이 수업 일정을 삭제하시겠습니까?`)) {
-      onDelete(initialData.id);
-      onClose();
-    }
+    showConfirm({
+      title: '수업 일정 삭제',
+      message: `'${studentName}' 학생의 이 수업 일정을 삭제하시겠습니까?`,
+      type: 'danger',
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: () => {
+        onDelete(initialData.id);
+        onClose();
+        focusAppWindow();
+      },
+    });
   };
 
   const handleGoToDiary = () => {

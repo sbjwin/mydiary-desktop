@@ -6,6 +6,8 @@ import { StudentManageTab } from './components/StudentManageTab';
 import { BackupSettingTab } from './components/BackupSettingTab';
 import { HelpModal } from './components/HelpModal';
 import { SettingsModal } from './components/SettingsModal';
+import { ConfirmModal } from './components/ConfirmModal';
+import { CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { Database, getTodayDateString } from './database/Database';
 import { getStoredTheme, applyTheme } from './theme';
 import './styles/app.css';
@@ -17,6 +19,67 @@ export function App() {
   const [helpInitialTab, setHelpInitialTab] = useState('guide');
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => getStoredTheme());
+
+  // 전역 토스트 및 확인 모달 상태 (Electron 네이티브 팝업 포커스 단절 원천 방어)
+  const [globalToast, setGlobalToast] = useState(null);
+  const [globalConfirm, setGlobalConfirm] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'primary',
+    confirmText: '확인',
+    cancelText: '취소',
+    isAlertOnly: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  // 전역 다이얼로그 & 토스트 커스텀 이벤트 리스너
+  useEffect(() => {
+    let toastTimer = null;
+    const handleToastEvent = (e) => {
+      const { message, type = 'success' } = e.detail || {};
+      setGlobalToast({ message, type });
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        setGlobalToast(null);
+      }, 3000);
+    };
+
+    const handleConfirmEvent = (e) => {
+      const {
+        title = '확인',
+        message = '',
+        type = 'primary',
+        confirmText = '확인',
+        cancelText = '취소',
+        isAlertOnly = false,
+        onConfirm,
+        onCancel,
+      } = e.detail || {};
+
+      setGlobalConfirm({
+        isOpen: true,
+        title,
+        message,
+        type,
+        confirmText,
+        cancelText,
+        isAlertOnly,
+        onConfirm,
+        onCancel,
+      });
+    };
+
+    window.addEventListener('mydiary:toast', handleToastEvent);
+    window.addEventListener('mydiary:confirm', handleConfirmEvent);
+
+    return () => {
+      window.removeEventListener('mydiary:toast', handleToastEvent);
+      window.removeEventListener('mydiary:confirm', handleConfirmEvent);
+      if (toastTimer) clearTimeout(toastTimer);
+    };
+  }, []);
 
   // 앱 마운트 시 저장된 테마 적용
   useEffect(() => {
@@ -136,6 +199,38 @@ export function App() {
         currentTheme={currentTheme}
         onSelectTheme={handleSelectTheme}
       />
+
+      {/* 전역 인앱 확인 및 알림 모달 (Electron 네이티브 OS 팝업 포커스 단절 원천 방지) */}
+      <ConfirmModal
+        isOpen={globalConfirm.isOpen}
+        title={globalConfirm.title}
+        message={globalConfirm.message}
+        type={globalConfirm.type}
+        confirmText={globalConfirm.confirmText}
+        cancelText={globalConfirm.cancelText}
+        isAlertOnly={globalConfirm.isAlertOnly}
+        onConfirm={() => {
+          setGlobalConfirm((prev) => ({ ...prev, isOpen: false }));
+          if (globalConfirm.onConfirm) globalConfirm.onConfirm();
+        }}
+        onClose={() => {
+          setGlobalConfirm((prev) => ({ ...prev, isOpen: false }));
+          if (globalConfirm.onCancel) globalConfirm.onCancel();
+        }}
+      />
+
+      {/* 전역 인라인 토스트 알림 */}
+      {globalToast && (
+        <div className={`diary-toast-notice ${globalToast.type || 'success'}`}>
+          <span className="toast-icon">
+            {globalToast.type === 'error' && <AlertCircle size={16} />}
+            {globalToast.type === 'warning' && <AlertTriangle size={16} />}
+            {globalToast.type === 'info' && <Info size={16} />}
+            {(!globalToast.type || globalToast.type === 'success') && <CheckCircle size={16} />}
+          </span>
+          <span>{globalToast.message}</span>
+        </div>
+      )}
     </div>
   );
 }

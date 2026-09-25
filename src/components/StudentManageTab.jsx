@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Database, getTodayDateString, formatPhoneInfo } from '../database/Database';
 import { generateStudentProfileHtml } from '../services/PrintService';
+import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 import {
   Users,
   UserPlus,
@@ -129,7 +130,7 @@ export const StudentManageTab = () => {
 
   const handleSaveStudent = async () => {
     if (!formData.name.trim()) {
-      alert('학생 성명을 입력해 주세요.');
+      showToast('학생 성명을 입력해 주세요.', 'warning');
       return;
     }
 
@@ -142,30 +143,39 @@ export const StudentManageTab = () => {
 
       if (selectedStudentId) {
         await Database.updateStudent(selectedStudentId, payload);
-        alert('학생 정보가 수정되었습니다.');
+        showToast('학생 정보가 수정되었습니다.', 'success');
       } else {
         const newSt = await Database.addStudent(payload);
         setSelectedStudentId(newSt.id);
-        alert('새 학생이 등록되었습니다.');
+        showToast('새 학생이 등록되었습니다.', 'success');
       }
       await loadStudents();
+      focusAppWindow();
     } catch (err) {
-      alert('저장 실패: ' + err.message);
+      showToast('저장 실패: ' + err.message, 'error');
     }
   };
 
-  const handleDeleteStudent = async () => {
+  const handleDeleteStudent = () => {
     if (!selectedStudentId) return;
-    if (!confirm('이 학생과 관련된 모든 수업 일지 및 기록이 삭제됩니다. 정말 삭제하시겠습니까?')) return;
-
-    try {
-      await Database.deleteStudent(selectedStudentId);
-      alert('학생이 삭제되었습니다.');
-      setSelectedStudentId(null);
-      await loadStudents();
-    } catch (err) {
-      alert('삭제 실패: ' + err.message);
-    }
+    showConfirm({
+      title: '학생 정보 삭제',
+      message: '이 학생과 관련된 모든 수업 일지 및 기록이 삭제됩니다.\n정말 삭제하시겠습니까?',
+      type: 'danger',
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await Database.deleteStudent(selectedStudentId);
+          showToast('학생이 성공적으로 삭제되었습니다.', 'info');
+          setSelectedStudentId(null);
+          await loadStudents();
+          focusAppWindow();
+        } catch (err) {
+          showToast('삭제 실패: ' + err.message, 'error');
+        }
+      },
+    });
   };
 
   // 휴회 처리
@@ -176,12 +186,13 @@ export const StudentManageTab = () => {
         endDate: modalDate,
         reason: modalReason || '휴회',
       });
-      alert('학생이 휴회 상태로 변경되었습니다.');
+      showToast('학생이 휴회 상태로 변경되었습니다.', 'info');
       setPauseModalOpen(false);
       setModalReason('');
       await loadStudents();
+      focusAppWindow();
     } catch (err) {
-      alert('휴회 처리 실패: ' + err.message);
+      showToast('휴회 처리 실패: ' + err.message, 'error');
     }
   };
 
@@ -194,12 +205,13 @@ export const StudentManageTab = () => {
         reason: modalReason || '재수강 복귀',
         defaultSchedules: formData.default_schedules,
       });
-      alert('학생이 재수강(새 차수)으로 등록되었습니다.');
+      showToast('학생이 재수강(새 차수)으로 등록되었습니다.', 'success');
       setResumeModalOpen(false);
       setModalReason('');
       await loadStudents();
+      focusAppWindow();
     } catch (err) {
-      alert('재수강 처리 실패: ' + err.message);
+      showToast('재수강 처리 실패: ' + err.message, 'error');
     }
   };
 

@@ -3415,4 +3415,143 @@
   }
 }
 
+/* ==========================================================================
+   인앱 확인/알림 모달 (ConfirmModal) - Electron 네이티브 다이얼로그 대체
+   ========================================================================== */
+.confirm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  animation: confirmFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.confirm-modal-container {
+  background: var(--bg-modal, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 480px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  animation: confirmScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.confirm-modal-header {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color, #334155);
+  background: var(--bg-card-header, rgba(255, 255, 255, 0.02));
+}
+
+.confirm-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.confirm-modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+}
+
+.confirm-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.confirm-modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main, #ffffff);
+}
+
+.confirm-modal-body {
+  padding: 22px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.confirm-modal-body p {
+  margin: 0 0 8px 0;
+}
+
+.confirm-modal-body p:last-child {
+  margin-bottom: 0;
+}
+
+.confirm-modal-body .confirm-note {
+  color: #f59e0b;
+  font-size: 13px;
+  background: rgba(245, 158, 11, 0.08);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #f59e0b;
+  margin-top: 10px;
+}
+
+.confirm-modal-footer {
+  padding: 14px 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--border-color, #334155);
+  background: var(--bg-card-footer, rgba(0, 0, 0, 0.1));
+}
+
+.confirm-btn-submit {
+  min-width: 90px;
+}
+
+.confirm-btn-cancel {
+  min-width: 70px;
+}
+
+.confirm-btn-submit.btn-danger {
+  background-color: #ef4444 !important;
+  border-color: #dc2626 !important;
+}
+
+.confirm-btn-submit.btn-danger:hover {
+  background-color: #dc2626 !important;
+}
+
+@keyframes confirmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes confirmScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+
 
