@@ -36,7 +36,7 @@ export const Header = ({ activeTab, onSelectTab, onOpenHelp, currentTheme, onSel
         </div>
         <div className="brand-titles">
           <span className="brand-title">MyDiary</span>
-          <span className="brand-badge">Desktop v0.4.2</span>
+          <span className="brand-badge">Desktop v0.4.3</span>
         </div>
       </div>
 

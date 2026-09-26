@@ -1,6 +1,6 @@
 {
   "name": "mydiary-desktop",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "MyDiary Desktop - 학생 일지 및 성장 기록 관리 데스크톱 앱",
   "author": "Sung Baekjin <sbjwin4271@gmail.com>",
   "main": "electron/main.js",

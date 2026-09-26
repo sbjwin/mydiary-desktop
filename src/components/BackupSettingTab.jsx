@@ -489,7 +489,7 @@ export const BackupSettingTab = () => {
           </div>
           <div className="info-row">
             <DbIcon size={16} className="text-muted" />
-            <span>엔진 버전: <strong>v0.4.2</strong> | 크로스 플랫폼 (Windows, macOS, Linux 지원)</span>
+            <span>엔진 버전: <strong>v0.4.3</strong> | 크로스 플랫폼 (Windows, macOS, Linux 지원)</span>
           </div>
           <div className="info-row">
             <Users size={16} className="text-muted" />

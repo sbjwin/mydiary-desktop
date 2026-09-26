@@ -1,4 +1,4 @@
-# MyDiary Desktop (v0.4.2)
+# MyDiary Desktop (v0.4.3)
 
 선생님들을 위한 스마트 수업 일지 및 학생 성장 기록 관리 크로스 플랫폼 데스크톱 애플리케이션입니다.  
 기존 스마트폰용 MyDiary 모바일 앱의 핵심 편의성과 데이터 호환성을 100% 계승하면서, 넓은 PC 모니터 화면에 특화된 와이드 시간표 매트릭스, 2열 마스터-디테일 에디터, 공문서 표준 한글(HWPX)/워드(DOCX) 내보내기, **스마트폰과 PC 간 구글 드라이브 원클릭 클라우드 데이터 동기화**, 그리고 **사용자 맞춤형 5대 다중 테마 시스템**을 제공합니다.
@@ -11,7 +11,7 @@
 
 ## 📌 프로젝트 정보
 
-- **버전**: `v0.4.2`
+- **버전**: `v0.4.3`
 - **기획 및 개발자**: 성백진 (Sung Baekjin) <sbjwin4271@gmail.com>
 - **지원 운영체제**: Windows 10/11, macOS, Linux (3대 OS 완벽 지원)
 - **핵심 기술 스택**: Electron, React 19, Vite, Lucide-React, JSZip (HWPX OWPML 파서), Google OAuth 2.0 PKCE Loopback
@@ -85,9 +85,16 @@
 
 ---
 
-## 🌟 v0.4.2 주요 신규 기능 및 기술 개선 사항
+## 🌟 v0.4.3 주요 신규 기능 및 기술 개선 사항
 
-### 1. 🛡️ 프로젝트 전반 네이티브 다이얼로그 전수 제거 및 전역 인앱 다이얼로그 시스템 구축 (Zero Native Dialogs)
+### 1. 🚀 GitHub Actions 기반 3대 OS(Windows/macOS/Linux) CI/CD 자동화 구축
+- **지속적 통합(CI) 품질 검증 파이프라인**:
+  - `main` 브랜치 Push 및 PR 시 가상 러너에서 자동으로 번들링 및 문법 결함을 사전 검증
+- **크로스플랫폼 자동 릴리즈(CD) 파이프라인**:
+  - 버전 태그(`v*`) 푸시 시 Windows, macOS, Ubuntu 3대 OS 러너가 병렬로 패키징을 수행
+  - 생성된 설치 파일(`.exe`, `.dmg`, `.AppImage`, `.deb`)을 GitHub Releases에 단일 트랜잭션으로 자동 첨부 및 배포
+
+### 2. 🛡️ 프로젝트 전반 네이티브 다이얼로그 전수 제거 및 전역 인앱 다이얼로그 시스템 구축 (Zero Native Dialogs)
 - **Windows Electron 포커스 잠김 및 키보드 입력 차단 결함 영구 근절**:
   - 브라우저 네이티브 `window.confirm()` 및 `alert()`로 인해 Chromium 렌더러 창이 키보드 입력 포커스를 잃어버리던 결함을 해결하기 위해 6개 파일 총 41건의 네이티브 팝업 전수 제거
 - **인앱 확인 모달(`ConfirmModal.jsx`) & 전역 다이얼로그 유틸리티(`dialog.js`) 신규 도입**:

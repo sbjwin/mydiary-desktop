@@ -268,7 +268,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
             <div>
               <div className="help-title-row">
                 <h3 className="help-title">MyDiary Desktop 도움말 및 사용 가이드</h3>
-                <span className="help-version-tag">Desktop v0.4.2</span>
+                <span className="help-version-tag">Desktop v0.4.3</span>
               </div>
               <p className="help-subtitle">
                 선생님을 위한 스마트 수업 다이어리 핵심 기능과 화면별 사용법을 확인하세요.
@@ -460,7 +460,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
                 <h4 className="about-app-name">MyDiary Desktop</h4>
                 <p className="about-app-slogan">선생님을 위한 스마트 수업 다이어리 및 학생 성장 관리 시스템</p>
                 <div className="about-badges-row">
-                  <span className="about-badge">Desktop v0.4.2</span>
+                  <span className="about-badge">Desktop v0.4.3</span>
                   <span className="about-badge">Electron + React</span>
                   <span className="about-badge">HWPX 표준 지원</span>
                 </div>
