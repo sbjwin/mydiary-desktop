@@ -1,0 +1,107 @@
+name: Release (Cross-Platform)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # 1. 3대 OS 병렬 패키징
+  build-and-package:
+    name: Package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    env:
+      # macOS 빌드 시 불필요한 키체인 인증서 검색 경고 방지
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정 (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: [Linux] AppImage 의존 패키지 설치
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 환경변수 파일 준비 (.env)
+        shell: bash
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            touch .env
+          fi
+
+      - name: [Windows] 패키징 (.exe, portable)
+        if: runner.os == 'Windows'
+        run: npm run package:win
+
+      - name: [macOS] 패키징 (.dmg)
+        if: runner.os == 'macOS'
+        run: npm run package:mac
+
+      - name: [Linux] 패키징 (.AppImage, .deb)
+        if: runner.os == 'Linux'
+        run: npm run package:linux
+
+      - name: 빌드 산출물 아티팩트 임시 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-artifacts-${{ matrix.os }}
+          path: |
+            dist-electron/*.exe
+            dist-electron/*.dmg
+            dist-electron/*.AppImage
+            dist-electron/*.deb
+            dist-electron/*.zip
+            dist-electron/latest*.yml
+          if-no-files-found: warn
+
+  # 2. GitHub Releases 통합 배포
+  publish-release:
+    name: Publish to GitHub Releases
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 빌드 산출물 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: GitHub Release 배포 및 파일 첨부
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-artifacts/*.exe
+            release-artifacts/*.dmg
+            release-artifacts/*.AppImage
+            release-artifacts/*.deb
+            release-artifacts/*.zip
+            release-artifacts/latest*.yml
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
