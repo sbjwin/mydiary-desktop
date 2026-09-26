@@ -18,6 +18,8 @@ jobs:
     env:
       # macOS 빌드 시 불필요한 키체인 인증서 검색 경고 방지
       CSC_IDENTITY_AUTO_DISCOVERY: false
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: 저장소 체크아웃
