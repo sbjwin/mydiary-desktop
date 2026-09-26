@@ -50,7 +50,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
       title: '주간 시간표 (Weekly Schedule)',
       badge: '시간표 매트릭스 & 대시보드',
       desc: '시간대별 주간 전체 표(오전~저녁 8시, 점심시간)와 요일별 카드 뷰를 전환하며, 빈 칸의 + 버튼으로 수업을 즉시 등록하고 일지 작성으로 연동할 수 있는 메인 대시보드입니다.',
-      image: '/guide/guide_weekly.png',
+      image: './guide/guide_weekly.png',
       features: [
         {
           num: '①',
@@ -83,7 +83,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
       title: '수업 일지 (Class Diary)',
       badge: '2열 마스터-디테일',
       desc: '학생별/날짜별 수업 진도, 과제, 학생 태도를 체계적으로 기록하고 공문서 표준 한글(HWPX) 문서 저장 및 A4 인쇄를 원클릭으로 처리합니다.',
-      image: '/guide/guide_diary.png',
+      image: './guide/guide_diary.png',
       features: [
         {
           num: '①',
@@ -122,7 +122,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
       title: '학생 관리 (Student Management)',
       badge: '학습 차수 & 시간표',
       desc: '재원생/휴회생별 기본 인적사항, 학부모 연락처, 요일별 정규 수업 시간표, 차수별 학습 히스토리를 꼼꼼하게 등록하고 관리합니다.',
-      image: '/guide/guide_students.png',
+      image: './guide/guide_students.png',
       features: [
         {
           num: '①',
@@ -155,7 +155,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
       title: '백업 및 설정 (Backup & Settings)',
       badge: '데이터 안전 보관 & 클라우드',
       desc: '구글 드라이브를 통해 스마트폰과 PC 간에 원클릭으로 데이터를 동기화하고, PC 로컬 JSON 파일 백업으로 소중한 교육 데이터를 안전하게 이중 보관합니다.',
-      image: '/guide/guide_backup.png',
+      image: './guide/guide_backup.png',
       features: [
         {
           num: '①',
@@ -367,6 +367,15 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
                     src={currentScreen.image}
                     alt={currentScreen.title}
                     className="screenshot-img"
+                    onError={(e) => {
+                      if (!e.target.dataset.tried) {
+                        e.target.dataset.tried = '1';
+                        e.target.src = `guide/${currentScreen.id === 'weekly' ? 'guide_weekly.png' : currentScreen.id === 'diary' ? 'guide_diary.png' : currentScreen.id === 'students' ? 'guide_students.png' : 'guide_backup.png'}`;
+                      } else if (e.target.dataset.tried === '1') {
+                        e.target.dataset.tried = '2';
+                        e.target.src = `/guide/${currentScreen.id === 'weekly' ? 'guide_weekly.png' : currentScreen.id === 'diary' ? 'guide_diary.png' : currentScreen.id === 'students' ? 'guide_students.png' : 'guide_backup.png'}`;
+                      }
+                    }}
                   />
                 </div>
               </div>
