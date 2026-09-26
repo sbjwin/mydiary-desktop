@@ -29,7 +29,7 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: [Linux] AppImage 의존 패키지 설치
+      - name: "[Linux] AppImage 의존 패키지 설치"
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -47,15 +47,15 @@ jobs:
             touch .env
           fi
 
-      - name: [Windows] 패키징 (.exe, portable)
+      - name: "[Windows] 패키징 (.exe, portable)"
         if: runner.os == 'Windows'
         run: npm run package:win
 
-      - name: [macOS] 패키징 (.dmg)
+      - name: "[macOS] 패키징 (.dmg)"
         if: runner.os == 'macOS'
         run: npm run package:mac
 
-      - name: [Linux] 패키징 (.AppImage, .deb)
+      - name: "[Linux] 패키징 (.AppImage, .deb)"
         if: runner.os == 'Linux'
         run: npm run package:linux
 
