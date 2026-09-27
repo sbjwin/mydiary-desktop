@@ -4,11 +4,51 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version name (e.g. v0.5.0)'
+        required: false
+        default: 'manual'
+
+# 최소 권한 원칙 (Least Privilege)
+permissions:
+  contents: write
 
 jobs:
-  # 1. 3대 OS 병렬 패키징
+  # 1. [CI 단계] 선행 빌드 무결성 검증 (Quality Gate)
+  pre-release-check:
+    name: Pre-Release Quality Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정 (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 환경변수 파일 준비 (.env)
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            touch .env
+          fi
+
+      - name: Vite 프로덕션 번들링 무결성 검증
+        run: npm run build
+
+  # 2. [CD 단계] 3대 OS 병렬 패키징
   build-and-package:
     name: Package (${{ matrix.os }})
+    needs: pre-release-check
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -74,7 +114,7 @@ jobs:
             dist-electron/latest*.yml
           if-no-files-found: warn
 
-  # 2. GitHub Releases 통합 배포
+  # 3. [Release 단계] GitHub Releases 통합 배포 (제목, 본문 템플릿 포함)
   publish-release:
     name: Publish to GitHub Releases
     needs: build-and-package
@@ -85,6 +125,8 @@ jobs:
     steps:
       - name: 저장소 체크아웃
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 빌드 산출물 다운로드
         uses: actions/download-artifact@v4
@@ -92,9 +134,49 @@ jobs:
           path: release-artifacts
           merge-multiple: true
 
+      - name: 릴리즈 메타데이터(제목 및 본문) 생성
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.release_version }}" ]; then
+            TAG_NAME="${{ github.event.inputs.release_version }}"
+          fi
+
+          # 릴리즈 제목 설정
+          RELEASE_TITLE="MyDiary Desktop ${TAG_NAME}"
+          echo "RELEASE_TITLE=${RELEASE_TITLE}" >> $GITHUB_ENV
+
+          # 태그 주석 메시지 추출 (없을 경우 최근 커밋 메시지)
+          TAG_MSG=$(git tag -l --format='%(contents)' "$TAG_NAME" 2>/dev/null | sed '/^$/d')
+          if [ -z "$TAG_MSG" ]; then
+            TAG_MSG=$(git log -1 --pretty=%B)
+          fi
+
+          # 릴리즈 본문(Release Body) 마크다운 구성
+          cat << 'EOF' > release_body.md
+## 🚀 MyDiary Desktop 릴리즈 안내
+
+교사와 학생을 위한 성장 기록 및 주간 일지 관리 데스크톱 애플리케이션입니다.
+
+### 📦 OS별 다운로드 및 설치 안내
+| 운영체제 (OS) | 설치 파일 | 설명 |
+| :--- | :--- | :--- |
+| 🪟 **Windows** | `MyDiary Setup *.exe`<br>`MyDiary *.exe` (Portable) | Windows 10/11 설치형 프로그램 및 무설치 포터블 |
+| 🍎 **macOS** | `MyDiary-*.dmg` | Intel 및 Apple Silicon (M1/M2/M3/M4) 통합 지원 |
+| 🐧 **Linux** | `MyDiary-*.AppImage`<br>`*.deb` | Ubuntu / Debian 및 AppImage 호환 배포판 |
+
+---
+
+### 📋 주요 변경 사항 (Changelog)
+EOF
+
+          echo -e "\n${TAG_MSG}\n" >> release_body.md
+          echo "---" >> release_body.md
+
       - name: GitHub Release 배포 및 파일 첨부
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ env.RELEASE_TITLE }}
+          body_path: release_body.md
           files: |
             release-artifacts/*.exe
             release-artifacts/*.dmg
