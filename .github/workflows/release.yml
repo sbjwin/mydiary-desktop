@@ -135,6 +135,7 @@ jobs:
           merge-multiple: true
 
       - name: 릴리즈 메타데이터(제목 및 본문) 생성
+        id: release_meta
         env:
           TAG_NAME: ${{ github.ref_name }}
           INPUT_VERSION: ${{ github.event.inputs.release_version }}
@@ -145,7 +146,7 @@ jobs:
           fi
 
           RELEASE_TITLE="MyDiary Desktop ${TARGET_TAG}"
-          echo "RELEASE_TITLE=${RELEASE_TITLE}" >> $GITHUB_ENV
+          echo "title=${RELEASE_TITLE}" >> $GITHUB_OUTPUT
 
           TAG_MSG=$(git tag -l --format='%(contents)' "$TARGET_TAG" 2>/dev/null | sed '/^$/d')
           if [ -z "$TAG_MSG" ]; then
@@ -176,7 +177,7 @@ jobs:
       - name: GitHub Release 배포 및 파일 첨부
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ env.RELEASE_TITLE }}
+          name: ${{ steps.release_meta.outputs.title }}
           body_path: release_body.md
           files: |
             release-artifacts/*.exe
