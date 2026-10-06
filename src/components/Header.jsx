@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check, Settings } from 'lucide-react';
+import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check } from 'lucide-react';
 import { THEME_PRESETS } from '../theme';
 
 export const Header = ({
   activeTab,
   onSelectTab,
   onOpenHelp,
-  onOpenSettings,
   currentTheme,
   onSelectTheme,
 }) => {
@@ -109,16 +108,6 @@ export const Header = ({
             </div>
           )}
         </div>
-
-        {/* ⚙️ 환경 설정 버튼 */}
-        <button
-          className="header-help-btn header-settings-btn"
-          onClick={onOpenSettings}
-          title="환경 설정 (단축키 및 테마/일반 환경/프로그램 정보)"
-        >
-          <Settings size={15} />
-          <span>설정</span>
-        </button>
 
         {/* 📖 도움말 버튼 */}
         <button

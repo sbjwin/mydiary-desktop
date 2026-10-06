@@ -5,7 +5,6 @@ import { ClassDiaryTab } from './components/ClassDiaryTab';
 import { StudentManageTab } from './components/StudentManageTab';
 import { BackupSettingTab } from './components/BackupSettingTab';
 import { HelpModal } from './components/HelpModal';
-import { SettingsModal } from './components/SettingsModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { Database, getTodayDateString } from './database/Database';
@@ -17,7 +16,6 @@ export function App() {
   const [diaryParams, setDiaryParams] = useState(null);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [helpInitialTab, setHelpInitialTab] = useState('guide');
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => getStoredTheme());
 
   // 전역 토스트 및 확인 모달 상태 (Electron 네이티브 팝업 포커스 단절 원천 방어)
@@ -167,7 +165,6 @@ export function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenHelp={() => handleOpenHelp('guide')}
-        onOpenSettings={() => setSettingsModalOpen(true)}
         currentTheme={currentTheme}
         onSelectTheme={handleSelectTheme}
       />
@@ -191,14 +188,6 @@ export function App() {
         isOpen={helpModalOpen}
         onClose={() => setHelpModalOpen(false)}
         initialTab={helpInitialTab}
-      />
-
-      {/* 독립된 환경 설정 모달 */}
-      <SettingsModal
-        isOpen={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-        currentTheme={currentTheme}
-        onSelectTheme={handleSelectTheme}
       />
 
       {/* 전역 인앱 확인 및 알림 모달 (Electron 네이티브 OS 팝업 포커스 단절 원천 방지) */}

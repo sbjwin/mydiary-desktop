@@ -119,7 +119,6 @@ const filesToCheckVersion = [
   { file: 'README.md', regex: new RegExp(`v${currentVersion}`) },
   { file: 'src/components/Header.jsx', regex: new RegExp(`v${currentVersion}`) },
   { file: 'src/components/HelpModal.jsx', regex: new RegExp(`v${currentVersion}`) },
-  { file: 'src/components/SettingsModal.jsx', regex: new RegExp(`v${currentVersion}`) },
   { file: 'src/components/BackupSettingTab.jsx', regex: new RegExp(`v${currentVersion}`) },
   { file: 'src/services/GoogleDriveService.js', regex: new RegExp(`version:\\s*['"]${currentVersion}['"]`) },
 ];
