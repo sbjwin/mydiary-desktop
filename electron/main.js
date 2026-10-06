@@ -253,45 +253,136 @@ ipcMain.handle('export-pdf', async (event, { htmlContent, defaultFileName }) => 
   }
 });
 
-// IPC: HTML 기반 시스템 인쇄 다이얼로그 호출
-ipcMain.handle('print-html', async (event, { htmlContent }) => {
+// IPC: HTML 기반 인쇄 미리보기 창 및 시스템 인쇄 다이얼로그 호출
+ipcMain.handle('print-html', async (event, { htmlContent, title }) => {
   let printWin = null;
   try {
     printWin = new BrowserWindow({
-      show: false,
+      width: 960,
+      height: 860,
+      minWidth: 700,
+      minHeight: 600,
+      title: title || '인쇄 미리보기',
+      autoHideMenuBar: true,
+      backgroundColor: '#f8fafc',
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
       },
     });
 
-    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
-
-    // DOM 렌더링 안정화를 위해 단시간 대기
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    return await new Promise((resolve) => {
-      printWin.webContents.print(
-        {
-          silent: false,
-          printBackground: true,
-        },
-        (success, failureReason) => {
-          resolve({ success, error: failureReason });
-        }
-      );
+    const docTitle = title || '인쇄 미리보기';
+    const styledHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${docTitle}</title>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
+      .print-body-wrap { padding: 0 !important; }
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    }
+    .no-print-toolbar {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 9999;
+    }
+    .no-print-toolbar h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .no-print-toolbar .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+    .no-print-toolbar button {
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-print {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-print:hover { background: #1d4ed8; }
+    .btn-close {
+      background: #475569;
+      color: #ffffff;
+    }
+    .btn-close:hover { background: #334155; }
+    .print-body-wrap {
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    .print-content-inner {
+      background: #ffffff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 820px;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print no-print-toolbar">
+    <h3>📄 ${docTitle}</h3>
+    <div class="btn-group">
+      <button class="btn-print" onclick="window.print()">🖨️ 인쇄 (프린터 / PDF)</button>
+      <button class="btn-close" onclick="window.close()">✖️ 닫기</button>
+    </div>
+  </div>
+  <div class="print-body-wrap">
+    <div class="print-content-inner">
+      ${htmlContent}
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        window.print();
+      }, 500);
     });
+  </script>
+</body>
+</html>
+    `;
+
+    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(styledHtml)}`);
+    return { success: true };
   } catch (err) {
-    console.error('Error printing HTML:', err);
+    console.error('Error opening print preview window:', err);
     return { success: false, error: err.message };
-  } finally {
-    if (printWin && !printWin.isDestroyed()) {
-      printWin.destroy();
-    }
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.focus();
-      mainWindow.webContents.focus();
-    }
   }
 });
 

@@ -3,18 +3,12 @@ import { showToast } from '../utils/dialog';
 
 // 데스크톱 / 웹 표준 인쇄 헬퍼 (인쇄 및 PDF 저장 시 파일명 동기화)
 const executePrintOrPdf = async (htmlContent, title) => {
-  const originalTitle = typeof document !== 'undefined' ? document.title : '';
-  if (typeof document !== 'undefined' && title) {
-    document.title = title;
-  }
-
-  // 1. Electron 환경인 경우 네이티브 시스템 인쇄 IPC 호출
+  // 1. Electron 환경인 경우 인쇄 미리보기 전용 IPC(printHtml) 호출 (메인 창 타이틀 보호)
   if (typeof window !== 'undefined' && window.electronAPI?.printHtml) {
     try {
-      const result = await window.electronAPI.printHtml(htmlContent);
-      if (typeof document !== 'undefined') document.title = originalTitle;
+      const result = await window.electronAPI.printHtml(htmlContent, title);
       if (result && !result.success && result.error && result.error !== 'cancelled') {
-        showToast('인쇄 중 오류가 발생했습니다: ' + result.error, 'error');
+        showToast('인쇄 창을 여는 도중 오류가 발생했습니다: ' + result.error, 'error');
       }
       return result;
     } catch (err) {
@@ -23,6 +17,10 @@ const executePrintOrPdf = async (htmlContent, title) => {
   }
 
   // 2. 브라우저 환경 fallback (window.open 또는 iframe)
+  const originalTitle = typeof document !== 'undefined' ? document.title : '';
+  if (typeof document !== 'undefined' && title) {
+    document.title = title;
+  }
   const printWindow = typeof window !== 'undefined' ? window.open('', '_blank', 'width=900,height=800') : null;
   if (printWindow) {
     if (title) printWindow.document.title = title;

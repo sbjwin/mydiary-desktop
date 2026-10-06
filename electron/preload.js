@@ -8,8 +8,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('save-file-dialog', { defaultFileName, base64Data, filterType: 'hwpx' }),
   exportPdf: (htmlContent, defaultFileName) =>
     ipcRenderer.invoke('export-pdf', { htmlContent, defaultFileName }),
-  printHtml: (htmlContent) =>
-    ipcRenderer.invoke('print-html', { htmlContent }),
+  printHtml: (htmlContent, title) =>
+    ipcRenderer.invoke('print-html', { htmlContent, title }),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   googleLogin: () => ipcRenderer.invoke('google-auth-login'),
   googleRefresh: (refreshToken) => ipcRenderer.invoke('google-auth-refresh', refreshToken),
