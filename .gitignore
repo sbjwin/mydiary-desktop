@@ -124,3 +124,7 @@ userData/
 .agents/
 .claude/
 .gemini/
+
+# 프로젝트 감사 보고서 (Local Audit Report)
+PROJECT_AUDIT_REPORT.md
+
