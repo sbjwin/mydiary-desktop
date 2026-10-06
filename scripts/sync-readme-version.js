@@ -71,3 +71,13 @@ if (fs.existsSync(backupSettingTabPath)) {
   console.log(`[sync-version] BackupSettingTab.jsx 버전이 v${currentVersion}(으)로 동기화되었습니다.`);
 }
 
+// 6. src/services/GoogleDriveService.js 동기화
+const googleDriveServicePath = path.join(rootDir, 'src', 'services', 'GoogleDriveService.js');
+if (fs.existsSync(googleDriveServicePath)) {
+  let googleDriveService = fs.readFileSync(googleDriveServicePath, 'utf8');
+  googleDriveService = googleDriveService.replace(/(version:\s*['"])\d+\.\d+\.\d+(['"])/g, `$1${currentVersion}$2`);
+  fs.writeFileSync(googleDriveServicePath, googleDriveService, 'utf8');
+  console.log(`[sync-version] GoogleDriveService.js 버전이 v${currentVersion}(으)로 동기화되었습니다.`);
+}
+
+

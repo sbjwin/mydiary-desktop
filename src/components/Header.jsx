@@ -43,7 +43,7 @@ export const Header = ({
         </div>
         <div className="brand-titles">
           <span className="brand-title">MyDiary</span>
-          <span className="brand-badge">Desktop v0.4.3</span>
+          <span className="brand-badge">Desktop v0.5.0</span>
         </div>
       </div>
 
