@@ -20,7 +20,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-import { ConfirmModal } from './ConfirmModal';
+import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 
 export const BackupSettingTab = () => {
   const [stats, setStats] = useState({
@@ -37,36 +37,6 @@ export const BackupSettingTab = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
-  const [toastNotice, setToastNotice] = useState(null);
-
-  // 인앱 확인/알림 모달 상태
-  const [confirmModal, setConfirmModal] = useState({
-    isOpen: false,
-    title: '',
-    message: '',
-    type: 'primary',
-    confirmText: '확인',
-    cancelText: '취소',
-    onConfirm: null,
-  });
-
-  const showToast = (message, type = 'success') => {
-    setToastNotice({ message, type });
-    if (window._backupToastTimer) clearTimeout(window._backupToastTimer);
-    window._backupToastTimer = setTimeout(() => {
-      setToastNotice(null);
-    }, 2800);
-  };
-
-  const closeConfirmModal = () => {
-    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-    if (typeof window !== 'undefined' && window.focus) {
-      window.focus();
-    }
-    if (window.electronAPI?.focusWindow) {
-      window.electronAPI.focusWindow();
-    }
-  };
 
   const loadStats = async () => {
     try {
@@ -119,34 +89,31 @@ export const BackupSettingTab = () => {
 
   // 2. 구글 로그아웃 (인앱 모달 적용)
   const handleGoogleLogout = () => {
-    setConfirmModal({
-      isOpen: true,
+    showConfirm({
       title: '구글 계정 연동 해제',
       message: '구글 드라이브 계정 연동을 해제하시겠습니까?\n해제 시 클라우드 동기화가 중단됩니다.',
       type: 'warning',
       confirmText: '연동 해제',
       cancelText: '취소',
       onConfirm: async () => {
-        closeConfirmModal();
         await GoogleDriveService.signOut();
         setAuth({ isLoggedIn: false, user: null, accessToken: null });
         setStatusMessage({ type: 'info', text: '구글 드라이브 연결이 해제되었습니다.' });
         showToast('구글 드라이브 연결이 해제되었습니다.', 'info');
+        focusAppWindow();
       },
     });
   };
 
   // 3. 스마트폰 구글 드라이브 백업 가져와 복원 (인앱 모달 및 토스트 적용)
   const handleDownloadCloudBackup = () => {
-    setConfirmModal({
-      isOpen: true,
+    showConfirm({
       title: '스마트폰 백업 데이터 복원',
       message: '구글 드라이브(스마트폰 백업)에서 데이터를 다운로드하여 현재 데스크톱 데이터를 복원하시겠습니까?\n\n※ 기존 로컬 데이터가 스마트폰 백업 데이터로 갱신됩니다.',
       type: 'primary',
       confirmText: '복원 실행',
       cancelText: '취소',
       onConfirm: async () => {
-        closeConfirmModal();
         setIsProcessing(true);
         setStatusMessage({ type: 'info', text: '구글 드라이브(appDataFolder)에서 백업 파일을 탐색하고 다운로드하는 중입니다...' });
 
@@ -497,31 +464,6 @@ export const BackupSettingTab = () => {
           </div>
         </div>
       </div>
-
-      {/* 인앱 확인 및 알림 모달 (Electron 네이티브 포커스 유실 원천 차단) */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        type={confirmModal.type}
-        confirmText={confirmModal.confirmText}
-        cancelText={confirmModal.cancelText}
-        onConfirm={confirmModal.onConfirm}
-        onClose={closeConfirmModal}
-      />
-
-      {/* 인라인 토스트 알림 */}
-      {toastNotice && (
-        <div className={`diary-toast-notice ${toastNotice.type || 'success'}`}>
-          <span className="toast-icon">
-            {toastNotice.type === 'error' && <AlertTriangle size={16} />}
-            {toastNotice.type === 'warning' && <AlertTriangle size={16} />}
-            {toastNotice.type === 'info' && <Info size={16} />}
-            {(!toastNotice.type || toastNotice.type === 'success') && <CheckCircle size={16} />}
-          </span>
-          <span>{toastNotice.message}</span>
-        </div>
-      )}
     </div>
   );
 };

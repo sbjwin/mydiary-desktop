@@ -17,7 +17,7 @@ import {
   AlertCircle,
   Info,
 } from 'lucide-react';
-import { ConfirmModal } from './ConfirmModal';
+import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 
 const COMMON_COURSES = ['국어', '수학', '사회', '과학', '영어', '독서논술', '창의체험'];
 
@@ -32,11 +32,8 @@ export const ClassDiaryTab = ({ initialParams }) => {
   const initialHandledRef = useRef(false);
   const contentTextareaRef = useRef(null);
   const lastFocusedFieldRef = useRef(null);
-
-  // 인라인 토스트, 인앱 삭제 확인 모달 및 저장 버튼 피드백 상태
-  const [toastNotice, setToastNotice] = useState(null);
+  // 저장 버튼 최근 피드백 상태
   const [isSavedRecently, setIsSavedRecently] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // 필드 포커스 및 윈도우 OS 포커스 강제 복원 헬퍼
   const ensureFieldFocus = (e) => {
@@ -71,14 +68,6 @@ export const ClassDiaryTab = ({ initialParams }) => {
     homework: '',
     notes: '',
   });
-
-  const showToast = (message, type = 'success') => {
-    setToastNotice({ message, type });
-    if (window._diaryToastTimer) clearTimeout(window._diaryToastTimer);
-    window._diaryToastTimer = setTimeout(() => {
-      setToastNotice(null);
-    }, 2200);
-  };
 
   const loadData = async (keepRecordId = null) => {
     const allStudents = await Database.getAllStudents();
@@ -225,26 +214,24 @@ export const ClassDiaryTab = ({ initialParams }) => {
 
   const handleDeleteClick = () => {
     if (!selectedRecordId) return;
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    setDeleteConfirmOpen(false);
-    try {
-      await Database.deleteClassRecord(selectedRecordId);
-      showToast('수업 일지가 삭제되었습니다.', 'info');
-      handleNewDiary();
-      await loadData();
-
-      if (typeof window !== 'undefined' && window.focus) {
-        window.focus();
-      }
-      if (window.electronAPI?.focusWindow) {
-        window.electronAPI.focusWindow();
-      }
-    } catch (err) {
-      showToast('삭제 실패: ' + err.message, 'error');
-    }
+    showConfirm({
+      title: '수업 일지 삭제',
+      message: '정말 이 수업 일지를 삭제하시겠습니까?\n삭제된 일지는 복구할 수 없습니다.',
+      type: 'danger',
+      confirmText: '삭제',
+      cancelText: '취소',
+      onConfirm: async () => {
+        try {
+          await Database.deleteClassRecord(selectedRecordId);
+          showToast('수업 일지가 삭제되었습니다.', 'info');
+          handleNewDiary();
+          await loadData();
+          focusAppWindow();
+        } catch (err) {
+          showToast('삭제 실패: ' + err.message, 'error');
+        }
+      },
+    });
   };
 
   // HWPX 한글 문서 저장
@@ -507,31 +494,6 @@ export const ClassDiaryTab = ({ initialParams }) => {
           </div>
         </div>
       </div>
-
-      {/* 수업 일지 삭제 확인 모달 (Electron 포커스 유실 원천 차단) */}
-      <ConfirmModal
-        isOpen={deleteConfirmOpen}
-        title="수업 일지 삭제"
-        message="정말 이 수업 일지를 삭제하시겠습니까? 삭제된 일지는 복구할 수 없습니다."
-        type="danger"
-        confirmText="삭제"
-        cancelText="취소"
-        onConfirm={handleConfirmDelete}
-        onClose={() => setDeleteConfirmOpen(false)}
-      />
-
-      {/* 인라인 토스트 알림 (OS 다이얼로그로 인한 포커스 유실 원천 차단) */}
-      {toastNotice && (
-        <div className={`diary-toast-notice ${toastNotice.type || 'success'}`}>
-          <span className="toast-icon">
-            {toastNotice.type === 'error' && <AlertCircle size={16} />}
-            {toastNotice.type === 'warning' && <AlertCircle size={16} />}
-            {toastNotice.type === 'info' && <Info size={16} />}
-            {(!toastNotice.type || toastNotice.type === 'success') && <CheckCircle size={16} />}
-          </span>
-          <span>{toastNotice.message}</span>
-        </div>
-      )}
     </div>
   );
 };

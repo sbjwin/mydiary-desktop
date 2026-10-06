@@ -167,6 +167,7 @@ export function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenHelp={() => handleOpenHelp('guide')}
+        onOpenSettings={() => setSettingsModalOpen(true)}
         currentTheme={currentTheme}
         onSelectTheme={handleSelectTheme}
       />

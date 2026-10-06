@@ -1,79 +1,22 @@
 import JSZip from 'jszip';
-import { showToast } from '../utils/dialog';
+import { formatPhoneInfo } from '../utils/phoneUtils';
+import { escapeXml, saveOrDownloadFile } from '../utils/fileUtils';
 
-// 연락처 정보 정규화 헬퍼 (모바일 Database.js에서 이식)
-export const formatPhoneInfo = (phoneInfo) => {
-  if (!phoneInfo || typeof phoneInfo !== 'string') return '';
-  return phoneInfo
-    .split('\n')
-    .map((line) => {
-      let trimmed = line.trim();
-      if (!trimmed) return '';
-      if (/^\(학부모[^)]*\)/.test(trimmed)) {
-        trimmed = trimmed.replace(/^\(학부모[^)]*\)\s*/, '(모)');
-      } else if (/^학부모[:\s]*/.test(trimmed)) {
-        trimmed = trimmed.replace(/^학부모[:\s]*/, '(모)');
-      } else if (/^\(모[^)]*\)/.test(trimmed)) {
-        trimmed = trimmed.replace(/^\(모[^)]*\)\s*/, '(모)');
-      } else if (/^모[:\s]*/.test(trimmed)) {
-        trimmed = trimmed.replace(/^모[:\s]*/, '(모)');
-      } else if (/^\(학생[^)]*\)/.test(trimmed)) {
-        trimmed = trimmed.replace(/^\(학생[^)]*\)\s*/, '(본)');
-      } else if (/^학생[:\s]*/.test(trimmed)) {
-        trimmed = trimmed.replace(/^학생[:\s]*/, '(본)');
-      } else if (/^\(본[^)]*\)/.test(trimmed)) {
-        trimmed = trimmed.replace(/^\(본[^)]*\)\s*/, '(본)');
-      } else if (/^본[:\s]*/.test(trimmed)) {
-        trimmed = trimmed.replace(/^본[:\s]*/, '(본)');
-      }
-      return trimmed;
-    })
-    .filter(Boolean)
-    .join('\n');
-};
+export { formatPhoneInfo, escapeXml };
 
 // 데스크톱 / 웹 공통 파일 저장 헬퍼
 export const saveOrDownloadHwpx = async (fileName, base64Data) => {
-  if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.saveHwpxFile) {
-    const result = await window.electronAPI.saveHwpxFile(fileName, base64Data);
-    if (result.success) {
-      showToast(`한글 문서(.hwpx)가 성공적으로 저장되었습니다. (저장 경로: ${result.filePath})`, 'success');
-      return result;
-    } else if (!result.canceled) {
-      showToast(`저장 중 오류가 발생했습니다: ${result.error}`, 'error');
-      return result;
-    }
-    return result;
-  } else if (typeof window !== 'undefined') {
-    const binary = atob(base64Data);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], { type: 'application/hwp+zip' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-    return { success: true };
-  }
+  return await saveOrDownloadFile({
+    defaultFileName: fileName,
+    base64Data,
+    filterType: 'hwpx',
+    mimeType: 'application/hwp+zip',
+    successMessage: '한글 문서(.hwpx)가 성공적으로 저장되었습니다.',
+  });
 };
 
 
 const TEACHER_NAME = '성백진';
-
-// XML 특수문자 이스케이프 헬퍼
-export const escapeXml = (unsafe) => {
-  if (unsafe == null) return '';
-  return String(unsafe)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-};
 
 /**
  * 텍스트 런(Run) 생성 헬퍼

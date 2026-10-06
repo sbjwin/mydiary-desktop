@@ -1,50 +1,21 @@
 import JSZip from 'jszip';
-import { formatPhoneInfo } from '../database/Database';
-import { showToast } from '../utils/dialog';
+import { formatPhoneInfo } from '../utils/phoneUtils';
+import { escapeXml, saveOrDownloadFile } from '../utils/fileUtils';
+
+export { escapeXml };
 
 // 개발자 정보 지침 준수: Sung Baekjin (성백진)
 const TEACHER_NAME = '성백진';
 
 // 데스크톱 / 웹 공통 DOCX 파일 저장 헬퍼
 const saveOrDownloadDocx = async (fileName, base64Data) => {
-  if (typeof window !== 'undefined' && window.electronAPI && window.electronAPI.saveFile) {
-    const result = await window.electronAPI.saveFile(fileName, base64Data, 'docx');
-    if (result.success) {
-      showToast(`워드 문서(.docx)가 성공적으로 저장되었습니다. (경로: ${result.filePath})`, 'success');
-      return result;
-    } else if (!result.canceled) {
-      showToast(`저장 중 오류 발생: ${result.error}`, 'error');
-      return result;
-    }
-    return result;
-  } else if (typeof window !== 'undefined') {
-    const binary = atob(base64Data);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], {
-      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-    return { success: true };
-  }
-};
-
-// XML 특수문자 이스케이프
-const escapeXml = (unsafe) => {
-  if (unsafe == null) return '';
-  return String(unsafe)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+  return await saveOrDownloadFile({
+    defaultFileName: fileName,
+    base64Data,
+    filterType: 'docx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    successMessage: '워드 문서(.docx)가 성공적으로 저장되었습니다.',
+  });
 };
 
 /**
