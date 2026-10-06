@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Database, getTodayDateString, formatPhoneInfo } from '../database/Database';
-import { generateStudentProfileHtml } from '../services/PrintService';
+import { generateStudentProfileHtml, printStudentProfile } from '../services/PrintService';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 import {
   Users,
@@ -242,17 +242,10 @@ export const StudentManageTab = () => {
   };
 
   // 학생 카드 인쇄
-  const handlePrintProfile = () => {
+  const handlePrintProfile = async () => {
     const st = students.find((s) => s.id === selectedStudentId);
     if (!st) return;
-    const html = generateStudentProfileHtml(st);
-    const win = window.open('', '_blank', 'width=900,height=800');
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      setTimeout(() => win.print(), 400);
-    }
+    await printStudentProfile(st);
   };
 
   // 필터링된 학생 리스트

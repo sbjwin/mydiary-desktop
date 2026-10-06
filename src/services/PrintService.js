@@ -8,6 +8,21 @@ const executePrintOrPdf = async (htmlContent, title) => {
     document.title = title;
   }
 
+  // 1. Electron 환경인 경우 네이티브 시스템 인쇄 IPC 호출
+  if (typeof window !== 'undefined' && window.electronAPI?.printHtml) {
+    try {
+      const result = await window.electronAPI.printHtml(htmlContent);
+      if (typeof document !== 'undefined') document.title = originalTitle;
+      if (result && !result.success && result.error && result.error !== 'cancelled') {
+        showToast('인쇄 중 오류가 발생했습니다: ' + result.error, 'error');
+      }
+      return result;
+    } catch (err) {
+      console.warn('Native electron printHtml failed, fallback to browser print:', err);
+    }
+  }
+
+  // 2. 브라우저 환경 fallback (window.open 또는 iframe)
   const printWindow = typeof window !== 'undefined' ? window.open('', '_blank', 'width=900,height=800') : null;
   if (printWindow) {
     if (title) printWindow.document.title = title;

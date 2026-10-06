@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Database, getTodayDateString } from '../database/Database';
 import { exportDiaryToHwpx } from '../services/HwpxExportService';
-import { generateClassRecordsHtml } from '../services/PrintService';
+import { generateClassRecordsHtml, printClassRecords } from '../services/PrintService';
 import {
   Calendar,
   Clock,
@@ -265,7 +265,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
   };
 
   // 인쇄 / PDF 출력
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const student = students.find((s) => s.id === formData.studentId);
     if (!student) return;
 
@@ -276,14 +276,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
       content: `${formData.content}\n\n[과제]: ${formData.homework || '없음'}\n[특이사항]: ${formData.notes || '없음'}`,
     };
 
-    const html = generateClassRecordsHtml(student, [currentRecord], formData.classDate);
-    const printWindow = window.open('', '_blank', 'width=900,height=800');
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => printWindow.print(), 400);
-    }
+    await printClassRecords(student, [currentRecord], formData.classDate);
   };
 
   // 필터링된 일지 목록

@@ -253,6 +253,48 @@ ipcMain.handle('export-pdf', async (event, { htmlContent, defaultFileName }) => 
   }
 });
 
+// IPC: HTML 기반 시스템 인쇄 다이얼로그 호출
+ipcMain.handle('print-html', async (event, { htmlContent }) => {
+  let printWin = null;
+  try {
+    printWin = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+    // DOM 렌더링 안정화를 위해 단시간 대기
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    return await new Promise((resolve) => {
+      printWin.webContents.print(
+        {
+          silent: false,
+          printBackground: true,
+        },
+        (success, failureReason) => {
+          resolve({ success, error: failureReason });
+        }
+      );
+    });
+  } catch (err) {
+    console.error('Error printing HTML:', err);
+    return { success: false, error: err.message };
+  } finally {
+    if (printWin && !printWin.isDestroyed()) {
+      printWin.destroy();
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.focus();
+      mainWindow.webContents.focus();
+    }
+  }
+});
+
 // IPC: 창 및 WebContents 포커스 강제 복원 (다이얼로그/외부 링크 후 포커스 유실 복구)
 ipcMain.handle('focus-window', () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
