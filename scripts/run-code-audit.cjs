@@ -144,6 +144,21 @@ if (fs.existsSync(deadStorageService)) {
   logPass('레거시 사장 파일(StorageService.js) 없음');
 }
 
+// 6. Windows 패키징 및 스마트 앱 컨트롤(SAC) 방어 검사
+logHeader('6. Windows 패키징 및 스마트 앱 컨트롤(SAC) 방어 검사');
+const scripts = pkg.scripts || {};
+if (scripts['package:win:signed']) {
+  logFail('자체 서명 패키징 스크립트(package:win:signed)가 잔존함 (Windows 11 스마트 앱 컨트롤 차단 원인)');
+} else {
+  logPass('자체 서명 패키징 스크립트 없음 (SAC 차단 위험 방어)');
+}
+
+if (!scripts['package:win'] || !scripts['package:win'].includes('electron-builder --win')) {
+  logFail('표준 무서명 Windows 패키징 스크립트(package:win) 누락 또는 오설정');
+} else {
+  logPass('표준 무서명 Windows 패키징 스크립트 정상 배치됨 (SmartScreen 통과 호환)');
+}
+
 // 종합 결론
 console.log(`\n========================================`);
 console.log(`📊 [감사 결과 요약] 결함: ${issueCount}건 | 경고: ${warningCount}건`);

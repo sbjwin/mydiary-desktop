@@ -10,7 +10,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "package:win": "vite build && electron-builder --win --publish never",
-    "package:win:signed": "powershell -ExecutionPolicy Bypass -File ./scripts/build-signed.ps1",
     "package:mac": "vite build && electron-builder --mac --publish never",
     "package:linux": "vite build && electron-builder --linux --publish never",
     "sync-version": "node scripts/sync-readme-version.js",

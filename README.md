@@ -141,9 +141,9 @@
 - 5가지 프리셋 컬러 테마(오션 블루, 포레스트 세이지, 로열 라벤더, 웜 선셋, 미드나잇 다크) 및 실시간 CSS 변수 트랜지션 적용
 - 헤더 퀵 팔레트 및 설정 탭 미니 창 프리뷰 카드를 통한 직관적 테마 변경
 
-### 4. 🔐 Windows 자체 서명(Code Signing) 패키징 지원
-- Windows SmartScreen 경고를 방지하는 자체 서명 인증서 자동 생성 및 로컬 등록 스크립트 제공
-- 보안 인증서와 비밀번호를 환경 변수로 안전하게 주입하는 `npm run package:win:signed` 파이프라인 구축
+### 4. 🛡️ Windows 스마트 앱 컨트롤(SAC) 방어 & 무서명 표준 패키징
+- Windows 11 Smart App Control 영구 차단 결함을 유발하는 자체 서명 대신, 순수 무서명 표준 인스톨러 빌드 파이프라인 채택
+- SmartScreen 화면에서 `[추가 정보]` ➔ `[실행]`을 통해 누구나 안전하고 원활하게 설치 가능
 
 ---
 
@@ -175,11 +175,8 @@ npm run dev:electron
 ## 📦 OS별 데스크톱 앱 패키징 (.exe / .dmg / .AppImage)
 
 ```bash
-# Windows 일반 빌드 (x64 NSIS 설치 파일 및 포터블 .exe)
+# Windows 표준 빌드 (x64 NSIS 설치 파일 및 포터블 .exe)
 npm run package:win
-
-# Windows 자체 서명 코드사이닝 포함 빌드 (로컬/테스트 전용 추천)
-npm run package:win:signed
 
 # macOS (.dmg)
 npm run package:mac
@@ -188,8 +185,8 @@ npm run package:mac
 npm run package:linux
 ```
 
-> 💡 **Windows SmartScreen 경고 대처 및 테스트 방법**:  
-> 패키징 후 실행 시 윈도우 보안 경고(SmartScreen) 차단 해제 및 자체 서명 인증서 활용법은 [docs/WINDOWS_SMARTSCREEN_TEST_GUIDE.md](docs/WINDOWS_SMARTSCREEN_TEST_GUIDE.md) 문서를 참고하십시오.
+> 💡 **Windows 설치 및 SmartScreen 안내**:  
+> 공인 상용 인증서가 없는 오픈소스/개인 배포 앱의 특성상 처음 설치/실행 시 Windows의 PC 보호(SmartScreen) 파란색 안내창이 나타날 수 있습니다. **`[추가 정보]` 클릭 후 `[실행]` 버튼**을 누르시면 정상적으로 즉시 설치 및 실행됩니다.
 
 ---
 
