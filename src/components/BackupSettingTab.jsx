@@ -35,8 +35,10 @@ export const BackupSettingTab = () => {
     accessToken: null,
   });
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingAction, setProcessingAction] = useState(null); // 'login' | 'download' | 'upload' | 'import' | null
   const [statusMessage, setStatusMessage] = useState(null);
+
+  const isBusy = !!processingAction;
 
   const loadStats = async () => {
     try {
@@ -65,7 +67,7 @@ export const BackupSettingTab = () => {
 
   // 1. 구글 로그인
   const handleGoogleLogin = async () => {
-    setIsProcessing(true);
+    setProcessingAction('login');
     setStatusMessage({ type: 'info', text: '기본 웹 브라우저에서 구글 로그인을 진행해 주세요...' });
     try {
       const authData = await GoogleDriveService.signIn();
@@ -76,14 +78,13 @@ export const BackupSettingTab = () => {
       });
       setStatusMessage({ type: 'success', text: `구글 드라이브 계정(${authData.user?.email || '인증됨'})이 연결되었습니다.` });
       showToast('구글 드라이브 계정이 성공적으로 연결되었습니다.', 'success');
-      if (typeof window !== 'undefined' && window.focus) window.focus();
-      if (window.electronAPI?.focusWindow) window.electronAPI.focusWindow();
+      focusAppWindow();
     } catch (err) {
       console.error('Login failed:', err);
       setStatusMessage({ type: 'error', text: `구글 로그인 실패: ${err.message}` });
       showToast(`구글 로그인 실패: ${err.message}`, 'error');
     } finally {
-      setIsProcessing(false);
+      setProcessingAction(null);
     }
   };
 
@@ -114,7 +115,7 @@ export const BackupSettingTab = () => {
       confirmText: '복원 실행',
       cancelText: '취소',
       onConfirm: async () => {
-        setIsProcessing(true);
+        setProcessingAction('download');
         setStatusMessage({ type: 'info', text: '구글 드라이브(appDataFolder)에서 백업 파일을 탐색하고 다운로드하는 중입니다...' });
 
         try {
@@ -125,20 +126,13 @@ export const BackupSettingTab = () => {
           });
           await loadStats();
           showToast(`스마트폰 백업 복원 성공 (학생 ${result.studentsCount}명, 일지 ${result.recordsCount}건)`, 'success');
-
-          // Electron 창 포커스 복원 보장
-          if (typeof window !== 'undefined' && window.focus) {
-            window.focus();
-          }
-          if (window.electronAPI?.focusWindow) {
-            window.electronAPI.focusWindow();
-          }
+          focusAppWindow();
         } catch (err) {
           console.error('Restore error:', err);
           setStatusMessage({ type: 'error', text: err.message });
           showToast(`클라우드 복원 실패: ${err.message}`, 'error');
         } finally {
-          setIsProcessing(false);
+          setProcessingAction(null);
         }
       },
     });
@@ -146,16 +140,14 @@ export const BackupSettingTab = () => {
 
   // 4. 현재 데스크톱 데이터를 구글 드라이브에 백업 (인앱 모달 및 토스트 적용)
   const handleUploadCloudBackup = () => {
-    setConfirmModal({
-      isOpen: true,
+    showConfirm({
       title: '구글 드라이브 클라우드 백업',
       message: '현재 데스크톱에 등록된 모든 데이터를 구글 드라이브(appDataFolder)에 백업하시겠습니까?\n\n※ 스마트폰 MyDiary 앱에서도 이 백업 데이터를 복원할 수 있습니다.',
       type: 'primary',
       confirmText: '백업 저장',
       cancelText: '취소',
       onConfirm: async () => {
-        closeConfirmModal();
-        setIsProcessing(true);
+        setProcessingAction('upload');
         setStatusMessage({ type: 'info', text: '구글 드라이브로 백업 데이터를 업로드하는 중입니다...' });
 
         try {
@@ -165,19 +157,13 @@ export const BackupSettingTab = () => {
             text: '현재 데스크톱 데이터가 구글 드라이브(mydiary_backup.json)에 안전하게 백업되었습니다.',
           });
           showToast('구글 드라이브 백업이 성공적으로 완료되었습니다.', 'success');
-
-          if (typeof window !== 'undefined' && window.focus) {
-            window.focus();
-          }
-          if (window.electronAPI?.focusWindow) {
-            window.electronAPI.focusWindow();
-          }
+          focusAppWindow();
         } catch (err) {
           console.error('Upload error:', err);
           setStatusMessage({ type: 'error', text: err.message });
           showToast(`클라우드 백업 실패: ${err.message}`, 'error');
         } finally {
-          setIsProcessing(false);
+          setProcessingAction(null);
         }
       },
     });
@@ -190,8 +176,7 @@ export const BackupSettingTab = () => {
       if (res && res.success) {
         showToast(res.filePath ? `백업 파일이 저장되었습니다: ${res.filePath}` : '백업 파일이 안전하게 다운로드되었습니다.', 'success');
       }
-      if (typeof window !== 'undefined' && window.focus) window.focus();
-      if (window.electronAPI?.focusWindow) window.electronAPI.focusWindow();
+      focusAppWindow();
     } catch (err) {
       showToast(`백업 파일 생성 실패: ${err.message}`, 'error');
     }
@@ -202,16 +187,14 @@ export const BackupSettingTab = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setConfirmModal({
-      isOpen: true,
+    showConfirm({
       title: '로컬 백업 파일 불러오기',
       message: `선택한 파일(${file.name})로 복원하시겠습니까?\n\n※ 기존 데이터가 이 백업 파일의 데이터로 대체됩니다.`,
       type: 'warning',
       confirmText: '복원 실행',
       cancelText: '취소',
       onConfirm: async () => {
-        closeConfirmModal();
-        setIsProcessing(true);
+        setProcessingAction('import');
         const reader = new FileReader();
         reader.onload = async (event) => {
           try {
@@ -220,13 +203,12 @@ export const BackupSettingTab = () => {
               const res = await GoogleDriveService.importLocalBackup(content);
               await loadStats();
               showToast(`성공적으로 복원되었습니다 (학생 ${res.studentsCount}명, 일지 ${res.recordsCount}건)`, 'success');
-              if (typeof window !== 'undefined' && window.focus) window.focus();
-              if (window.electronAPI?.focusWindow) window.electronAPI.focusWindow();
+              focusAppWindow();
             }
           } catch (err) {
             showToast(`백업 복원 실패: ${err.message}`, 'error');
           } finally {
-            setIsProcessing(false);
+            setProcessingAction(null);
           }
         };
         reader.readAsText(file);
@@ -333,9 +315,9 @@ export const BackupSettingTab = () => {
               <button
                 className="btn-google-login"
                 onClick={handleGoogleLogin}
-                disabled={isProcessing}
+                disabled={isBusy}
               >
-                {isProcessing ? (
+                {processingAction === 'login' ? (
                   <>
                     <RefreshCw size={16} className="spin-icon" /> 인증 대기 중...
                   </>
@@ -362,9 +344,9 @@ export const BackupSettingTab = () => {
                 <button
                   className="btn-primary"
                   onClick={handleDownloadCloudBackup}
-                  disabled={isProcessing}
+                  disabled={isBusy}
                 >
-                  {isProcessing ? (
+                  {processingAction === 'download' ? (
                     <>
                       <RefreshCw size={16} className="spin-icon" /> 다운로드 중...
                     </>
@@ -388,9 +370,9 @@ export const BackupSettingTab = () => {
                 <button
                   className="btn-secondary"
                   onClick={handleUploadCloudBackup}
-                  disabled={isProcessing}
+                  disabled={isBusy}
                 >
-                  {isProcessing ? (
+                  {processingAction === 'upload' ? (
                     <>
                       <RefreshCw size={16} className="spin-icon" /> 업로드 중...
                     </>
