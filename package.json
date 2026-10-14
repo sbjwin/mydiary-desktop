@@ -12,6 +12,7 @@
     "package:win": "vite build && electron-builder --win --publish never",
     "package:mac": "vite build && electron-builder --mac --publish never",
     "package:linux": "vite build && electron-builder --linux --publish never",
+    "cert:setup": "node scripts/setup-code-signing.cjs",
     "sync-version": "node scripts/sync-readme-version.js",
     "audit": "node scripts/run-code-audit.cjs"
   },
@@ -58,7 +59,10 @@
         "nsis",
         "portable"
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "signtoolOptions": {
+        "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+      }
     },
     "mac": {
       "target": [
