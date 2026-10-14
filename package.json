@@ -14,7 +14,9 @@
     "package:linux": "vite build && electron-builder --linux --publish never",
     "cert:setup": "node scripts/setup-code-signing.cjs",
     "sync-version": "node scripts/sync-readme-version.js",
-    "audit": "node scripts/run-code-audit.cjs"
+    "audit": "node scripts/run-code-audit.cjs",
+    "git:pr": "node scripts/git-achievement.js pr",
+    "git:commit": "node scripts/git-achievement.js direct"
   },
   "dependencies": {
     "docx-preview": "^0.4.1",
