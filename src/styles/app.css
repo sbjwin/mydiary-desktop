@@ -222,6 +222,17 @@
   font-size: 12px;
 }
 
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.btn-success:disabled,
+.btn-warning:disabled,
+.btn-outline-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
 .full-width {
   width: 100%;
 }

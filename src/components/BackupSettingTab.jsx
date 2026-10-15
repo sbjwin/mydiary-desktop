@@ -305,7 +305,7 @@ export const BackupSettingTab = () => {
                 <button
                   className="btn-outline-sm btn-logout"
                   onClick={handleGoogleLogout}
-                  disabled={isProcessing}
+                  disabled={isBusy}
                   title="구글 계정 연동 해제"
                 >
                   <LogOut size={14} /> 해제

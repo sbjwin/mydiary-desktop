@@ -266,16 +266,17 @@ export const GoogleDriveService = {
         metadata.parents = ['appDataFolder'];
       }
 
-      // multipart/related 문자열 구성 (스마트폰 MyDiary와 동일 포맷)
+      // multipart/related 본문 구성 (RFC 2046 규격 준수: 첫 줄은 빈 줄 없이 --boundary로 시작)
       const boundary = 'mydiary_desktop_backup_boundary';
-      const delimiter = `\r\n--${boundary}\r\n`;
+      const firstDelim = `--${boundary}\r\n`;
+      const midDelim = `\r\n--${boundary}\r\n`;
       const closeDelim = `\r\n--${boundary}--`;
 
       const body =
-        delimiter +
+        firstDelim +
         'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
         JSON.stringify(metadata) +
-        delimiter +
+        midDelim +
         'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
         backupJsonString +
         closeDelim;
@@ -289,6 +290,22 @@ export const GoogleDriveService = {
         },
         body: body,
       });
+
+      if (!uploadRes.ok) {
+        let errDetail = `상태 코드 ${uploadRes.status}`;
+        try {
+          const errData = await uploadRes.json();
+          if (errData.error?.message) {
+            errDetail = errData.error.message;
+          }
+        } catch (_) {
+          try {
+            const errText = await uploadRes.text();
+            if (errText) errDetail = errText.slice(0, 100);
+          } catch (_) {}
+        }
+        throw new Error(`클라우드 백업 업로드 실패: ${errDetail}`);
+      }
 
       const uploadData = await uploadRes.json();
       if (uploadData.error) {
