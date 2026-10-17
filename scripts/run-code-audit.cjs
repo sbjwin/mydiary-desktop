@@ -159,6 +159,39 @@ if (!scripts['package:win'] || !scripts['package:win'].includes('electron-builde
   logPass('표준 무서명 Windows 패키징 스크립트 정상 배치됨 (SmartScreen 통과 호환)');
 }
 
+// 7. Zero-Config Mock 폴백 및 키 안전성 검사 (Mock Fallback Integrity)
+logHeader('7. Zero-Config Mock 폴백 및 키 안전성 검사');
+const mainJsPath = path.join(rootDir, 'electron', 'main.js');
+const driveServicePath = path.join(srcDir, 'services', 'GoogleDriveService.js');
+const backupTabPath = path.join(srcDir, 'components', 'BackupSettingTab.jsx');
+
+if (fs.existsSync(mainJsPath)) {
+  const mainJsCode = fs.readFileSync(mainJsPath, 'utf8');
+  if (mainJsCode.includes('isMockAuthEnabled')) {
+    logPass('electron/main.js GCP 키 부재 시 자동 Mock 로그인 폴백 보존됨');
+  } else {
+    logFail('electron/main.js에서 isMockAuthEnabled 폴백 로직이 누락됨');
+  }
+}
+
+if (fs.existsSync(driveServicePath)) {
+  const driveServiceCode = fs.readFileSync(driveServicePath, 'utf8');
+  if (driveServiceCode.includes('isMockMode') && driveServiceCode.includes('seedMockData') && driveServiceCode.includes('@mydiary:mock_cloud_storage')) {
+    logPass('GoogleDriveService.js 가상 스토리지 및 Seeder 하네스 정상 보존됨');
+  } else {
+    logFail('GoogleDriveService.js에서 Mock 모드 또는 Seeder 로직이 누락됨');
+  }
+}
+
+if (fs.existsSync(backupTabPath)) {
+  const backupTabCode = fs.readFileSync(backupTabPath, 'utf8');
+  if (backupTabCode.includes('handleSeedMockData') && backupTabCode.includes('isMock')) {
+    logPass('BackupSettingTab.jsx Mock 배지 및 샘플 데이터 Seeder UI 연동 보존됨');
+  } else {
+    logFail('BackupSettingTab.jsx에서 Mock 배지 또는 Seeder 버튼 연동이 누락됨');
+  }
+}
+
 // 종합 결론
 console.log(`\n========================================`);
 console.log(`📊 [감사 결과 요약] 결함: ${issueCount}건 | 경고: ${warningCount}건`);

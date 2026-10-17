@@ -120,8 +120,7 @@ export/
 exports/
 userData/
 
-# AI 에이전트 설정 (AI Agent Governance & Local Skills)
-.agents/
+# AI 에이전트 로컬 설정 (IDE Local Configs)
 .claude/
 .gemini/
 
