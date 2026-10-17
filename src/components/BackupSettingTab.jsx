@@ -18,6 +18,7 @@ import {
   LogOut,
   LogIn,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
@@ -33,12 +34,14 @@ export const BackupSettingTab = () => {
     isLoggedIn: false,
     user: null,
     accessToken: null,
+    isMock: false,
   });
 
-  const [processingAction, setProcessingAction] = useState(null); // 'login' | 'download' | 'upload' | 'import' | null
+  const [processingAction, setProcessingAction] = useState(null); // 'login' | 'download' | 'upload' | 'import' | 'seed' | null
   const [statusMessage, setStatusMessage] = useState(null);
 
   const isBusy = !!processingAction;
+  const isMock = auth.isMock || GoogleDriveService.isMockMode();
 
   const loadStats = async () => {
     try {
@@ -68,16 +71,18 @@ export const BackupSettingTab = () => {
   // 1. 구글 로그인
   const handleGoogleLogin = async () => {
     setProcessingAction('login');
-    setStatusMessage({ type: 'info', text: '기본 웹 브라우저에서 구글 로그인을 진행해 주세요...' });
+    setStatusMessage({ type: 'info', text: '구글 로그인을 진행하는 중입니다...' });
     try {
       const authData = await GoogleDriveService.signIn();
       setAuth({
         isLoggedIn: true,
         user: authData.user,
         accessToken: authData.accessToken,
+        isMock: !!authData.isMock,
       });
-      setStatusMessage({ type: 'success', text: `구글 드라이브 계정(${authData.user?.email || '인증됨'})이 연결되었습니다.` });
-      showToast('구글 드라이브 계정이 성공적으로 연결되었습니다.', 'success');
+      const modeText = authData.isMock ? ' (Mock 개발 모드)' : '';
+      setStatusMessage({ type: 'success', text: `구글 드라이브 계정(${authData.user?.email || '인증됨'})${modeText}이 연결되었습니다.` });
+      showToast(`구글 드라이브 계정이 연결되었습니다.${modeText}`, 'success');
       focusAppWindow();
     } catch (err) {
       console.error('Login failed:', err);
@@ -86,6 +91,37 @@ export const BackupSettingTab = () => {
     } finally {
       setProcessingAction(null);
     }
+  };
+
+  // 1-1. 개발자/공동협업자용 테스트 샘플 데이터 자동 생성 (Seeder)
+  const handleSeedMockData = () => {
+    showConfirm({
+      title: '테스트용 샘플 데이터 생성',
+      message: '공동개발 및 빠른 기능 테스트를 위해 샘플 학생(4명), 일지 기록(4건), 주간 계획 및 가상 클라우드 백업 데이터를 자동으로 생성하시겠습니까?\n\n※ 기존 로컬 데이터가 샘플 데이터로 갱신됩니다.',
+      type: 'primary',
+      confirmText: '샘플 데이터 생성',
+      cancelText: '취소',
+      onConfirm: async () => {
+        setProcessingAction('seed');
+        setStatusMessage({ type: 'info', text: '테스트용 샘플 데이터 및 가상 클라우드 백업을 생성하는 중입니다...' });
+        try {
+          const res = await GoogleDriveService.seedMockData();
+          await loadStats();
+          setStatusMessage({
+            type: 'success',
+            text: `샘플 데이터 생성 완료: 학생 ${res.studentsCount}명, 일지 ${res.recordsCount}건, 주간계획 ${res.plansCount}건 및 가상 클라우드 백업이 준비되었습니다.`,
+          });
+          showToast('테스트용 샘플 데이터 및 가상 클라우드 백업이 생성되었습니다.', 'success');
+          focusAppWindow();
+        } catch (err) {
+          console.error('Seed mock data failed:', err);
+          setStatusMessage({ type: 'error', text: `샘플 데이터 생성 실패: ${err.message}` });
+          showToast(`샘플 데이터 생성 실패: ${err.message}`, 'error');
+        } finally {
+          setProcessingAction(null);
+        }
+      },
+    });
   };
 
   // 2. 구글 로그아웃 (인앱 모달 적용)
@@ -282,9 +318,17 @@ export const BackupSettingTab = () => {
                 <Cloud size={20} color="#0284c7" />
               </div>
               <div>
-                <h3>구글 드라이브 클라우드 연동 (스마트폰 MyDiary 동기화)</h3>
+                <div className="cloud-title-with-badge">
+                  <h3>구글 드라이브 클라우드 연동 (스마트폰 MyDiary 동기화)</h3>
+                  {isMock && (
+                    <span className="mock-badge" title="GCP 키 없이 가상 구글 드라이브(로컬 스토리지)로 동작 중입니다.">
+                      🛠️ Mock 개발 모드
+                    </span>
+                  )}
+                </div>
                 <p className="cloud-subtitle">
                   스마트폰 앱과 동일한 구글 계정으로 로그인하여 <strong>appDataFolder</strong>에 보관된 백업을 즉시 가져오거나 올립니다.
+                  {isMock && <span className="mock-sub-info"> (GCP 키 없이 로컬 가상 스토리지로 안전하게 동작 중)</span>}
                 </p>
               </div>
             </div>
@@ -389,6 +433,37 @@ export const BackupSettingTab = () => {
               <p>
                 💡 상단의 <strong>[구글 드라이브 연결 및 로그인]</strong> 버튼을 누르면 기본 웹 브라우저에서 안전하게 구글 로그인을 진행할 수 있습니다.
               </p>
+            </div>
+          )}
+
+          {/* 개발자/협업자용 Mock 도우미 배너 및 원클릭 샘플 데이터 생성 */}
+          {isMock && (
+            <div className="mock-helper-banner">
+              <div className="mock-helper-info">
+                <Sparkles size={18} className="text-warning flex-shrink-0" />
+                <div>
+                  <span className="mock-helper-title">공동개발 및 빠른 테스트를 위한 Mock 환경 안내</span>
+                  <p className="mock-helper-desc">
+                    GCP 키 발급 없이도 로컬 가상 구글 드라이브로 구글 로그인, 백업 및 복원 기능을 100% 동일하게 검증할 수 있습니다.
+                  </p>
+                </div>
+              </div>
+              <button
+                className="btn-seed-data"
+                onClick={handleSeedMockData}
+                disabled={isBusy}
+                title="학생 4명, 일지 4건, 주간계획 및 가상 클라우드 백업을 일괄 생성합니다."
+              >
+                {processingAction === 'seed' ? (
+                  <>
+                    <RefreshCw size={14} className="spin-icon" /> 데이터 생성 중...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} /> 🧪 테스트용 샘플 데이터 생성
+                  </>
+                )}
+              </button>
             </div>
           )}
         </div>

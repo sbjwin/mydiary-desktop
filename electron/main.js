@@ -408,9 +408,33 @@ const GOOGLE_SCOPES = [
   'openid',
 ].join(' ');
 
+// Mock 환경 판별: 환경변수로 강제 지정되었거나, 개발 환경에서 GCP 키가 없는 경우
+const isDevMode = !app.isPackaged && process.env.NODE_ENV !== 'production';
+const isMockAuthEnabled =
+  process.env.VITE_USE_MOCK_GOOGLE === 'true' ||
+  process.env.MOCK_GOOGLE === 'true' ||
+  ((!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) && isDevMode);
+
 ipcMain.handle('google-auth-login', async () => {
   return new Promise((resolve) => {
     try {
+      if (isMockAuthEnabled) {
+        console.log('[Google Auth] GCP 키가 없거나 개발 Mock 모드가 활성화되어 가상(Mock) 계정으로 로그인합니다.');
+        return resolve({
+          success: true,
+          isMock: true,
+          accessToken: 'mock_access_token_' + Date.now(),
+          refreshToken: 'mock_refresh_token_' + Date.now(),
+          expiresIn: 3600,
+          user: {
+            id: 'mock_teacher_01',
+            email: 'teacher.mock@mydiary.test',
+            name: '홍길동 선생님 (Mock)',
+            photo: null,
+          },
+        });
+      }
+
       if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
         return resolve({
           success: false,
@@ -577,6 +601,15 @@ ipcMain.handle('google-auth-login', async () => {
 // IPC: 구글 액세스 토큰 갱신 (리프레시 토큰 활용)
 ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
   try {
+    if (isMockAuthEnabled || (refreshToken && refreshToken.startsWith('mock_'))) {
+      return {
+        success: true,
+        isMock: true,
+        accessToken: 'mock_access_token_' + Date.now(),
+        expiresIn: 3600,
+      };
+    }
+
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       return { success: false, error: 'GOOGLE_CLIENT_ID 또는 GOOGLE_CLIENT_SECRET 설정이 누락되었습니다.' };
     }
