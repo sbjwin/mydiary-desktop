@@ -32,7 +32,7 @@ MyDiary Desktop은 스마트폰 앱(`mydiary`)의 검증된 일지 관리 철학
 | **3. 와이드 데스크톱 UI/UX** | **95%** | 5–10 h | [ui-design.md](file:///d:/development/mydiary-desktop/docs/ui-design.md) · 3단 마스터-디테일 완성, 고해상도 차트 뷰 추가 예정 |
 | **4. 국가 표준 HWPX / 서식 엔진** | **92%** | 10–15 h | `HwpxExportService.js` · KS X 6101 OWPML 표 서식 완비, 커스텀 서식 템플릿 다변화 |
 | **5. 3대 OS 바이너리 패키징** | **90%** | 10–15 h | [release-versioning.md](file:///d:/development/mydiary-desktop/docs/release-versioning.md) · Win 완성, Mac(.dmg)/Linux(.AppImage) CI 검증 |
-| **6. 에이전트 하네스 & 코드 감사** | **95%** | 5–10 h | [AGENTS.md](file:///d:/development/mydiary-desktop/AGENTS.md) · 루트 마스터 하네스 완비, `npm run audit` 정기 검증 |
+| **6. 에이전트 하네스 & 코드 감사** | **100%** | 0 h | [AGENTS.md](file:///d:/development/mydiary-desktop/AGENTS.md) · GitHub 4대 업적 연계 하네스 및 9대 무결성 감사 완비 |
 
 ---
 
