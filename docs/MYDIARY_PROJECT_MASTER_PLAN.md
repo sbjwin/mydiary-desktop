@@ -1,8 +1,8 @@
 # 📘 MyDiary Desktop 마스터 계획서 (Rev 2.1 - Production Completeness Edition)
 
 > **문서 개정판 (Doc Revision)**: Rev 2.1 (Full Production Completeness)  
-> **현재 프로젝트 앱 버전**: v0.5.0 (기준: package.json)  
-> **수립 및 최종 보강 일자**: 2026-10-14  
+> **현재 프로젝트 앱 버전**: v0.5.1 (기준: package.json)  
+> **수립 및 최종 보강 일자**: 2026-10-19  
 > **개발자**: 성백진 (`Sung Baekjin` / `sbjwin4271@gmail.com`)  
 > **적용 표준**: 범용 7대 소프트웨어 엔지니어링 원칙 + 데스크톱 실무 운영 6대 핵심 스펙
 

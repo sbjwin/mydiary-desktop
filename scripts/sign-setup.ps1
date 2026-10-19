@@ -1,5 +1,5 @@
 $certPath = Resolve-Path "certs\dev-cert.pfx"
-$setupPath = Resolve-Path "dist-electron\MyDiary Setup 0.5.0.exe"
+$setupPath = Resolve-Path "dist-electron\MyDiary Setup 0.5.1.exe"
 
 $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath, "mydiary1234", [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable)
 
