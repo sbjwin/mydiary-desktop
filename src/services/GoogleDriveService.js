@@ -37,7 +37,7 @@ export const GoogleDriveService = {
   exportLocalBackup: async () => {
     try {
       const backupData = {
-        version: '0.5.0',
+        version: '0.5.1',
         exportedAt: new Date().toISOString(),
         students: JSON.parse(localStorage.getItem('@mydiary:students') || '[]'),
         records: JSON.parse(localStorage.getItem('@mydiary:records') || '[]'),
@@ -533,7 +533,7 @@ export const GoogleDriveService = {
       };
 
       const seedData = {
-        version: '0.5.0',
+        version: '0.5.1',
         exportedAt: new Date().toISOString(),
         timestamp: new Date().toISOString(),
         students: sampleStudents,
