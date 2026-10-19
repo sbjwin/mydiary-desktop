@@ -1,6 +1,6 @@
 # MyDiary Desktop 로드맵 (Roadmap)
 
-**Stage: v0.5.0 (Beta)** · next: v1.0.0 (Production Stable) · 잔여 공수 추정치: ~40–60 에이전트-시간 (Agent Wall-Clock Hours)
+**Stage: v0.5.1 (Beta)** · next: v1.0.0 (Production Stable) · 잔여 공수 추정치: ~40–60 에이전트-시간 (Agent Wall-Clock Hours)
 
 > **최종 갱신일:** 2026-10-19  
 > **총괄 관리자:** 성백진 (`Sung Baekjin` / `sbjwin4271@gmail.com`)  
@@ -53,5 +53,6 @@ MyDiary Desktop은 스마트폰 앱(`mydiary`)의 검증된 일지 관리 철학
 
 - **v0.1.0 ~ v0.3.0**: Electron + React 19 기본 골격 구축, 모바일 JSON 백업 복원 호환성 확보.
 - **v0.4.0**: 와이드 데스크톱 UI 개편, Zero-Config Mock 구글 드라이브 스토리지 및 Seeder 신설, Windows SmartScreen 무서명 표준 배포 체계 수립.
-- **v0.5.0 (현재)**: HWPX 표준 서식 엔진 안정화, GitHub 4대 업적 연계 Git 하네스 도입, 범용 도구 중립적 에이전트 거버넌스(Collaborative Harness) 확립.
+- **v0.5.0**: HWPX 표준 서식 엔진 안정화, GitHub 4대 업적 연계 Git 하네스 도입, 범용 도구 중립적 에이전트 거버넌스(Collaborative Harness) 확립.
+- **v0.5.1 (현재)**: 클라우드 백업/복원 독립 로딩 분리 및 UI 안정화, 데스크톱 단일 인스턴스 락 및 창 상태 기억, Vite 번들 청크 최적화.
 - **v1.0.0 (Next Target)**: 3대 OS 통합 배포 완료 및 공식 프로덕션 릴리즈.
