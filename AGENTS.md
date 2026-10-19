@@ -78,10 +78,10 @@ mydiary-desktop/
 - 로컬에 구글 클라우드(GCP) API 키가 없더라도 앱이 크래시 없이 즉시 실행·테스트될 수 있도록 Mock 폴백 구조(`GoogleDriveService.js`, `main.js`)를 절대 훼손하지 않습니다.
 - 원클릭 샘플 데이터 생성기(`seedMockData`) 로직을 항상 보존합니다.
 
-### Rule 5. 100% 순수 한국어 Git 커밋 & 업적 연계
+### Rule 5. 100% 순수 한국어 Git 커밋 & 유연한 협업자 태그
 - 모든 Git 커밋 메시지는 **예외 없이 100% 명확한 한국어**로만 작성합니다 (`feat: 학생 통계 차트 신규 추가` 등).
-- 협업자 `Co-authored-by: zigman1234 <zigman1234@users.noreply.github.com>`를 기본 적용합니다.
-- `scripts/git-achievement.js` 하네스를 통해 GitHub 4대 업적 뱃지 달성을 지원합니다.
+- 실제로 페어 프로그래밍이나 공동 작업을 진행한 협업자가 있을 경우에 한하여 선택적으로 `Co-authored-by: 이름 <이메일>` 태그를 적용합니다 (특정 계정 자동 하드코딩 금지).
+- `scripts/git-achievement.js` 하네스를 통해 GitHub 업적 뱃지 및 PR 워크플로우를 유연하게 지원합니다.
 
 ### Rule 6. 서킷 브레이커 (Circuit Breaker)
 - 빌드/린트/테스트 검증 실패 시 동일한 원인에 대한 자동 자가 수정 시도는 **최대 2회**로 제한합니다.
@@ -135,6 +135,6 @@ LLM 세션은 컨텍스트 용량 제한이나 네트워크 타임아웃으로 �
 ## 8. 기여자 크레딧 (Contributor Credits)
 
 - **총괄 설계 및 개발 (Lead Maintainer)**: 성백진 (`Sung Baekjin` / `sbjwin4271@gmail.com`)
-- **공동 개발 및 협력 (Collaborator)**: `zigman1234`
+- **오픈소스 기여자 (Open Source Contributors)**: 전 세계 오픈소스 기여자 (상세 명단 및 등록은 [ATTRIBUTION.md](file:///d:/development/mydiary-desktop/ATTRIBUTION.md) 참조)
 - **공인 AI 에이전트 기여자 (AI Contributors)**: Google Antigravity Agent (Gemini Flash/Pro), Anthropic Claude Code, OpenAI Codex 등
 - 상세한 라이선스 및 에셋 귀속은 [ATTRIBUTION.md](file:///d:/development/mydiary-desktop/ATTRIBUTION.md)를 참조하십시오.

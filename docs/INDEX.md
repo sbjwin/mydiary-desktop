@@ -1,7 +1,7 @@
 # 📚 MyDiary Desktop 공식 문서 체계 및 인덱스 (Documentation Hub)
 
 > **문서 목적**: MyDiary Desktop 프로젝트의 설계 철학, 마스터 플랜, 협업 가이드, 배포 지침, 엔지니어링 표준을 체계화한 공식 통합 문서 허브(Sitemap)입니다.  
-> **독자 대상**: 인간 개발자(`Sung Baekjin`), 공동개발자(`zigman1234`), 그리고 모든 AI 에이전트(Antigravity, Claude Code, Cursor, Copilot 등).  
+> **독자 대상**: 리드 개발자(`Sung Baekjin`), 오픈소스 기여자, 그리고 모든 AI 에이전트(Antigravity, Claude Code, Cursor, Copilot 등).  
 > **최신 개정판**: 2026-10-19  
 > **총괄 책임자**: 성백진 (`Sung Baekjin` / `sbjwin4271@gmail.com`)
 

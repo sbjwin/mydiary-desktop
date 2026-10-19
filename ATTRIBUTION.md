@@ -6,21 +6,41 @@ MyDiary Desktop의 자체 개발 코드 및 오리지널 에셋은 **MIT License
 
 ---
 
-## 1. 프로젝트 총괄 및 기여자 (Contributors)
+## 1. 프로젝트 총괄 및 메인테이너 (Maintainers)
+
+| 이름 / 식별자 | 역할 | 소속 및 채널 | 책임 영역 |
+|---|---|---|---|
+| **성백진 (`Sung Baekjin`)** | 총괄 설계자 & 리드 엔지니어 (Lead Maintainer) | `sbjwin4271@gmail.com` | 프로젝트 기획, 핵심 아키텍처, 비즈니스 로직, 릴리즈 총괄 |
+
+---
+
+## 2. 오픈소스 기여자 (Open Source Contributors)
+
+본 프로젝트는 전 세계 모든 오픈소스 개발자와 기여자의 참여를 환영합니다. 코드, 문서, 버그 리포트, 번역 등 프로젝트에 기여하신 분은 누구나 본 명단에 자유롭게 등재될 수 있습니다.
+
+| GitHub 계정 / 이름 | 기여 유형 | 기여 내용 |
+|---|---|---|
+| `@zigman1234` | 기여자 (Contributor) | 초기 저장소 협업 및 Git 하네스 테스트 참여 |
+| *(새 기여자 등록 대기 중)* | 기여자 (Contributor) | PR 승인 및 머지 시 본 표에 추가됩니다 |
+
+> **💡 기여자 명단 추가 가이드**:
+> 프로젝트에 기여(PR)할 때, 본 파일(`ATTRIBUTION.md`)의 위 표에 자신의 GitHub 아이디와 기여 내용을 한 줄 추가하여 함께 커밋해 주시면 공식 기여자로 등재됩니다.
+
+---
+
+## 3. 공인 AI 에이전트 기여자 (AI Contributors)
 
 본 프로젝트는 인간 엔지니어의 비전과 리더십 아래, AI 에이전트를 동등한 파트너 엔지니어로 인정하고 협력하여 개발되었습니다.
 
-| 이름 / 식별자 | 역할 | 소속 및 채널 | 기여 영역 |
+| AI 모델 / 도구 | 역할 | 개발사 | 기여 영역 |
 |---|---|---|---|
-| **성백진 (`Sung Baekjin`)** | 총괄 설계자 & 리드 엔지니어 (Lead Maintainer) | `sbjwin4271@gmail.com` | 프로젝트 기획, 핵심 아키텍처, 비즈니스 로직, 릴리즈 총괄 |
-| **`zigman1234`** | 공동 개발자 (Collaborator) | GitHub (`@zigman1234`) | 저장소 협업, Git 업적 및 공동 커밋(Co-authored-by) 파트너 |
-| **Google Antigravity Agent** | 공인 AI 엔지니어 (AI Contributor) | Google Gemini 3.8 / 2.5 Pro & Flash | 아키텍처 리팩토링, HWPX 서식 엔진, 에이전트 하네스 구축, 코드 감사 |
-| **Anthropic Claude Code** | 공인 AI 엔지니어 (AI Contributor) | Anthropic Claude 3.5 / 3.7 Sonnet | 프런트엔드 UI 컴포넌트, 크로스플랫폼 동기화 로직 |
+| **Google Antigravity Agent** | 공인 AI 엔지니어 (AI Contributor) | Google (Gemini Flash/Pro) | 아키텍처 리팩토링, HWPX 서식 엔진, 에이전트 하네스 구축, 코드 감사 |
+| **Anthropic Claude Code** | 공인 AI 엔지니어 (AI Contributor) | Anthropic (Claude 3.5/3.7) | 프런트엔드 UI 컴포넌트, 크로스플랫폼 동기화 로직 |
 | **OpenAI Codex** | 공인 AI 엔지니어 (AI Contributor) | OpenAI | 초기 스크립트 작성 및 데이터 파싱 유틸리티 |
 
 ---
 
-## 2. 앱에 번들된 에셋 및 라이브러리 (Bundled Assets & Dependencies)
+## 4. 앱에 번들된 에셋 및 라이브러리 (Bundled Assets & Dependencies)
 
 | 에셋 / 라이브러리 | 용도 및 위치 | 제작자 / 프로젝트 | 라이선스 | 출처 |
 |---|---|---|---|---|
@@ -36,7 +56,7 @@ MyDiary Desktop의 자체 개발 코드 및 오리지널 에셋은 **MIT License
 
 ---
 
-## 3. 기여 원칙 및 에셋 추가 지침
+## 5. 기여 원칙 및 에셋 추가 지침
 
 1. 새로운 외부 에셋(폰트, 아이콘, 템플릿, 사운드 등)을 추가할 때는 반드시 Permissive한 오픈소스 라이선스(MIT, Apache-2.0, SIL OFL, ISC 등)여야 합니다.
 2. 새 에셋이 추가되는 즉시 본 `ATTRIBUTION.md`에 출처와 라이선스를 동일한 커밋에 누락 없이 기록해야 합니다.

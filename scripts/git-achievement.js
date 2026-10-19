@@ -1,15 +1,15 @@
 /**
  * MyDiary GitHub 업적(Achievements) 연계 Git 자동화 하네스
  *
- * 타겟 업적:
- * 1. 👥 Pair Extraordinaire: zigman1234 공동 저자 태그 자동 삽입
+ * 지원 기능:
+ * 1. 👥 Pair Extraordinaire: 협업자 환경변수(CO_AUTHOR) 설정 시 공동 저자 태그 자동 삽입
  * 2. ⚡ Quickdraw: 작업 브랜치 생성 -> PR 생성 -> 5분 이내 머지
  * 3. 🦈 Pull Shark: PR 머지 횟수 자동 누적
  * 4. 🤠 YOLO: 브랜치 보호 규칙 하에서 코드 리뷰 없이 즉시 머지
  *
  * 사용법:
- * - npm run git:pr -- "커밋 메시지"        (PR 생성 및 5분 내 머지 모드 - 4대 뱃지 동시 달성)
- * - npm run git:commit -- "커밋 메시지"    (main 직접 푸시 모드 - Pair 뱃지 달성)
+ * - npm run git:pr -- "한국어 커밋 메시지"        (PR 생성 및 5분 내 머지 모드)
+ * - npm run git:commit -- "한국어 커밋 메시지"    (main 직접 푸시 모드, CO_AUTHOR 지정 시 Co-author 자동 포함)
  */
 
 const { execSync } = require('child_process');
@@ -32,7 +32,16 @@ function getRepoInfo() {
 const repoInfo = getRepoInfo();
 const REPO_OWNER = repoInfo.owner;
 const REPO_NAME = repoInfo.name;
-const CO_AUTHOR = 'Co-authored-by: zigman1234 <zigman1234@users.noreply.github.com>';
+
+// 동적 협업자 설정 (환경변수 또는 인자로 전달된 경우에만 적용)
+function getCoAuthor() {
+  if (process.env.CO_AUTHOR) {
+    return process.env.CO_AUTHOR.startsWith('Co-authored-by:')
+      ? process.env.CO_AUTHOR
+      : `Co-authored-by: ${process.env.CO_AUTHOR}`;
+  }
+  return null;
+}
 
 function run(command, options = {}) {
   try {
@@ -67,6 +76,11 @@ async function createAndMergeViaAPI(token, branchName, title) {
     'Accept': 'application/vnd.github+json'
   };
 
+  const coAuthor = getCoAuthor();
+  const prBody = coAuthor
+    ? `### 🌟 GitHub PR\n\n* **작업 내용**: ${title}\n* **협업자**: ${coAuthor}\n\n${coAuthor}`
+    : `### 🌟 GitHub PR\n\n* **작업 내용**: ${title}`;
+
   console.log('🤖 GitHub API를 통해 PR을 자동 생성합니다...');
   const prRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls`, {
     method: 'POST',
@@ -75,7 +89,7 @@ async function createAndMergeViaAPI(token, branchName, title) {
       title,
       head: branchName,
       base: 'main',
-      body: `### 🌟 GitHub 업적 연계 PR\n\n* **작업 내용**: ${title}\n* **협업자**: @zigman1234\n\n${CO_AUTHOR}`
+      body: prBody
     })
   });
 
@@ -193,8 +207,9 @@ function openBrowserAndPrompt(compareUrl) {
 }
 
 function handleDirectMode(commitMsg) {
+  const coAuthor = getCoAuthor();
   console.log('\n======================================================');
-  console.log('👥 Pair Extraordinaire (Co-author) 직커밋을 실행합니다');
+  console.log(coAuthor ? `👥 Co-author (${coAuthor}) 포함 직커밋을 실행합니다` : '🚀 메인 브랜치 직커밋을 실행합니다');
   console.log('======================================================\n');
 
   const status = run('git status --porcelain', { silent: true });
@@ -204,10 +219,14 @@ function handleDirectMode(commitMsg) {
   }
 
   run('git add -A');
-  run(`git commit -m "${commitMsg}" -m "${CO_AUTHOR}"`);
+  if (coAuthor) {
+    run(`git commit -m "${commitMsg}" -m "${coAuthor}"`);
+  } else {
+    run(`git commit -m "${commitMsg}"`);
+  }
   run('git push origin main');
 
-  console.log('\n✨ Co-author가 포함된 직커밋이 원격 main에 반영되었습니다!\n');
+  console.log('\n✨ 직커밋이 원격 main에 정상 반영되었습니다!\n');
 }
 
 async function main() {

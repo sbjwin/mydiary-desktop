@@ -95,9 +95,9 @@ npm run dev
 
 | 스크립트 명령어 | 동작 모드 | 타겟 GitHub 뱃지 |
 | :--- | :--- | :--- |
-| `npm run git:commit -- "한국어 커밋 메시지"` | main 직접 커밋/푸시 | 👥 **Pair Extraordinaire** (`zigman1234` Co-author 자동 포함) |
-| `npm run git:pr -- "한국어 커밋 메시지"` | 작업 브랜치 생성 ➔ PR ➔ 5분 내 머지 | ⚡ **Quickdraw**, 🦈 **Pull Shark**, 🤠 **YOLO**, 👥 **Pair Extraordinaire** |
+| `npm run git:commit -- "한국어 커밋 메시지"` | main 직접 커밋/푸시 | 단독 또는 선택적 Co-author 지정 커밋 |
+| `npm run git:pr -- "한국어 커밋 메시지"` | 작업 브랜치 생성 ➔ PR ➔ 5분 내 머지 | ⚡ **Quickdraw**, 🦈 **Pull Shark**, 🤠 **YOLO** |
 
 ### ⚠️ 커밋 메시지 핵심 규칙
 * **100% 한국어 작성 원칙**: `feat: ...`, `fix: ...` 태그 뒤의 본문 설명은 반드시 명확한 순수 한국어로 작성해야 합니다 (영문 커밋 메시지 금지).
-* 협력자 태그(`Co-authored-by: zigman1234 <...>`)는 하네스에 의해 자동 삽입되므로 수동 작성할 필요가 없습니다.
+* **협력자 태그 (Co-author)**: 실제로 페어 작업을 함께한 동료나 기여자가 있을 때만 선택적으로 지정하며, 특정 계정을 기본값으로 강제 삽입하지 않습니다.
