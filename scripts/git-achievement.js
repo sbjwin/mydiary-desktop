@@ -48,6 +48,27 @@ function getCoAuthor() {
   return DEFAULT_CO_AUTHOR;
 }
 
+// GitHub 인증 토큰 획득 (환경변수 또는 Git Credential Manager 자동 연동)
+function getGitHubToken() {
+  if (process.env.GITHUB_TOKEN) {
+    return process.env.GITHUB_TOKEN;
+  }
+  try {
+    const cred = execSync('cmd /c "echo protocol=https^&echo host=github.com| git credential fill"', {
+      cwd: path.resolve(__dirname, '..'),
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore']
+    });
+    const match = cred.match(/password=(.+)/);
+    if (match && match[1].trim()) {
+      return match[1].trim();
+    }
+  } catch (e) {
+    // 무시
+  }
+  return null;
+}
+
 function run(command, options = {}) {
   try {
     return execSync(command, {
@@ -161,7 +182,7 @@ async function handlePRMode(commitMsg) {
   console.log(`🚀 원격 저장소에 [${branchName}] 브랜치 푸시...`);
   run(`git push -u origin ${branchName}`);
 
-  const token = process.env.GITHUB_TOKEN;
+  const token = getGitHubToken();
   const compareUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/compare/main...${branchName}?expand=1`;
 
   if (token) {
