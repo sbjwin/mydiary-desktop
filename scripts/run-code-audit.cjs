@@ -192,6 +192,35 @@ if (fs.existsSync(backupTabPath)) {
   }
 }
 
+// 8. 데스크톱 런타임 수명주기 검사 (단일 인스턴스 락 & 창 상태 기억)
+logHeader('8. 데스크톱 런타임 수명주기 검사 (Single Instance Lock & Window State)');
+if (fs.existsSync(mainJsPath)) {
+  const mainJsCode = fs.readFileSync(mainJsPath, 'utf8');
+  if (mainJsCode.includes('requestSingleInstanceLock')) {
+    logPass('electron/main.js 단일 인스턴스 락(requestSingleInstanceLock) 중복 실행 방어 보존됨');
+  } else {
+    logFail('electron/main.js 단일 인스턴스 락 누락 (중복 실행 시 로컬스토리지 충돌 위험)');
+  }
+
+  if (mainJsCode.includes('loadWindowState') && mainJsCode.includes('saveWindowState')) {
+    logPass('electron/main.js 창 크기/위치 상태 영속화(window-state.json) 정상 적용됨');
+  } else {
+    logFail('electron/main.js 창 상태 영속화 로직 누락');
+  }
+}
+
+// 9. 루트 마스터 거버넌스 및 문서 SSOT 검사
+logHeader('9. 루트 마스터 거버넌스 및 문서 SSOT 무결성 검사');
+const governanceFiles = ['AGENTS.md', 'ROADMAP.md', 'ATTRIBUTION.md', 'SECURITY.md', 'docs/INDEX.md'];
+for (const gFile of governanceFiles) {
+  const gPath = path.join(rootDir, gFile);
+  if (fs.existsSync(gPath)) {
+    logPass(`${gFile} 마스터 거버넌스 문서 정상 배치됨`);
+  } else {
+    logFail(`필수 마스터 거버넌스 문서 누락: ${gFile}`);
+  }
+}
+
 // 종합 결론
 console.log(`\n========================================`);
 console.log(`📊 [감사 결과 요약] 결함: ${issueCount}건 | 경고: ${warningCount}건`);

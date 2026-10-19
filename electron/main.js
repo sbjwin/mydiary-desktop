@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu, shell, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -14,6 +14,89 @@ for (const envPath of candidateEnvPaths) {
   if (fs.existsSync(envPath)) {
     require('dotenv').config({ path: envPath });
     break;
+  }
+}
+
+// 런타임 수명주기 1: 단일 인스턴스 락 (Single Instance Lock)
+// 중복 기동으로 인한 로컬스토리지 동시 쓰기 및 포트 충돌 방어
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
+// 런타임 수명주기 2: 창 크기/위치 상태 기억 및 복원 (Window State Persistence)
+const WINDOW_STATE_FILE = 'window-state.json';
+
+function getWindowStateFilePath() {
+  return path.join(app.getPath('userData'), WINDOW_STATE_FILE);
+}
+
+function loadWindowState() {
+  const defaultState = {
+    width: 1360,
+    height: 880,
+    x: undefined,
+    y: undefined,
+    isMaximized: false,
+  };
+
+  try {
+    const filePath = getWindowStateFilePath();
+    if (!fs.existsSync(filePath)) return defaultState;
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+    // 연결된 디스플레이 영역 내에 유효한지 검증 (모니터 분리 시 화면 밖으로 사라지는 현상 방어)
+    if (data.x !== undefined && data.y !== undefined) {
+      const displays = screen.getAllDisplays();
+      const isVisibleOnAnyDisplay = displays.some((d) => {
+        const b = d.bounds;
+        return (
+          data.x >= b.x - 100 &&
+          data.x < b.x + b.width &&
+          data.y >= b.y - 100 &&
+          data.y < b.y + b.height
+        );
+      });
+      if (!isVisibleOnAnyDisplay) {
+        data.x = undefined;
+        data.y = undefined;
+      }
+    }
+
+    return {
+      width: Math.max(1024, data.width || defaultState.width),
+      height: Math.max(700, data.height || defaultState.height),
+      x: data.x,
+      y: data.y,
+      isMaximized: Boolean(data.isMaximized),
+    };
+  } catch (err) {
+    return defaultState;
+  }
+}
+
+function saveWindowState(win) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    const isMaximized = win.isMaximized();
+    const bounds = win.getBounds();
+    const state = {
+      isMaximized,
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
+    };
+    fs.writeFileSync(getWindowStateFilePath(), JSON.stringify(state, null, 2), 'utf8');
+  } catch (_) {
+    // 무시
   }
 }
 
@@ -95,9 +178,11 @@ function createWindow() {
   const pngPath = path.join(__dirname, '../build/icon.png');
   const iconPath = fs.existsSync(icoPath) ? icoPath : (fs.existsSync(pngPath) ? pngPath : null);
 
-  mainWindow = new BrowserWindow({
-    width: 1360,
-    height: 880,
+  const windowState = loadWindowState();
+
+  const windowOptions = {
+    width: windowState.width,
+    height: windowState.height,
     minWidth: 1024,
     minHeight: 700,
     title: 'MyDiary Desktop',
@@ -108,6 +193,22 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+  };
+
+  if (windowState.x !== undefined && windowState.y !== undefined) {
+    windowOptions.x = windowState.x;
+    windowOptions.y = windowState.y;
+  }
+
+  mainWindow = new BrowserWindow(windowOptions);
+
+  if (windowState.isMaximized) {
+    mainWindow.maximize();
+  }
+
+  // 창 닫힐 때 상태 영속 저장
+  mainWindow.on('close', () => {
+    saveWindowState(mainWindow);
   });
 
   // 보안: 새 창(window.open / target="_blank") 생성 차단 및 안전한 외부 링크만 기본 브라우저로 위임
