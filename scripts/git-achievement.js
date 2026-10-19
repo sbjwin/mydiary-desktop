@@ -33,14 +33,19 @@ const repoInfo = getRepoInfo();
 const REPO_OWNER = repoInfo.owner;
 const REPO_NAME = repoInfo.name;
 
-// 동적 협업자 설정 (환경변수 또는 인자로 전달된 경우에만 적용)
+const DEFAULT_CO_AUTHOR = 'Co-authored-by: zigman1234 <zigman1234@users.noreply.github.com>';
+
+// 동적 협업자 설정 (기본값: zigman1234, CO_AUTHOR 환경변수로 오버라이드 또는 'none'으로 비활성화 가능)
 function getCoAuthor() {
+  if (process.env.CO_AUTHOR === 'none' || process.env.CO_AUTHOR === 'false') {
+    return null;
+  }
   if (process.env.CO_AUTHOR) {
     return process.env.CO_AUTHOR.startsWith('Co-authored-by:')
       ? process.env.CO_AUTHOR
       : `Co-authored-by: ${process.env.CO_AUTHOR}`;
   }
-  return null;
+  return DEFAULT_CO_AUTHOR;
 }
 
 function run(command, options = {}) {
@@ -107,7 +112,7 @@ async function createAndMergeViaAPI(token, branchName, title) {
     headers,
     body: JSON.stringify({
       commit_title: `${title} (#${prNumber})`,
-      commit_message: CO_AUTHOR,
+      commit_message: coAuthor ? `${title}\n\n${coAuthor}` : title,
       merge_method: 'squash'
     })
   });
@@ -145,7 +150,12 @@ async function handlePRMode(commitMsg) {
   // 3. 파일 스테이징 및 Co-authored 커밋
   console.log('📝 변경 사항 스테이징 및 Co-author 커밋 작성...');
   run('git add -A');
-  run(`git commit -m "${commitMsg}" -m "${CO_AUTHOR}"`);
+  const coAuthor = getCoAuthor();
+  if (coAuthor) {
+    run(`git commit -m "${commitMsg}" -m "${coAuthor}"`);
+  } else {
+    run(`git commit -m "${commitMsg}"`);
+  }
 
   // 4. 원격 브랜치 푸시
   console.log(`🚀 원격 저장소에 [${branchName}] 브랜치 푸시...`);
