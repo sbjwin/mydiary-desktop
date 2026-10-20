@@ -121,11 +121,6 @@ export/
 exports/
 userData/
 
-# AI 에이전트 로컬 설정 (IDE Local Configs)
-.claude/
-.gemini/
-.agents/
-
 # 프로젝트 감사 보고서 (Local Audit Report)
 PROJECT_AUDIT_REPORT.md
 
