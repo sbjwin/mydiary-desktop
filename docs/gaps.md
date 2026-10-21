@@ -31,13 +31,13 @@
   1. `HwpxExportService.js` 내에 결재란(담당/원장 서명란)이 포함된 `section.xml` OWPML 템플릿 함수 추가.
   2. 내보내기 모달에서 템플릿 프리셋 선택 라디오 버튼 제공.
 
-### [G2] 학생별 성장 추이 및 수업 통계 와이드 대시보드
-- **우선순위**: `P1 (Critical)` | **상태**: `Partial`
+### [G2] 학생별 성장 추이 및 수업 통계 와이드 요약 카드
+- **우선순위**: `P1 (Critical)` | **상태**: `Done` (1단계 요약 카드 완비)
 - **목표**: 누적된 수업 일지 및 학생별 출석/진도 데이터를 한눈에 조망할 수 있는 와이드 화면 특화 통계 뷰 제공.
-- **관련 파일**: `src/components/StatisticsTab.jsx` (신설 예정), [src/components/StudentDetail.jsx](file:///d:/development/mydiary-desktop/src/components/StudentDetail.jsx)
+- **관련 파일**: [src/components/StudentManageTab.jsx](file:///d:/development/mydiary-desktop/src/components/StudentManageTab.jsx), [src/styles/app.css](file:///d:/development/mydiary-desktop/src/styles/app.css)
 - **작업 내용**:
-  1. 학생별 월간 수업 횟수, 수업 시간 합계, 주요 교재 이수율 집계 로직.
-  2. 순수 SVG 기반의 가벼운 막대/라인 차트 시각화 (외부 무거운 차트 라이브러리 추가 지양).
+  1. 학생 선택 시 `Database.getRecordsByStudent` 기반 누적 일지 수, 이번 달 수업 수, 최근 진행 교재, 최근 수업일자 4대 지표 실시간 집계.
+  2. 와이드 화면 상단에 4열 그리드 반응형 요약 카드 컴포넌트 렌더링 완료.
 
 ### [G3] macOS DMG 및 Linux AppImage CI 빌드 파이프라인 검증
 - **우선순위**: `P2 (High)` | **상태**: `Partial`
