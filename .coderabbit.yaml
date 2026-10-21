@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "ko-KR"
+tone_instructions: "당신은 MyDiary Desktop 프로젝트의 시니어 크로스플랫폼 엔지니어입니다. 한국어로 전문적이고 친절하며 명확하게 코드 리뷰를 제공하십시오."
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    ignore_usernames:
+      - "dependabot[bot]"
+  path_instructions:
+    - path: "src/database/**"
+      instructions: "모바일 앱(mydiary) 백업 JSON과의 1:1 완벽 호환성, Cascade Delete, @mydiary:* 스토리지 키 표준 및 데이터 유실 방지 여부를 최우선으로 검토하십시오."
+    - path: "src/services/**"
+      instructions: "순수 비즈니스 로직 계층이 UI 컴포넌트(components/)나 React Hook을 역참조하지 않는지 아키텍처 계층 분리를 엄격히 검토하십시오."
+    - path: "src/utils/**"
+      instructions: "단일 진실 공급원(SSOT) 원칙을 준수하고 브라우저 네이티브 다이얼로그(alert, confirm, prompt)가 직접 호출되지 않았는지 확인하십시오."
+    - path: "electron/**"
+      instructions: "Context Isolation 기반 IPC 화이트리스트 보안 및 창 크기/위치 상태 기억(window-state), 단일 인스턴스 락이 올바르게 보존되는지 확인하십시오."
+
+chat:
+  auto_reply: true
