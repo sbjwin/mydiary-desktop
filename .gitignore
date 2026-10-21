@@ -124,3 +124,6 @@ userData/
 # 프로젝트 감사 보고서 (Local Audit Report)
 PROJECT_AUDIT_REPORT.md
 
+# 에이전트 로컬 작업 계획 (Local Agent Plans)
+plan/
+

@@ -211,7 +211,7 @@ if (fs.existsSync(mainJsPath)) {
 
 // 9. 루트 마스터 거버넌스 및 문서 SSOT 검사
 logHeader('9. 루트 마스터 거버넌스 및 문서 SSOT 무결성 검사');
-const governanceFiles = ['AGENTS.md', 'ROADMAP.md', 'ATTRIBUTION.md', 'SECURITY.md', 'docs/INDEX.md'];
+const governanceFiles = ['AGENTS.md', 'ROADMAP.md', 'ATTRIBUTION.md', 'SECURITY.md', 'docs/INDEX.md', 'docs/gaps.md'];
 for (const gFile of governanceFiles) {
   const gPath = path.join(rootDir, gFile);
   if (fs.existsSync(gPath)) {
@@ -219,6 +219,27 @@ for (const gFile of governanceFiles) {
   } else {
     logFail(`필수 마스터 거버넌스 문서 누락: ${gFile}`);
   }
+}
+
+// 10. 아키텍처 계층화 및 비즈니스 로직 역참조 방어 검사 (Layering & Dependency Isolation)
+logHeader('10. 아키텍처 계층화 및 비즈니스 로직 역참조 방어 검사');
+const coreDirs = [path.join(srcDir, 'services'), path.join(srcDir, 'database')];
+let layeringViolations = 0;
+for (const dir of coreDirs) {
+  if (!fs.existsSync(dir)) continue;
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.js'));
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    const code = fs.readFileSync(fullPath, 'utf8');
+    const relPath = path.relative(rootDir, fullPath);
+    if (code.includes('components/')) {
+      logFail(`${relPath}에서 UI 컴포넌트(components/) 역참조 감지됨 (비즈니스 로직 격리 원칙 위반)`);
+      layeringViolations++;
+    }
+  }
+}
+if (layeringViolations === 0) {
+  logPass('모든 코어 비즈니스 로직(services, database)에서 UI 컴포넌트 역참조 없음 (계층 분리 완벽 준수)');
 }
 
 // 종합 결론

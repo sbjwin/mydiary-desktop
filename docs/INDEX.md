@@ -28,6 +28,7 @@ graph TD
 ### 1. 마스터 거버넌스 & 로드맵 (Root)
 * [AGENTS.md](file:///d:/development/mydiary-desktop/AGENTS.md): AI 에이전트 및 기여자를 위한 최상위 행동 헌장, 골든 룰, 세션 인계 가이드.
 * [ROADMAP.md](file:///d:/development/mydiary-desktop/ROADMAP.md): 현재 버전 단계, 차원별 준비도(%), 에이전트-시간 추정 및 현재 집중 과제.
+* [gaps.md](file:///d:/development/mydiary-desktop/docs/gaps.md): 모바일 앱 기능 패리티 체크리스트, 잔여 격차 랭킹(G1~G5) 및 정량적 스코어카드.
 * [ATTRIBUTION.md](file:///d:/development/mydiary-desktop/ATTRIBUTION.md): 번들 에셋, 폰트, 아이콘 라이선스 및 인간/AI 공식 기여자 명시.
 * [SECURITY.md](file:///d:/development/mydiary-desktop/SECURITY.md): 보안 정책, 취약점 보고 절차, 로컬 데이터 격리 및 Electron IPC 보안.
 

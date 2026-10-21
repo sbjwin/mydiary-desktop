@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "dev:electron": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "test": "node --no-warnings scripts/test-integrity.cjs",
     "build": "vite build",
     "preview": "vite preview",
     "package:win": "vite build && electron-builder --win --publish never",

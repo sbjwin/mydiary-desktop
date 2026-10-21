@@ -2,7 +2,7 @@
  * MyDiary Desktop 파일 처리 및 텍스트 이스케이프 공통 유틸리티
  */
 
-import { showToast } from './dialog';
+import { showToast } from './dialog.js';
 
 /**
  * XML 특수문자 이스케이프 (HWPX, DOCX XML 안전성 보장)

@@ -51,8 +51,8 @@ import {
   getMondayOfWeek,
   getDateFromMondayOffset,
   getTodayDateString,
-} from '../utils/dateUtils';
-import { formatPhoneInfo } from '../utils/phoneUtils';
+} from '../utils/dateUtils.js';
+import { formatPhoneInfo } from '../utils/phoneUtils.js';
 
 export {
   getMondayOfWeek,
