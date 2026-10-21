@@ -18,6 +18,8 @@ import {
   Printer,
   Plus,
   X,
+  BookOpen,
+  TrendingUp,
 } from 'lucide-react';
 
 const WEEKDAYS = [
@@ -76,6 +78,63 @@ export const StudentManageTab = () => {
   useEffect(() => {
     loadStudents();
   }, []);
+
+  // 선택된 학생의 누적 수업 및 성장 통계 상태
+  const [studentStats, setStudentStats] = useState({
+    totalCount: 0,
+    monthCount: 0,
+    lastClassDate: null,
+    recentCourse: '',
+  });
+
+  useEffect(() => {
+    if (!selectedStudentId) {
+      setStudentStats({
+        totalCount: 0,
+        monthCount: 0,
+        lastClassDate: null,
+        recentCourse: '',
+      });
+      return;
+    }
+
+    let isMounted = true;
+    Database.getRecordsByStudent(selectedStudentId)
+      .then((records) => {
+        if (!isMounted) return;
+        if (!Array.isArray(records) || records.length === 0) {
+          setStudentStats({
+            totalCount: 0,
+            monthCount: 0,
+            lastClassDate: null,
+            recentCourse: '',
+          });
+          return;
+        }
+
+        // 날짜 내림차순 정렬 (최신 수업이 맨 앞)
+        const sorted = [...records].sort((a, b) => (b.class_date || '').localeCompare(a.class_date || ''));
+        const latest = sorted[0];
+
+        // 이번 달(YYYY-MM) 계산
+        const currentYearMonth = getTodayDateString().slice(0, 7);
+        const thisMonthCount = sorted.filter((r) => (r.class_date || '').startsWith(currentYearMonth)).length;
+
+        setStudentStats({
+          totalCount: sorted.length,
+          monthCount: thisMonthCount,
+          lastClassDate: latest.class_date || null,
+          recentCourse: latest.course || latest.subject || '',
+        });
+      })
+      .catch((err) => {
+        console.warn('학생 통계 로드 실패:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedStudentId]);
 
   const populateForm = (st) => {
     const resolvedCourse =
@@ -381,6 +440,55 @@ export const StudentManageTab = () => {
         </div>
 
         <div className="student-form-scroll">
+          {/* 학생 성장 및 수업 통계 요약 카드 (선택된 학생이 있을 때) */}
+          {selectedStudentId && (
+            <div className="student-stats-overview">
+              <div className="stat-card">
+                <div className="stat-icon-wrapper blue">
+                  <TrendingUp size={18} />
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">누적 수업 일지</span>
+                  <span className="stat-value">{studentStats.totalCount}회</span>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon-wrapper green">
+                  <Calendar size={18} />
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">이번 달 진행 수업</span>
+                  <span className="stat-value">{studentStats.monthCount}회</span>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon-wrapper orange">
+                  <BookOpen size={18} />
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">최근 진행 교재</span>
+                  <span className="stat-value" title={studentStats.recentCourse || formData.course || '미지정'}>
+                    {studentStats.recentCourse || formData.course || '미지정'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon-wrapper purple">
+                  <Clock size={18} />
+                </div>
+                <div className="stat-info">
+                  <span className="stat-label">최근 수업 일자</span>
+                  <span className="stat-value">
+                    {studentStats.lastClassDate || '기록 없음'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 섹션 1: 기본 인적사항 */}
           <div className="form-section-card">
             <h3 className="section-title">■ 기본 인적사항</h3>
