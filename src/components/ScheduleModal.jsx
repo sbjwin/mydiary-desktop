@@ -325,42 +325,16 @@ export const ScheduleModal = ({
                   required
                 />
                 {conflictSchedule && (
-                  <div
-                    style={{
-                      backgroundColor: '#fffbeb',
-                      border: '1px solid #fde047',
-                      color: '#b45309',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      fontSize: '11.5px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      marginTop: '6px',
-                    }}
-                  >
-                    <AlertTriangle size={14} color="#d97706" style={{ flexShrink: 0 }} />
+                  <div className="schedule-conflict-banner warning">
+                    <AlertTriangle size={14} color="#d97706" />
                     <span>
                       ⚠️ <strong>{conflictSchedule.studentName}</strong> 학생과 시간이 겹칩니다!
                     </span>
                   </div>
                 )}
                 {sameStudentOnDate && !conflictSchedule && (
-                  <div
-                    style={{
-                      backgroundColor: '#eff6ff',
-                      border: '1px solid #bfdbfe',
-                      color: '#1e40af',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      fontSize: '11.5px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      marginTop: '6px',
-                    }}
-                  >
-                    <AlertTriangle size={14} color="#3b82f6" style={{ flexShrink: 0 }} />
+                  <div className="schedule-conflict-banner info">
+                    <AlertTriangle size={14} color="#3b82f6" />
                     <span>
                       ℹ️ <strong>{studentName}</strong> 학생의 수업이 같은 날({sameStudentOnDate.startTime || sameStudentOnDate.classTime})에 이미 등록되어 있습니다.
                     </span>
@@ -450,7 +424,6 @@ export const ScheduleModal = ({
                   className="btn-danger sm"
                   onClick={handleDelete}
                   title="일정 삭제"
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
                   <Trash2 size={14} /> 삭제
                 </button>
@@ -463,7 +436,6 @@ export const ScheduleModal = ({
                   type="button"
                   className="btn-secondary sm btn-diary-direct"
                   onClick={handleGoToDiary}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
                   <ArrowRight size={14} /> 수업 일지 작성
                 </button>

@@ -260,6 +260,10 @@
   gap: 6px;
 }
 
+.form-group.mt-3 {
+  margin-top: 12px;
+}
+
 .form-label {
   font-size: 12.5px;
   font-weight: 600;
@@ -1017,7 +1021,34 @@
   min-width: 0;
 }
 
-.form-row-grid-2 {
+/* 일정 충돌 / 동일 학생 알림 배너 (인라인 스타일 공통화) */
+.schedule-conflict-banner {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.schedule-conflict-banner svg {
+  flex-shrink: 0;
+}
+
+.schedule-conflict-banner.warning {
+  background-color: #fffbeb;
+  border: 1px solid #fde047;
+  color: #b45309;
+}
+
+.schedule-conflict-banner.info {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.schedule-modal-body .form-row-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
@@ -1114,7 +1145,9 @@
   overflow: hidden;
 }
 
-.diary-list-sidebar {
+/* 일지 & 학생 목록 사이드바 공통 레이아웃 */
+.diary-list-sidebar,
+.student-list-sidebar {
   width: 320px;
   background-color: #ffffff;
   border-right: 1px solid var(--border-color);
@@ -1122,7 +1155,9 @@
   flex-direction: column;
 }
 
-.diary-sidebar-header {
+/* 사이드바 상단 헤더 공통 */
+.diary-sidebar-header,
+.student-sidebar-top {
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -1158,7 +1193,9 @@
   flex: 1;
 }
 
-.diary-records-scroll {
+/* 사이드바 스크롤 목록 공통 */
+.diary-records-scroll,
+.student-items-scroll {
   flex: 1;
   overflow-y: auto;
   padding: 12px;
@@ -1167,7 +1204,9 @@
   gap: 8px;
 }
 
-.diary-item-card {
+/* 사이드바 아이템 카드 공통 */
+.diary-item-card,
+.student-item-card {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -1176,12 +1215,14 @@
   transition: all 0.15s ease;
 }
 
-.diary-item-card:hover {
+.diary-item-card:hover,
+.student-item-card:hover {
   border-color: var(--primary);
   background-color: #ffffff;
 }
 
-.diary-item-card.active {
+.diary-item-card.active,
+.student-item-card.active {
   border-color: var(--primary);
   background-color: var(--primary-light);
 }
@@ -1211,7 +1252,9 @@
   line-height: 1.4;
 }
 
-.diary-editor-panel {
+/* 우측 상세 / 에디터 패널 공통 */
+.diary-editor-panel,
+.student-detail-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1288,21 +1331,9 @@
   overflow: hidden;
 }
 
-.student-list-sidebar {
-  width: 320px;
-  background-color: #ffffff;
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-}
+/* .student-list-sidebar 는 상위 .diary-list-sidebar 와 공통 정의됨 */
 
-.student-sidebar-top {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+/* .student-sidebar-top 은 상위 .diary-sidebar-header 와 공통 정의됨 */
 
 .filter-pill-group {
   display: flex;
@@ -1330,33 +1361,9 @@
   box-shadow: var(--shadow-sm);
 }
 
-.student-items-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+/* .student-items-scroll 은 상위 .diary-records-scroll 과 공통 정의됨 */
 
-.student-item-card {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-main);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.student-item-card:hover {
-  border-color: var(--primary);
-  background-color: #ffffff;
-}
-
-.student-item-card.active {
-  border-color: var(--primary);
-  background-color: var(--primary-light);
-}
+/* .student-item-card 는 상위 .diary-item-card 와 공통 정의됨 */
 
 .student-item-header {
   display: flex;
@@ -1395,15 +1402,7 @@
   color: var(--text-muted);
 }
 
-.student-detail-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg-main);
-  overflow-y: auto;
-  padding: 24px;
-  gap: 16px;
-}
+/* .student-detail-panel 은 상위 .diary-editor-panel 과 공통 정의됨 */
 
 .detail-top-bar {
   display: flex;
@@ -1713,7 +1712,7 @@
   gap: 16px;
 }
 
-.stat-card {
+.stats-cards-grid .stat-card {
   background-color: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: 10px;

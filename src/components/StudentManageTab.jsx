@@ -575,7 +575,7 @@ export const StudentManageTab = () => {
               </div>
             </div>
 
-            <div className="form-group" style={{ marginTop: '12px' }}>
+            <div className="form-group mt-3">
               <label className="form-label">거주지 주소</label>
               <input
                 type="text"
