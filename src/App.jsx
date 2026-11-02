@@ -6,6 +6,7 @@ import { StudentManageTab } from './components/StudentManageTab';
 import { BackupSettingTab } from './components/BackupSettingTab';
 import { HelpModal } from './components/HelpModal';
 import { ConfirmModal } from './components/ConfirmModal';
+import { TabErrorBoundary } from './components/TabErrorBoundary';
 import { CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { Database, getTodayDateString } from './database/Database';
 import { getStoredTheme, applyTheme } from './theme';
@@ -221,18 +222,20 @@ export function App() {
         onSelectTheme={handleSelectTheme}
       />
       <main className="app-main-content">
-        {activeTab === 'weekly' && (
-          <WeeklyScheduleTab onNavigateToDiary={handleNavigateToDiary} />
-        )}
-        {activeTab === 'diary' && (
-          <ClassDiaryTab initialParams={diaryParams} onDirtyChange={setIsEditorDirty} />
-        )}
-        {activeTab === 'students' && (
-          <StudentManageTab onDirtyChange={setIsEditorDirty} onNavigateToDiary={handleNavigateToDiary} />
-        )}
-        {activeTab === 'backup' && (
-          <BackupSettingTab />
-        )}
+        <TabErrorBoundary activeTab={activeTab} onNavigateHome={() => handleSafeSelectTab('weekly')}>
+          {activeTab === 'weekly' && (
+            <WeeklyScheduleTab onNavigateToDiary={handleNavigateToDiary} />
+          )}
+          {activeTab === 'diary' && (
+            <ClassDiaryTab initialParams={diaryParams} onDirtyChange={setIsEditorDirty} />
+          )}
+          {activeTab === 'students' && (
+            <StudentManageTab onDirtyChange={setIsEditorDirty} onNavigateToDiary={handleNavigateToDiary} />
+          )}
+          {activeTab === 'backup' && (
+            <BackupSettingTab />
+          )}
+        </TabErrorBoundary>
       </main>
 
       {/* 종합 시각적 도움말 모달 */}

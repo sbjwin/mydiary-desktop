@@ -19,6 +19,8 @@ import {
   LogIn,
   RefreshCw,
   Sparkles,
+  RotateCcw,
+  ShieldCheck,
 } from 'lucide-react';
 
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
@@ -55,6 +57,9 @@ export const BackupSettingTab = () => {
         recordsCount: records.length,
         plansCount: Object.keys(plansMap).length,
       });
+
+      const snap = await GoogleDriveService.getRollbackInfo();
+      setRollbackSnapshot(snap);
     } catch (err) {
       console.error('Failed to load stats:', err);
     }
