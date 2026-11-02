@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Database, getTodayDateString, getMondayOfWeek, getDateFromMondayOffset } from '../database/Database';
-import { exportDiaryToHwpx } from '../services/HwpxExportService';
+import { exportDiaryToHwpx, exportMultipleDiariesToHwpx } from '../services/HwpxExportService';
 import { generateClassRecordsHtml, printClassRecords } from '../services/PrintService';
 import {
   Calendar,
@@ -43,6 +43,8 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   const [searchFilter, setSearchFilter] = useState('');
   const [dateFilterMode, setDateFilterMode] = useState('all'); // 'all' | 'week' | 'month' | 'custom'
   const [customFromDate, setCustomFromDate] = useState('');
+  const [hwpxPreset, setHwpxPreset] = useState('standard'); // 'standard' | 'approval' | 'narrative'
+  const [hwpxMenuOpen, setHwpxMenuOpen] = useState(false);
   const [customToDate, setCustomToDate] = useState('');
   const [isDirty, setIsDirty] = useState(false);
 
@@ -280,7 +282,23 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
       content: `[수업 시간] ${formData.classTime}\n[과정/교재] ${formData.course}\n\n■ 학습 진도 및 지도 내용\n${formData.content || '(내용 없음)'}\n\n■ 과제 및 숙제\n${formData.homework || '(없음)'}\n\n■ 수업 태도 및 특이사항\n${formData.notes || '(특이사항 없음)'}`,
     };
 
-    await exportDiaryToHwpx(student, diaryForHwpx);
+    await exportDiaryToHwpx(student, diaryForHwpx, { preset: hwpxPreset });
+    setHwpxMenuOpen(false);
+  };
+
+  // 현재 검색/필터된 일지 목록 전체 HWPX 일괄 저장
+  const handleExportBulkHwpx = async () => {
+    if (filteredRecords.length === 0) {
+      showToast('내보낼 수업 일지가 없습니다.', 'warning');
+      return;
+    }
+    const targetSt = students.find((s) => s.id === selectedStudentId);
+    const labelName = targetSt ? `${targetSt.name}학생` : '전체학생';
+    await exportMultipleDiariesToHwpx(filteredRecords, students, {
+      preset: hwpxPreset,
+      labelName,
+    });
+    setHwpxMenuOpen(false);
   };
 
   // 인쇄 / PDF 출력
@@ -539,7 +557,40 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
           </div>
 
           <div className="btn-group">
-            <button className="btn-secondary" onClick={handleExportHwpx}>
+            <div className="toolbar-dropdown-wrapper">
+              <button type="button" className="btn-secondary" onClick={() => setHwpxMenuOpen(!hwpxMenuOpen)}>
+                <FileDown size={15} /> 한글(HWPX) 양식 저장 ▾
+              </button>
+              {hwpxMenuOpen && (
+                <div className="toolbar-dropdown-menu hwpx-preset-dropdown">
+                  <div className="hwpx-preset-section-title">1. HWPX 문서 서식 프리셋 (G1)</div>
+                  {[
+                    { id: 'standard', label: '📄 표준형 (기본 관찰일지 표)' },
+                    { id: 'approval', label: '🏛️ 결재란 포함형 (담당·원장·학부모 서명)' },
+                    { id: 'narrative', label: '💌 학부모 상담용 (가정 연계 리포트)' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`toolbar-dropdown-item ${hwpxPreset === p.id ? 'selected-preset' : ''}`}
+                      onClick={() => setHwpxPreset(p.id)}
+                    >
+                      <span>{p.label}</span>
+                      {hwpxPreset === p.id && <strong>✓</strong>}
+                    </button>
+                  ))}
+                  <div className="dropdown-divider" />
+                  <div className="hwpx-preset-section-title">2. 저장 실행 범위 선택</div>
+                  <button type="button" className="toolbar-dropdown-item primary-action" onClick={handleExportHwpx}>
+                    <FileDown size={14} /> 현재 작성 일지 1건 HWPX 저장
+                  </button>
+                  <button type="button" className="toolbar-dropdown-item" onClick={handleExportBulkHwpx}>
+                    <FileDown size={14} /> 좌측 필터된 일지 일괄 저장 ({filteredRecords.length}건)
+                  </button>
+                </div>
+              )}
+            </div>
+            <button className="btn-secondary" style={{ display: 'none' }} onClick={handleExportHwpx}>
               <FileDown size={15} /> 한글 문서(HWPX) 저장
             </button>
             <button className="btn-secondary" onClick={handlePrint}>

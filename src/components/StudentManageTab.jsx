@@ -114,6 +114,14 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
             monthCount: 0,
             lastClassDate: null,
             recentCourse: '',
+            monthlyTrend: [],
+            recentRecords: [],
+          });
+          if (false) setStudentStats({
+            totalCount: 0,
+            monthCount: 0,
+            lastClassDate: null,
+            recentCourse: '',
           });
           return;
         }
@@ -126,7 +134,25 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
         const currentYearMonth = getTodayDateString().slice(0, 7);
         const thisMonthCount = sorted.filter((r) => (r.class_date || '').startsWith(currentYearMonth)).length;
 
+        // 최근 6개월 월별 수업 추이 계산
+        const now = new Date();
+        const monthlyTrend = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const cnt = sorted.filter((r) => (r.class_date || '').startsWith(ym)).length;
+          monthlyTrend.push({ ym, label: `${d.getMonth() + 1}월`, count: cnt });
+        }
+
         setStudentStats({
+          totalCount: sorted.length,
+          monthCount: thisMonthCount,
+          lastClassDate: latest.class_date || null,
+          recentCourse: latest.course || latest.subject || '',
+          monthlyTrend,
+          recentRecords: sorted.slice(0, 5),
+        });
+        if (false) setStudentStats({
           totalCount: sorted.length,
           monthCount: thisMonthCount,
           lastClassDate: latest.class_date || null,
@@ -506,6 +532,65 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                     {studentStats.lastClassDate || '기록 없음'}
                   </span>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* 학생 성장 추이 시각화 차트 및 최근 수업 일지 타임라인 */}
+          {selectedStudentId && (
+            <div className="student-growth-dashboard-grid">
+              {/* 좌측: 최근 6개월 월별 수업 횟수 바 차트 */}
+              <div className="form-section-card growth-chart-card">
+                <h3 className="section-title">📊 최근 6개월 월별 수업 추이</h3>
+                <div className="monthly-bar-chart">
+                  {(studentStats.monthlyTrend || []).map((m) => {
+                    const maxCnt = Math.max(1, ...(studentStats.monthlyTrend || []).map((x) => x.count));
+                    const heightPct = Math.max(10, Math.round((m.count / maxCnt) * 100));
+                    return (
+                      <div key={m.ym} className="bar-col" title={`${m.ym}: ${m.count}회 수업`}>
+                        <span className="bar-count-label">{m.count}회</span>
+                        <div className="bar-track">
+                          <div
+                            className={`bar-fill ${m.count > 0 ? 'has-val' : ''}`}
+                            style={{ height: `${heightPct}%` }}
+                          />
+                        </div>
+                        <span className="bar-month-label">{m.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 우측: 최근 수업 일지 5건 바로보기 타임라인 */}
+              <div className="form-section-card recent-records-card">
+                <h3 className="section-title">📝 최근 작성된 수업 일지 (클릭 시 이동)</h3>
+                {(!studentStats.recentRecords || studentStats.recentRecords.length === 0) ? (
+                  <div className="empty-sub-notice">아직 작성된 수업 일지가 없습니다.</div>
+                ) : (
+                  <div className="recent-diary-mini-list">
+                    {studentStats.recentRecords.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className="recent-diary-mini-item"
+                        onClick={() =>
+                          onNavigateToDiary?.({
+                            studentId: selectedStudentId,
+                            diaryId: rec.id,
+                            date: rec.class_date || rec.date,
+                          })
+                        }
+                        title="클릭하여 이 수업 일지 상세 편집 화면으로 이동"
+                      >
+                        <div className="recent-mini-top">
+                          <span className="recent-mini-date">{rec.class_date || rec.date}</span>
+                          <span className="recent-mini-course">{rec.course || rec.subject || '수업'}</span>
+                        </div>
+                        <div className="recent-mini-content">{rec.content || '(진도 기록 없음)'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

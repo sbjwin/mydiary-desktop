@@ -4079,3 +4079,175 @@
   border-color: var(--primary, #0284c7);
   color: var(--primary, #0284c7);
 }
+
+/* ==========================================================================
+   Phase 3. 학생 성장 시각화 차트 & 교사 프로필 / HWPX 다중 서식 프리셋
+   ========================================================================== */
+.user-profile-badge {
+  position: relative;
+}
+
+.user-profile-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.user-profile-clickable:hover {
+  color: var(--primary, #0284c7);
+}
+
+.profile-popover-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+  z-index: 60;
+  overflow: hidden;
+}
+
+.profile-popover-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.hwpx-preset-dropdown {
+  min-width: 270px;
+}
+
+.hwpx-preset-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  padding: 4px 10px 2px;
+}
+
+.toolbar-dropdown-item.selected-preset {
+  background-color: var(--primary-light, #e0f2fe);
+  color: var(--primary-dark, #0369a1);
+  justify-content: space-between;
+}
+
+.toolbar-dropdown-item.primary-action {
+  color: var(--primary, #0284c7);
+  font-weight: 700;
+}
+
+.student-growth-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.monthly-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 130px;
+  padding: 12px 10px 4px;
+  gap: 10px;
+  background-color: var(--bg-main, #f8fafc);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 4px;
+}
+
+.bar-count-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+}
+
+.bar-track {
+  flex: 1;
+  width: 22px;
+  background-color: #e2e8f0;
+  border-radius: 5px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: 100%;
+  background-color: #cbd5e1;
+  border-radius: 5px 5px 0 0;
+  transition: height 0.25s ease;
+}
+
+.bar-fill.has-val {
+  background: linear-gradient(180deg, var(--primary, #0284c7) 0%, var(--primary-dark, #0369a1) 100%);
+}
+
+.bar-month-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-main, #334155);
+}
+
+.recent-diary-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 136px;
+  overflow-y: auto;
+}
+
+.recent-diary-mini-item {
+  padding: 7px 10px;
+  border-radius: 6px;
+  background-color: var(--bg-main, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.recent-diary-mini-item:hover {
+  border-color: var(--primary, #0284c7);
+  background-color: var(--primary-light, #f0f9ff);
+}
+
+.recent-mini-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.recent-mini-date {
+  color: var(--primary, #0284c7);
+}
+
+.recent-mini-course {
+  color: var(--text-muted, #64748b);
+}
+
+.recent-mini-content {
+  font-size: 12px;
+  color: var(--text-main, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

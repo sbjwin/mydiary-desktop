@@ -16,7 +16,41 @@ export const saveOrDownloadHwpx = async (fileName, base64Data) => {
 };
 
 
-const TEACHER_NAME = '성백진';
+const DEFAULT_TEACHER_NAME = '성백진';
+const TEACHER_PROFILE_KEY = '@mydiary:teacher_profile';
+
+export const getTeacherProfile = () => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(TEACHER_PROFILE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          teacherName: (parsed.teacherName || DEFAULT_TEACHER_NAME).trim(),
+          orgName: (parsed.orgName || '교실 모드').trim(),
+        };
+      }
+    }
+  } catch (e) {
+    // ignore storage read error
+  }
+  return { teacherName: DEFAULT_TEACHER_NAME, orgName: '교실 모드' };
+};
+
+export const saveTeacherProfile = ({ teacherName, orgName }) => {
+  const next = {
+    teacherName: (teacherName || DEFAULT_TEACHER_NAME).trim(),
+    orgName: (orgName || '교실 모드').trim(),
+  };
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(TEACHER_PROFILE_KEY, JSON.stringify(next));
+    }
+  } catch (e) {
+    console.warn('Failed to save teacher profile:', e);
+  }
+  return next;
+};
 
 /**
  * 텍스트 런(Run) 생성 헬퍼
@@ -557,7 +591,7 @@ export const buildWeeklyPlanHwpxSectionXml = (weeklyPlan) => {
   </hp:p>
   <hp:p id="0" paraPrIDRef="5" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
     <hp:run charPrIDRef="20"><hp:t>${year}년 ${month}월 ${day}일 주간의 </hp:t></hp:run>
-    <hp:run charPrIDRef="21"><hp:t>${TEACHER_NAME}</hp:t></hp:run>
+    <hp:run charPrIDRef="21"><hp:t>${escapeXml(getTeacherProfile().teacherName)}</hp:t></hp:run>
     <hp:run charPrIDRef="20"><hp:t> 업무 보고서</hp:t></hp:run>
   </hp:p>
   <hp:p id="0" paraPrIDRef="5" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
@@ -625,7 +659,7 @@ export const shareWeeklyReportHwpx = async (weeklyPlan) => {
   <opf:metadata>
     <opf:title>주간 업무 보고서</opf:title>
     <opf:language>ko</opf:language>
-    <opf:meta name="creator" content="${TEACHER_NAME}"/>
+    <opf:meta name="creator" content="${escapeXml(getTeacherProfile().teacherName)}"/>
   </opf:metadata>
   <opf:manifest>
     <opf:item id="header" href="Contents/header.xml" media-type="application/xml"/>
@@ -686,7 +720,37 @@ const createTableParagraph = ({
   </hp:p>
   `;
 };
-export const exportDiaryToHwpx = async (student, diary) => {
+export const buildApprovalTableBlockXml = (teacherName) => createTableParagraph({
+  id: 99,
+  rows: [
+    createRow([
+      createCell({ paragraphs: [createParagraph([createRun('결 재', 3)], 5)], width: 4252, height: 1600, borderFillIDRef: 7, rowAddr: 0, colAddr: 0, rowSpan: 2, vertAlign: 'CENTER' }),
+      createCell({ paragraphs: [createParagraph([createRun('담 당', 3)], 5)], width: 6378, height: 700, borderFillIDRef: 7, rowAddr: 0, colAddr: 1, vertAlign: 'CENTER' }),
+      createCell({ paragraphs: [createParagraph([createRun('원 장 / 팀 장', 3)], 5)], width: 6378, height: 700, borderFillIDRef: 7, rowAddr: 0, colAddr: 2, vertAlign: 'CENTER' }),
+      createCell({ paragraphs: [createParagraph([createRun('학부모 확인', 3)], 5)], width: 6378, height: 700, borderFillIDRef: 7, rowAddr: 0, colAddr: 3, vertAlign: 'CENTER' }),
+    ]),
+    createRow([
+      createCell({ paragraphs: [createParagraph([createRun(`${teacherName} (인)`, 0)], 5)], width: 6378, height: 1400, borderFillIDRef: 6, rowAddr: 1, colAddr: 1, vertAlign: 'CENTER' }),
+      createCell({ paragraphs: [createParagraph([createRun('(인)', 2)], 5)], width: 6378, height: 1400, borderFillIDRef: 6, rowAddr: 1, colAddr: 2, vertAlign: 'CENTER' }),
+      createCell({ paragraphs: [createParagraph([createRun('(서명)', 2)], 5)], width: 6378, height: 1400, borderFillIDRef: 6, rowAddr: 1, colAddr: 3, vertAlign: 'CENTER' }),
+    ]),
+  ],
+  rowCnt: 2,
+  colCnt: 4,
+  width: 23386,
+  height: 2100,
+  borderFillIDRef: 6,
+});
+
+export const exportDiaryToHwpx = async (student, diary, options = {}) => {
+  const preset = options.preset || 'standard'; // 'standard' | 'approval' | 'narrative'
+  const { teacherName, orgName } = getTeacherProfile();
+  const presetTitleMap = {
+    standard: '학생 관찰 및 성장 기록 일지 (표준형)',
+    approval: '학생 수업 및 관찰 일지 (결재란 포함)',
+    narrative: '가정 연계 학습 안내 및 성장 리포트 (서술형)',
+  };
+  const docHeaderTitle = presetTitleMap[preset] || presetTitleMap.standard;
   try {
     const fileName = `${student.name}_${diary.date}_관찰일지.hwpx`;
     const zip = new JSZip();
@@ -705,7 +769,7 @@ export const exportDiaryToHwpx = async (student, diary) => {
   <opf:metadata>
     <opf:title>${escapeXml(student.name)} 관찰일지</opf:title>
     <opf:language>ko</opf:language>
-    <opf:meta name="creator">${TEACHER_NAME}</opf:meta>
+    <opf:meta name="creator">${escapeXml(teacherName)}</opf:meta>
   </opf:metadata>
   <opf:manifest>
     <opf:item id="header" href="Contents/header.xml" media-type="application/xml"/>
@@ -739,8 +803,10 @@ export const exportDiaryToHwpx = async (student, diary) => {
       </hp:secPr>
     </hp:run>
   </hp:p>
-  ${createParagraph([createRun('학생 관찰 및 성장 기록 일지', 1)], 1)}
-  ${createParagraph([createRun(`작성일: ${diary.date}  |  작성 교사: ${TEACHER_NAME}`, 2)], 2)}
+
+  ${createParagraph([createRun(docHeaderTitle, 1)], 1)}
+  ${createParagraph([createRun(`작성일: ${diary.date}  |  작성 교사: ${teacherName} (${orgName})`, 2)], 2)}
+  ${preset === 'approval' ? buildApprovalTableBlockXml(teacherName) : ''}
   ${createParagraph([createRun('', 0)], 6)}
   ${createTableParagraph({
     id: 1,
@@ -781,6 +847,116 @@ export const exportDiaryToHwpx = async (student, diary) => {
     return await saveOrDownloadHwpx(fileName, base64Data);
   } catch (error) {
     console.error('Failed to export single diary HWPX:', error);
+    showToast('한글 문서 생성 중 오류가 발생했습니다: ' + (error?.message || error), 'error');
+  }
+};
+
+export const exportMultipleDiariesToHwpx = async (records = [], students = [], options = {}) => {
+  try {
+    if (!Array.isArray(records) || records.length === 0) return;
+    const preset = options.preset || 'standard';
+    const { teacherName, orgName } = getTeacherProfile();
+    const labelName = options.labelName || '전체학생';
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const fileName = `${labelName}_수업일지모음(${records.length}건)_${todayStr}.hwpx`;
+    const zip = new JSZip();
+
+    zip.file('mimetype', 'application/hwp+zip', { compression: 'STORE' });
+    zip.file('version.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<hv:HCFVersion xmlns:hv="http://www.hancom.co.kr/hwpml/2011/version" tagetApplication="WORDPROCESSOR" major="5" minor="0" micro="0" buildNumber="0" os="1" xmlVersion="1.2" application="Hancom Office Hangul" appVersion="11, 0, 0, 2128 WIN32LEWindows_10"/>`);
+    zip.file('settings.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<ha:HWPApplicationSetting xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0">\n  <ha:CaretPosition listIDRef="0" paraIDRef="0" pos="0"/>\n</ha:HWPApplicationSetting>`);
+
+    const metaFolder = zip.folder('META-INF');
+    metaFolder.file('container.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<ocf:container xmlns:ocf="urn:oasis:names:tc:opendocument:xmlns:container" xmlns:hpf="http://www.hancom.co.kr/schema/2011/hpf">\n  <ocf:rootfiles>\n    <ocf:rootfile full-path="Contents/content.hpf" media-type="application/hwpml-package+xml"/>\n  </ocf:rootfiles>\n</ocf:container>`);
+    metaFolder.file('manifest.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<odf:manifest xmlns:odf="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"/>`);
+
+    const contentsFolder = zip.folder('Contents');
+    contentsFolder.file('content.hpf', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<opf:package xmlns:opf="http://www.idpf.org/2007/opf/" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0" unique-identifier="BookId">
+  <opf:metadata>
+    <opf:title>${escapeXml(labelName)} 수업일지 통합 보고서</opf:title>
+    <opf:language>ko</opf:language>
+    <opf:meta name="creator">${escapeXml(teacherName)}</opf:meta>
+  </opf:metadata>
+  <opf:manifest>
+    <opf:item id="header" href="Contents/header.xml" media-type="application/xml"/>
+    <opf:item id="section0" href="Contents/section0.xml" media-type="application/xml"/>
+    <opf:item id="settings" href="settings.xml" media-type="application/xml"/>
+  </opf:manifest>
+  <opf:spine>
+    <opf:itemref idref="header" linear="yes"/>
+    <opf:itemref idref="section0" linear="yes"/>
+  </opf:spine>
+</opf:package>`);
+
+    contentsFolder.file('header.xml', buildHeaderXml());
+
+    const tablesXml = records.map((rec, idx) => {
+      const st = students.find((s) => s.id === (rec.student_id || rec.studentId));
+      const stName = st ? `${st.name} (${st.school_grade || st.grade || '재원'})` : '학생';
+      const dateStr = rec.class_date || rec.date || '';
+      const timeStr = rec.class_time || rec.time || rec.classTime || '';
+      const courseStr = rec.course || rec.subject || '';
+      const bodyLines = [
+        `[학습 진도] ${rec.content || '(내용 없음)'}`,
+        rec.homework ? `[과제 안내] ${rec.homework}` : '',
+        rec.notes ? `[특이사항] ${rec.notes}` : '',
+      ].filter(Boolean);
+      const bodyParas = bodyLines.flatMap((line) => line.split('\n')).map((l) => createParagraph([createRun(l, 0)], 0));
+      return createTableParagraph({
+        id: idx + 1,
+        rows: [
+          createRow([
+            createCell({ paragraphs: [createParagraph([createRun('학생 / 일시', 3)], 1)], width: 8504, borderFillIDRef: 2, rowAddr: 0, colAddr: 0 }),
+            createCell({ paragraphs: [createParagraph([createRun(`${stName}  |  ${dateStr} ${timeStr}`, 0)], 0)], width: 34016, borderFillIDRef: 2, rowAddr: 0, colAddr: 1 }),
+          ]),
+          createRow([
+            createCell({ paragraphs: [createParagraph([createRun('과정 / 교재', 3)], 1)], width: 8504, borderFillIDRef: 2, rowAddr: 1, colAddr: 0 }),
+            createCell({ paragraphs: [createParagraph([createRun(courseStr || '일반 수업', 4)], 0)], width: 34016, borderFillIDRef: 2, rowAddr: 1, colAddr: 1 }),
+          ]),
+          createRow([
+            createCell({ paragraphs: [createParagraph([createRun('지도 기록', 3)], 1)], width: 8504, borderFillIDRef: 2, rowAddr: 2, colAddr: 0 }),
+            createCell({ paragraphs: bodyParas, width: 34016, borderFillIDRef: 2, rowAddr: 2, colAddr: 1 }),
+          ]),
+        ],
+        rowCnt: 3,
+        colCnt: 2,
+        width: 42520,
+        height: 4500,
+        borderFillIDRef: 2,
+      }) + createParagraph([createRun('', 0)], 6);
+    }).join('');
+
+    const sectionXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<hs:sec xmlns:ha="http://www.hancom.co.kr/hwpml/2011/app"
+        xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph"
+        xmlns:hs="http://www.hancom.co.kr/hwpml/2011/section"
+        xmlns:hc="http://www.hancom.co.kr/hwpml/2011/core"
+        xmlns:hh="http://www.hancom.co.kr/hwpml/2011/head">
+  <hp:p paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">
+    <hp:run charPrIDRef="0">
+      <hp:secPr textDirection="HORIZONTAL" outlineShapeIDRef="1">
+        <hp:pagePr landscape="WIDELY" width="59528" height="84188">
+          <hp:margin header="0" footer="0" left="8504" right="8504" top="4252" bottom="4252"/>
+        </hp:pagePr>
+      </hp:secPr>
+    </hp:run>
+  </hp:p>
+  ${createParagraph([createRun(`${labelName} 수업 및 관찰 일지 통합 보고서 (총 ${records.length}건)`, 1)], 1)}
+  ${createParagraph([createRun(`출력일: ${todayStr}  |  담당 교사: ${teacherName} (${orgName})`, 2)], 2)}
+  ${preset === 'approval' ? buildApprovalTableBlockXml(teacherName) : ''}
+  ${createParagraph([createRun('', 0)], 6)}
+  ${tablesXml}
+</hs:sec>`;
+
+    contentsFolder.file('section0.xml', sectionXml);
+    const base64Data = await zip.generateAsync({
+      type: 'base64',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    });
+    return await saveOrDownloadHwpx(fileName, base64Data);
+  } catch (error) {
+    console.error('Failed to export multiple diaries HWPX:', error);
     showToast('한글 문서 생성 중 오류가 발생했습니다: ' + (error?.message || error), 'error');
   }
 };

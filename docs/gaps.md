@@ -12,7 +12,7 @@
 | 영역 (Area) | 완료 (Done) | 진행/부분 (Partial) | 미구현 (Missing) | 패리티 달성률 | 핵심 현황 |
 |---|---:|---:|---:|---:|---|
 | **1. 모바일 앱 (`mydiary`) 패리티** | 12 | 2 | 0 | **95.2%** | 학생 주소록, 수강 차수, 일지 작성, 주간 시간표 1:1 호환 완료 |
-| **2. 국가 표준 HWPX / 서식 엔진** | 4 | 2 | 0 | **85.7%** | KS X 6101 OWPML 표 생성 완료, 커스텀 서식 템플릿 다변화 필요 |
+| **2. 국가 표준 HWPX / 서식 엔진** | 5 | 1 | 0 | **92.9%** | KS X 6101 OWPML 표 및 3종 서식 프리셋(표준/결재란/서술형) 완료 |
 | **3. 와이드 데스크톱 UI/UX** | 9 | 2 | 1 | **88.0%** | 3단 마스터-디테일, 다크/라이트 테마 완료, 성장 차트 대시보드 필요 |
 | **4. 3대 OS 패키징 & 배포** | 3 | 1 | 1 | **75.0%** | Windows NSIS/포터블 완료, macOS DMG / Linux AppImage CI 검증 대기 |
 | **5. 하네스 & 품질 게이트** | 6 | 0 | 0 | **100.0%** | `node:test` 내장 테스트, 9대 정기 코드 감사, 100% 한국어 커밋 하네스 완비 |
@@ -24,12 +24,13 @@
 에이전트가 새로운 작업을 선택할 때 위에서부터 아래로 순차적으로 착수합니다:
 
 ### [G1] HWPX 복수 표 서식 템플릿 프리셋 다변화
-- **우선순위**: `P1 (Critical)` | **상태**: `Partial`
-- **목표**: 교육청, 복지관, 개인 교습소 등 기관별 요구 서식에 맞춘 2~3종의 HWPX 출력 레이아웃 프리셋(표준형, 서술형, 결재란 포함형) 선택 지원.
-- **관련 파일**: [src/services/HwpxExportService.js](file:///d:/development/mydiary-desktop/src/services/HwpxExportService.js), [src/components/ExportModal.jsx](file:///d:/development/mydiary-desktop/src/components/ExportModal.jsx)
+- **우선순위**: `P1 (Critical)` | **상태**: `Done` (Phase 3 완비)
+- **목표**: 교육청, 복지관, 개인 교습소 등 기관별 요구 서식에 맞춘 3종의 HWPX 출력 레이아웃 프리셋(표준형, 서술형, 결재란 포함형) 선택 지원 및 교사 프로필 연동.
+- **관련 파일**: [src/services/HwpxExportService.js](file:///d:/development/mydiary-desktop/src/services/HwpxExportService.js), [src/components/ClassDiaryTab.jsx](file:///d:/development/mydiary-desktop/src/components/ClassDiaryTab.jsx), [src/components/Header.jsx](file:///d:/development/mydiary-desktop/src/components/Header.jsx)
 - **작업 내용**:
-  1. `HwpxExportService.js` 내에 결재란(담당/원장 서명란)이 포함된 `section.xml` OWPML 템플릿 함수 추가.
-  2. 내보내기 모달에서 템플릿 프리셋 선택 라디오 버튼 제공.
+  1. `HwpxExportService.js` 내 결재란(담당/원장/학부모 서명) OWPML 표 서식 및 3종 프리셋(표준형/결재란/서술형) 추가.
+  2. 일지 탭에서 HWPX 양식 드롭다운을 통해 프리셋 선택 및 필터된 일지 일괄 내보내기 지원.
+  3. 상단 헤더 교사명/기관명 설정 팝오버를 통해 HWPX 작성자 및 소속 메타데이터 동적 반영.
 
 ### [G2] 학생별 성장 추이 및 수업 통계 와이드 요약 카드
 - **우선순위**: `P1 (Critical)` | **상태**: `Done` (1단계 요약 카드 완비)

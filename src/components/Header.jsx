@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check } from 'lucide-react';
 import { THEME_PRESETS } from '../theme';
+import { getTeacherProfile, saveTeacherProfile } from '../services/HwpxExportService';
+import { showToast } from '../utils/dialog';
 
 export const Header = ({
   activeTab,
@@ -11,6 +13,21 @@ export const Header = ({
 }) => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const paletteRef = useRef(null);
+  const profileRef = useRef(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [teacherProfile, setTeacherProfile] = useState(() => getTeacherProfile());
+  const [draftTeacherName, setDraftTeacherName] = useState(() => getTeacherProfile().teacherName);
+  const [draftOrgName, setDraftOrgName] = useState(() => getTeacherProfile().orgName);
+
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    const saved = saveTeacherProfile({ teacherName: draftTeacherName, orgName: draftOrgName });
+    setTeacherProfile(saved);
+    setDraftTeacherName(saved.teacherName);
+    setDraftOrgName(saved.orgName);
+    setIsProfileOpen(false);
+    showToast(`교사 프로필이 '${saved.teacherName} 선생님 (${saved.orgName})'으로 저장되었습니다.`, 'success');
+  };
 
   const tabs = [
     { id: 'weekly', label: '주간 시간표', icon: Calendar },
@@ -121,7 +138,46 @@ export const Header = ({
 
         <div className="user-profile-badge">
           <Laptop size={14} />
-          <span>성백진 선생님 (교실 모드)</span>
+          <span
+            className="user-profile-clickable"
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            title="클릭하여 교사명 및 교실/기관명 변경 (HWPX 문서 작성자 연동)"
+          >
+            {teacherProfile.teacherName} 선생님 ({teacherProfile.orgName}) ▾
+          </span>
+          {isProfileOpen && (
+            <form className="profile-popover-dropdown" onSubmit={handleSaveProfile} ref={profileRef}>
+              <div className="theme-popover-header">
+                <span>👩‍🏫 교사 및 기관명 설정</span>
+              </div>
+              <div className="profile-popover-body">
+                <label className="form-label">선생님 성함 (HWPX 작성자)</label>
+                <input
+                  type="text"
+                  className="form-input sm"
+                  value={draftTeacherName}
+                  onChange={(e) => setDraftTeacherName(e.target.value)}
+                  placeholder="예: 성백진"
+                />
+                <label className="form-label">소속 / 교실 모드 표기</label>
+                <input
+                  type="text"
+                  className="form-input sm"
+                  value={draftOrgName}
+                  onChange={(e) => setDraftOrgName(e.target.value)}
+                  placeholder="예: 교실 모드 / OO초교 / OO학원"
+                />
+                <div className="profile-popover-actions">
+                  <button type="button" className="btn-secondary sm" onClick={() => setIsProfileOpen(false)}>
+                    취소
+                  </button>
+                  <button type="submit" className="btn-primary sm">
+                    저장
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </header>
