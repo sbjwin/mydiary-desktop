@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Database, getTodayDateString } from '../database/Database';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Database, getTodayDateString, getMondayOfWeek, getDateFromMondayOffset } from '../database/Database';
 import { exportDiaryToHwpx } from '../services/HwpxExportService';
 import { generateClassRecordsHtml, printClassRecords } from '../services/PrintService';
 import {
@@ -7,6 +7,7 @@ import {
   Clock,
   BookOpen,
   User,
+  Users,
   Save,
   Plus,
   Trash2,
@@ -16,10 +17,23 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
+  Sparkles,
 } from 'lucide-react';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 
 const COMMON_COURSES = ['국어', '수학', '사회', '과학', '영어', '독서논술', '창의체험'];
+const CONTENT_PHRASES = [
+  '개념 이해 및 기본 문제 풀이 완료',
+  '응용/심화 문제 오답 정리',
+  '단원 평가 실시 및 피드백',
+  '지난 과제 점검 및 보충 설명',
+];
+const NOTES_PHRASES = [
+  '수업 집중도가 높고 질문이 적극적임',
+  '과제를 성실히 수행해 왔음',
+  '개념 복습 및 연산 연습이 추가로 필요함',
+  '다음 시간 교재 및 오답노트 지참 안내',
+];
 
 export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   const [students, setStudents] = useState([]);
@@ -27,6 +41,9 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const [dateFilterMode, setDateFilterMode] = useState('all'); // 'all' | 'week' | 'month' | 'custom'
+  const [customFromDate, setCustomFromDate] = useState('');
+  const [customToDate, setCustomToDate] = useState('');
   const [isDirty, setIsDirty] = useState(false);
 
   // 포커스 안전 유지 및 1회성 initialParams 처리용 Refs
@@ -281,18 +298,76 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
     await printClassRecords(student, [currentRecord], formData.classDate);
   };
 
-  // 필터링된 일지 목록
-  const filteredRecords = records.filter((r) => {
-    if (selectedStudentId && r.student_id !== selectedStudentId) return false;
-    if (searchFilter) {
-      const q = searchFilter.toLowerCase();
-      const matchCourse = (r.course || '').toLowerCase().includes(q);
-      const matchContent = (r.content || '').toLowerCase().includes(q);
-      const matchDate = (r.class_date || '').includes(q);
-      return matchCourse || matchContent || matchDate;
-    }
-    return true;
-  });
+  // 복합 필터링된 일지 목록 (G5: 학생, 과목, 본문, 과제, 특이사항 + 기간 필터)
+  const filteredRecords = useMemo(() => {
+    const todayStr = getTodayDateString();
+    const mondayStr = getMondayOfWeek(new Date());
+    const sundayStr = getDateFromMondayOffset(mondayStr, 6);
+    const currentMonthPrefix = todayStr.slice(0, 7);
+
+    return records.filter((r) => {
+      const rStudentId = r.student_id || r.studentId;
+      if (selectedStudentId && rStudentId !== selectedStudentId) return false;
+
+      const rDate = r.class_date || r.date || '';
+      if (dateFilterMode === 'week') {
+        if (rDate < mondayStr || rDate > sundayStr) return false;
+      } else if (dateFilterMode === 'month') {
+        if (!rDate.startsWith(currentMonthPrefix)) return false;
+      } else if (dateFilterMode === 'custom') {
+        if (customFromDate && rDate < customFromDate) return false;
+        if (customToDate && rDate > customToDate) return false;
+      }
+
+      if (searchFilter.trim()) {
+        const q = searchFilter.toLowerCase().trim();
+        const st = students.find((s) => s.id === rStudentId);
+        const matchStudent = (st?.name || '').toLowerCase().includes(q);
+        const matchCourse = (r.course || r.subject || '').toLowerCase().includes(q);
+        const matchContent = (r.content || '').toLowerCase().includes(q);
+        const matchHomework = (r.homework || r.assignment || '').toLowerCase().includes(q);
+        const matchNotes = (r.notes || r.special_notes || r.memo || '').toLowerCase().includes(q);
+        const matchDate = rDate.includes(q);
+        return matchStudent || matchCourse || matchContent || matchHomework || matchNotes || matchDate;
+      }
+      return true;
+    });
+  }, [records, selectedStudentId, dateFilterMode, customFromDate, customToDate, searchFilter, students]);
+
+  // 현재 대상 학생의 직전 수업 일지 탐색
+  const prevRecord = useMemo(() => {
+    const targetStudentId = formData.studentId || selectedStudentId;
+    if (!targetStudentId) return null;
+    const studentRecs = records
+      .filter((r) => (r.student_id || r.studentId) === targetStudentId && r.id !== selectedRecordId)
+      .sort((a, b) => (b.class_date || b.date || '').localeCompare(a.class_date || a.date || ''));
+    return studentRecs[0] || null;
+  }, [records, formData.studentId, selectedStudentId, selectedRecordId]);
+
+  const handleApplyPrevRecord = () => {
+    if (!prevRecord) return;
+    const prevCourse = prevRecord.course || prevRecord.subject || formData.course;
+    const prevHw = prevRecord.homework || prevRecord.assignment || '';
+    const nextContent = prevHw
+      ? `[직전 과제 점검] ${prevHw}\n${formData.content || ''}`.trim()
+      : formData.content || '';
+    setFormData((prev) => ({
+      ...prev,
+      course: prevCourse,
+      content: nextContent,
+    }));
+    updateDirty(true);
+    showToast('직전 수업의 교재와 과제를 현재 일지에 불러왔습니다.', 'info');
+  };
+
+  const handleAppendPhrase = (field, phrase) => {
+    setFormData((prev) => {
+      const current = (prev[field] || '').trim();
+      const updated = current ? `${current}\n• ${phrase}` : `• ${phrase}`;
+      return { ...prev, [field]: updated };
+    });
+    updateDirty(true);
+  };
 
   const currentStudent = students.find((s) => s.id === formData.studentId);
 
@@ -313,49 +388,117 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
 
   return (
     <div className="tab-container class-diary-tab">
-      {/* 좌측: 일지 목록 사이드 패널 */}
+      {/* 1열: 와이드 데스크톱 3단 학생 빠른 선택 레일 */}
+      <aside className="diary-student-rail">
+        <div className="rail-header">
+          <Users size={14} className="text-primary" />
+          <span>학생 빠른 선택</span>
+        </div>
+        <div className="rail-student-list">
+          <button
+            type="button"
+            className={`rail-student-item ${selectedStudentId === '' ? 'active' : ''}`}
+            onClick={() => {
+              setSelectedStudentId('');
+              setSelectedRecordId(null);
+            }}
+          >
+            <span className="rail-student-name">전체 학생 보기</span>
+            <span className="rail-count-badge">{records.length}</span>
+          </button>
+          {students.map((s) => {
+            const count = records.filter((r) => (r.student_id || r.studentId) === s.id).length;
+            const isSelected = selectedStudentId === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                className={`rail-student-item ${isSelected ? 'active' : ''} ${
+                  s.status === 'paused' ? 'is-paused' : ''
+                }`}
+                onClick={() => {
+                  setSelectedStudentId(s.id);
+                  setFormData((prev) => ({
+                    ...prev,
+                    studentId: s.id,
+                    course: s.course || s.subject || prev.course,
+                  }));
+                  setSelectedRecordId(null);
+                  updateDirty(false);
+                }}
+              >
+                <div className="rail-student-meta">
+                  <span className="rail-student-name">{s.name}</span>
+                  <span className="rail-student-sub">{s.school_grade || s.grade || '재원'}</span>
+                </div>
+                <span className="rail-count-badge">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      {/* 2열: 일지 타임라인 및 복합 검색 패널 */}
       <div className="diary-list-sidebar">
         <div className="diary-sidebar-header">
-          <div className="student-filter-select-box">
-            <User size={14} className="text-primary" />
-            <select
-              className="form-select sm"
-              value={selectedStudentId}
-              onChange={(e) => {
-                setSelectedStudentId(e.target.value);
-                setFormData((prev) => ({ ...prev, studentId: e.target.value }));
-                setSelectedRecordId(null);
-                updateDirty(false);
-              }}
-            >
-              <option value="">전체 학생 일지 보기</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.school_grade || s.grade || '재원'})
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="search-input-box">
             <Search size={14} className="text-muted" />
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="일지 검색 (과목, 날짜, 내용)... (Ctrl+F)"
+              placeholder="과목, 진도, 과제, 특이사항 검색 (Ctrl+F)"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
             />
           </div>
 
+          {/* 기간 복합 필터 칩 (G5) */}
+          <div className="diary-period-filter-bar">
+            {[
+              { id: 'all', label: '전체' },
+              { id: 'week', label: '이번 주' },
+              { id: 'month', label: '이번 달' },
+              { id: 'custom', label: '기간 지정' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`period-chip-btn ${dateFilterMode === p.id ? 'active' : ''}`}
+                onClick={() => setDateFilterMode(p.id)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {dateFilterMode === 'custom' && (
+            <div className="custom-date-range-row">
+              <input
+                type="date"
+                className="form-input sm"
+                value={customFromDate}
+                onChange={(e) => setCustomFromDate(e.target.value)}
+                title="시작일"
+              />
+              <span>~</span>
+              <input
+                type="date"
+                className="form-input sm"
+                value={customToDate}
+                onChange={(e) => setCustomToDate(e.target.value)}
+                title="종료일"
+              />
+            </div>
+          )}
+
           <button className="btn-primary full-width" onClick={handleNewDiary} title="단축키: Ctrl+N">
-            <Plus size={15} /> 새 일지 작성
+            <Plus size={15} /> 새 일지 작성 ({filteredRecords.length}건)
           </button>
         </div>
 
         <div className="diary-records-scroll">
           {filteredRecords.length === 0 ? (
-            <div className="empty-notice">기록된 수업 일지가 없습니다.</div>
+            <div className="empty-notice">조건에 맞는 수업 일지가 없습니다.</div>
           ) : (
             filteredRecords.map((rec) => {
               const st = students.find((s) => s.id === (rec.student_id || rec.studentId));
@@ -382,7 +525,7 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
         </div>
       </div>
 
-      {/* 우측: 정식 수업 일지 폼 */}
+      {/* 3열: 정밀 수업 일지 에디터 패널 */}
       <div className="diary-editor-panel">
         <div className="editor-top-actions">
           <div className="editor-title-area">
@@ -419,6 +562,34 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
           </div>
         </div>
 
+        {/* 직전 수업 기록 참조 카드 */}
+        {prevRecord && (
+          <div className="prev-record-reference-card">
+            <div className="prev-ref-info">
+              <div className="prev-ref-badge-row">
+                <span className="prev-ref-tag">📌 직전 수업 참조</span>
+                <span className="prev-ref-date">
+                  {prevRecord.class_date || prevRecord.date} · {prevRecord.course || '과목 미지정'}
+                </span>
+              </div>
+              <div className="prev-ref-texts">
+                <span><strong>진도:</strong> {prevRecord.content || '기록 없음'}</span>
+                {(prevRecord.homework || prevRecord.assignment) && (
+                  <span><strong>직전 과제:</strong> {prevRecord.homework || prevRecord.assignment}</span>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary sm prev-apply-btn"
+              onClick={handleApplyPrevRecord}
+              title="직전 수업의 교재명과 과제를 오늘 일지 입력란에 즉시 반영합니다"
+            >
+              <Sparkles size={13} className="text-primary" /> 직전 교재/과제 불러오기
+            </button>
+          </div>
+        )}
+
         <div className="diary-form-body">
           {/* 기본 메타데이터 그리드 (학생, 날짜, 시간, 과목) */}
           <div className="form-row-grid">
@@ -427,7 +598,10 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
               <select
                 className="form-select"
                 value={formData.studentId}
-                onChange={(e) => handleFieldChange('studentId', e.target.value)}
+                onChange={(e) => {
+                  setSelectedStudentId(e.target.value);
+                  handleFieldChange('studentId', e.target.value);
+                }}
                 onFocus={ensureFieldFocus}
                 onClick={ensureFieldFocus}
               >
@@ -481,9 +655,23 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
 
           {/* 주요 텍스트 입력 영역 */}
           <div className="form-group">
-            <label className="form-label">
-              <BookOpen size={14} /> 학습 진도 및 상세 지도 내용
-            </label>
+            <div className="form-label-with-chips">
+              <label className="form-label">
+                <BookOpen size={14} /> 학습 진도 및 상세 지도 내용
+              </label>
+              <div className="quick-phrase-chips">
+                {CONTENT_PHRASES.map((ph) => (
+                  <button
+                    key={ph}
+                    type="button"
+                    className="phrase-chip-btn"
+                    onClick={() => handleAppendPhrase('content', ph)}
+                  >
+                    + {ph}
+                  </button>
+                ))}
+              </div>
+            </div>
             <textarea
               ref={contentTextareaRef}
               className="form-textarea"
@@ -513,7 +701,21 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">💡 수업 태도 및 특이사항 / 학부모 전달사항</label>
+              <div className="form-label-with-chips">
+                <label className="form-label">💡 수업 태도 및 특이사항 / 학부모 전달사항</label>
+                <div className="quick-phrase-chips">
+                  {NOTES_PHRASES.slice(0, 2).map((ph) => (
+                    <button
+                      key={ph}
+                      type="button"
+                      className="phrase-chip-btn"
+                      onClick={() => handleAppendPhrase('notes', ph)}
+                    >
+                      + {ph}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <textarea
                 className="form-textarea"
                 rows={4}

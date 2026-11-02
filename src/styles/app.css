@@ -3848,3 +3848,234 @@
   border-radius: 12px;
   margin-left: 6px;
 }
+/* ==========================================================================
+   Phase 2: 수업 일지 3단 와이드 워크스테이션, 복합 기간 필터(G5) & 직전 수업 참조
+   ========================================================================== */
+.diary-student-rail {
+  width: 195px;
+  flex-shrink: 0;
+  background-color: var(--bg-panel, #ffffff);
+  border-right: 1px solid var(--border-color, #e2e8f0);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rail-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 14px 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-main, #1e293b);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.rail-student-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rail-student-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-main, #1e293b);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.rail-student-item:hover {
+  background-color: var(--bg-input, #f1f5f9);
+}
+
+.rail-student-item.active {
+  background-color: var(--primary-light, #e0f2fe);
+  border-color: var(--primary, #0284c7);
+  color: var(--primary-dark, #0369a1);
+}
+
+.rail-student-item.is-paused {
+  opacity: 0.65;
+}
+
+.rail-student-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rail-student-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail-student-sub {
+  font-size: 10.5px;
+  color: var(--text-muted, #64748b);
+}
+
+.rail-count-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  background-color: var(--bg-input, #f1f5f9);
+  color: var(--text-muted, #64748b);
+  padding: 2px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.rail-student-item.active .rail-count-badge {
+  background-color: var(--primary, #0284c7);
+  color: #ffffff;
+}
+
+.diary-period-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background-color: var(--bg-input, #f1f5f9);
+  padding: 3px;
+  border-radius: 7px;
+}
+
+.period-chip-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #64748b);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.period-chip-btn.active {
+  background-color: var(--bg-panel, #ffffff);
+  color: var(--primary, #0284c7);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.custom-date-range-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text-muted, #64748b);
+}
+
+.custom-date-range-row .form-input.sm {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  font-size: 11.5px;
+}
+
+.prev-record-reference-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background-color: var(--bg-panel, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-left: 4px solid var(--primary, #0284c7);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.prev-ref-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.prev-ref-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prev-ref-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--primary, #0284c7);
+  background-color: var(--primary-light, #e0f2fe);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.prev-ref-date {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+}
+
+.prev-ref-texts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-main, #1e293b);
+}
+
+.prev-ref-texts span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+
+.prev-apply-btn {
+  flex-shrink: 0;
+}
+
+.form-label-with-chips {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quick-phrase-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.phrase-chip-btn {
+  background-color: var(--bg-input, #f1f5f9);
+  border: 1px solid var(--border-color, #cbd5e1);
+  color: var(--text-muted, #475569);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.phrase-chip-btn:hover {
+  background-color: var(--primary-light, #e0f2fe);
+  border-color: var(--primary, #0284c7);
+  color: var(--primary, #0284c7);
+}
