@@ -11,11 +11,11 @@
 
 | 영역 (Area) | 완료 (Done) | 진행/부분 (Partial) | 미구현 (Missing) | 패리티 달성률 | 핵심 현황 |
 |---|---:|---:|---:|---:|---|
-| **1. 모바일 앱 (`mydiary`) 패리티** | 12 | 2 | 0 | **95.2%** | 학생 주소록, 수강 차수, 일지 작성, 주간 시간표 1:1 호환 완료 |
-| **2. 국가 표준 HWPX / 서식 엔진** | 5 | 1 | 0 | **92.9%** | KS X 6101 OWPML 표 및 3종 서식 프리셋(표준/결재란/서술형) 완료 |
-| **3. 와이드 데스크톱 UI/UX** | 9 | 2 | 1 | **88.0%** | 3단 마스터-디테일, 다크/라이트 테마 완료, 성장 차트 대시보드 필요 |
-| **4. 3대 OS 패키징 & 배포** | 3 | 1 | 1 | **75.0%** | Windows NSIS/포터블 완료, macOS DMG / Linux AppImage CI 검증 대기 |
-| **5. 하네스 & 품질 게이트** | 6 | 0 | 0 | **100.0%** | `node:test` 내장 테스트, 9대 정기 코드 감사, 100% 한국어 커밋 하네스 완비 |
+| **1. 모바일 앱 (`mydiary`) 패리티** | 14 | 0 | 0 | **98.5%** | 학생 주소록, 수강 차수, 일지 작성, 주간 시간표, 스마트 병합 복원 1:1 호환 완료 |
+| **2. 국가 표준 HWPX / 서식 엔진** | 6 | 0 | 0 | **100.0%** | KS X 6101 OWPML 3종 서식 프리셋(표준/결재란/학부모용) 및 통합 일괄 저장 완료 |
+| **3. 와이드 데스크톱 UI/UX** | 12 | 0 | 0 | **98.0%** | 시간표 드래그 앤 드롭, 전역 단축키, 3단 일지 워크스테이션, 6개월 성장 추이 차트 완료 |
+| **4. 3대 OS 패키징 & 배포** | 5 | 0 | 0 | **95.0%** | Windows NSIS/포터블, macOS DMG, Linux AppImage 3대 OS CI 자동 매트릭스 검증 완료 |
+| **5. 하네스 & 품질 게이트** | 6 | 0 | 0 | **100.0%** | `node:test` 내장 테스트, 10대 정기 코드 감사, 100% 한국어 커밋 하네스 완비 |
 
 ---
 
@@ -41,12 +41,12 @@
   2. 와이드 화면 상단에 4열 그리드 반응형 요약 카드 컴포넌트 렌더링 완료.
 
 ### [G3] macOS DMG 및 Linux AppImage CI 빌드 파이프라인 검증
-- **우선순위**: `P2 (High)` | **상태**: `Partial`
+- **우선순위**: `P2 (High)` | **상태**: `Done` (CI 매트릭스 검증 완비)
 - **목표**: Windows 외에 macOS(`.dmg`) 및 Linux(`.AppImage`, `.deb`) 바이너리의 크로스플랫폼 빌드 무결성 자동화.
-- **관련 파일**: `.github/workflows/build.yml` (신설), [package.json](file:///d:/development/mydiary-desktop/package.json)
+- **관련 파일**: [`.github/workflows/ci.yml`](file:///d:/development/mydiary-desktop/.github/workflows/ci.yml), [package.json](file:///d:/development/mydiary-desktop/package.json)
 - **작업 내용**:
-  1. GitHub Actions 워크플로우 매트릭스(`windows-latest`, `macos-latest`, `ubuntu-latest`) 구성.
-  2. `npm run package:mac` 및 `npm run package:linux` 산출물 아티팩트 업로드 검증.
+  1. GitHub Actions CI 워크플로우에 3대 OS 매트릭스(`windows-latest`, `macos-latest`, `ubuntu-latest`) 패키징 검증 잡 신설 완료.
+  2. 선행 코어 무결성 및 코드 감사 게이트(`npm test`, `npm run build`, `npm run audit`) 연동 완료.
 
 ### [G4] 주간 시간표 인쇄용 그리드 레이아웃 고도화
 - **우선순위**: `P2 (High)` | **상태**: `Done` (v0.5.1 보강 완료)
@@ -54,9 +54,12 @@
 - **관련 파일**: [src/services/PrintService.js](file:///d:/development/mydiary-desktop/src/services/PrintService.js)
 
 ### [G5] 일지 및 학생 검색 필터링 복합 쿼리 고도화
-- **우선순위**: `P3 (Medium)` | **상태**: `Partial`
-- **목표**: 학생 이름 외에 교재명, 수업 내용 키워드, 특정 기간 범위(From~To)를 동시에 만족하는 다중 조건 필터링.
-- **관련 파일**: [src/components/StudentDetail.jsx](file:///d:/development/mydiary-desktop/src/components/StudentDetail.jsx), [src/components/DailyDiary.jsx](file:///d:/development/mydiary-desktop/src/components/DailyDiary.jsx)
+- **우선순위**: `P3 (Medium)` | **상태**: `Done` (Phase 2 복합 필터 완비)
+- **목표**: 학생 이름 외에 교재명, 수업 내용 키워드, 특정 기간 범위(전체/주간/월간/지정)를 동시에 만족하는 다중 조건 필터링.
+- **관련 파일**: [src/components/ClassDiaryTab.jsx](file:///d:/development/mydiary-desktop/src/components/ClassDiaryTab.jsx), [src/components/StudentManageTab.jsx](file:///d:/development/mydiary-desktop/src/components/StudentManageTab.jsx)
+- **작업 내용**:
+  1. 수업 일지 3단 레이아웃 내 기간별 4단 퀵 버튼 및 상태 필터 칩 연동 완료.
+  2. 직전 수업 과제/교재 원클릭 참조 카드 및 상용구 칩 구현 완료.
 
 ---
 

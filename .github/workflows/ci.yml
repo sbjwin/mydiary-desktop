@@ -1,4 +1,4 @@
-name: CI (Build Check)
+name: CI (Quality & Packaging Check)
 
 on:
   push:
@@ -8,8 +8,9 @@ on:
     branches: [ main ]
 
 jobs:
-  build-check:
-    name: Build & Lint Check
+  # 1. 3대 코어 무결성 및 품질 감사 게이트
+  quality-gate:
+    name: Core Integrity & Code Audit
     runs-on: ubuntu-latest
 
     steps:
@@ -33,5 +34,66 @@ jobs:
             touch .env
           fi
 
-      - name: Vite 프로덕션 번들링 무결성 검증
+      - name: 1. 코어 무결성 및 모바일 호환 회귀 테스트
+        run: npm test
+
+      - name: 2. Vite 프로덕션 번들링 무결성 검증
         run: npm run build
+
+      - name: 3. 10대 정기 코드 감사 및 계층 무결성 검증
+        run: npm run audit
+
+  # 2. 3대 OS 크로스플랫폼 패키징 빌드 매트릭스 검증 (G3 패리티)
+  cross-platform-package-check:
+    name: Package Check (${{ matrix.os }})
+    needs: quality-gate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: false
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정 (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: "[Linux] AppImage 의존 패키지 설치"
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 환경변수 파일 준비 (.env)
+        shell: bash
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            touch .env
+          fi
+
+      - name: "[Windows] 패키징 검증 (.exe, portable)"
+        if: runner.os == 'Windows'
+        run: npm run package:win
+
+      - name: "[macOS] 패키징 검증 (.dmg)"
+        if: runner.os == 'macOS'
+        run: npm run package:mac
+
+      - name: "[Linux] 패키징 검증 (.AppImage, .deb)"
+        if: runner.os == 'Linux'
+        run: npm run package:linux
