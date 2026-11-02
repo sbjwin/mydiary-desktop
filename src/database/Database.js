@@ -36,6 +36,7 @@ const AsyncStorage = {
 const STUDENTS_KEY = '@mydiary:students';
 const RECORDS_KEY = '@mydiary:records';
 const WEEKLY_PLANS_KEY = '@mydiary:weekly_plans';
+const ROLLBACK_SNAPSHOT_KEY = '@mydiary:rollback_snapshot';
 
 // 간단한 UUID 생성 헬퍼
 const generateUUID = () => {
@@ -818,22 +819,155 @@ export const Database = {
   },
 
   // JSON 파싱된 데이터를 기존 AsyncStorage에 덮어쓰기
-  importAllData: async (parsedData) => {
+  // 복원 직전 현재 상태의 롤백 스냅샷 생성
+  createRollbackSnapshot: async () => {
+    try {
+      const students = await Database.getAllStudents();
+      const records = await Database.getAllRecords();
+      const weeklyPlans = await Database.getAllWeeklyPlansMap();
+      const snapshot = {
+        students,
+        records,
+        weeklyPlans,
+        snapshotCreatedAt: new Date().toISOString(),
+        studentsCount: students.length,
+        recordsCount: records.length,
+        plansCount: Object.keys(weeklyPlans).length,
+      };
+      await AsyncStorage.setItem(ROLLBACK_SNAPSHOT_KEY, JSON.stringify(snapshot));
+      return snapshot;
+    } catch (e) {
+      console.warn('Failed to create rollback snapshot:', e);
+      return null;
+    }
+  },
+
+  // 보관 중인 롤백 스냅샷 정보 조회
+  getRollbackSnapshot: async () => {
+    try {
+      const data = await AsyncStorage.getItem(ROLLBACK_SNAPSHOT_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  // 이전 복원 스냅샷으로 되돌리기(롤백)
+  rollbackToSnapshot: async () => {
+    try {
+      const data = await AsyncStorage.getItem(ROLLBACK_SNAPSHOT_KEY);
+      if (!data) {
+        throw new Error('되돌릴 수 있는 이전 복원 스냅샷이 존재하지 않습니다.');
+      }
+      const snapshot = JSON.parse(data);
+      await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify(snapshot.students || []));
+      await AsyncStorage.setItem(RECORDS_KEY, JSON.stringify(snapshot.records || []));
+      await AsyncStorage.setItem(WEEKLY_PLANS_KEY, JSON.stringify(snapshot.weeklyPlans || {}));
+      await AsyncStorage.removeItem(ROLLBACK_SNAPSHOT_KEY);
+      return {
+        success: true,
+        studentsCount: (snapshot.students || []).length,
+        recordsCount: (snapshot.records || []).length,
+        plansCount: Object.keys(snapshot.weeklyPlans || {}).length,
+      };
+    } catch (e) {
+      console.error('Failed to rollback to snapshot:', e);
+      throw e;
+    }
+  },
+
+  // JSON 파싱된 데이터를 기존 스토리지에 복원 (스마트 병합 or 전체 덮어쓰기)
+  importAllData: async (parsedData, options = {}) => {
     try {
       if (!parsedData) {
         throw new Error('No data provided for import');
       }
 
-      const students = Array.isArray(parsedData.students) ? parsedData.students : [];
-      const records = Array.isArray(parsedData.records) ? parsedData.records : [];
-      const weeklyPlans = parsedData.weeklyPlans && typeof parsedData.weeklyPlans === 'object' ? parsedData.weeklyPlans : {};
+      // 1. 복원 실행 직전 현재 상태의 안전 롤백 스냅샷 자동 생성
+      await Database.createRollbackSnapshot();
 
-      // 로컬 스토리지에 덮어쓰기
-      await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
-      await AsyncStorage.setItem(RECORDS_KEY, JSON.stringify(records));
-      await AsyncStorage.setItem(WEEKLY_PLANS_KEY, JSON.stringify(weeklyPlans));
+      const mode = options.mode || 'replace'; // 'replace' | 'merge'
+      const newStudents = Array.isArray(parsedData.students) ? parsedData.students : [];
+      const newRecords = Array.isArray(parsedData.records) ? parsedData.records : [];
+      const newWeeklyPlans = parsedData.weeklyPlans && typeof parsedData.weeklyPlans === 'object' ? parsedData.weeklyPlans : {};
 
-      console.log('Successfully imported data (students, records, weeklyPlans)');
+      if (mode === 'merge') {
+        const currentStudents = await Database.getAllStudents();
+        const studentMap = new Map();
+        currentStudents.forEach((s) => studentMap.set(s.id, s));
+        newStudents.forEach((ns) => {
+          if (studentMap.has(ns.id)) {
+            const existing = studentMap.get(ns.id);
+            studentMap.set(ns.id, {
+              ...existing,
+              ...ns,
+              terms: Array.isArray(ns.terms) && ns.terms.length > 0 ? ns.terms : existing.terms,
+            });
+          } else {
+            studentMap.set(ns.id, ns);
+          }
+        });
+        const mergedStudents = Array.from(studentMap.values());
+
+        const currentRecords = await Database.getAllRecords();
+        const recordMap = new Map();
+        currentRecords.forEach((r) => {
+          const key = r.id || `${r.student_id}_${r.class_date}_${r.class_time}`;
+          recordMap.set(key, r);
+        });
+        newRecords.forEach((nr) => {
+          const key = nr.id || `${nr.student_id || nr.studentId}_${nr.class_date || nr.date}_${nr.class_time || nr.time}`;
+          if (!recordMap.has(key)) {
+            recordMap.set(key, nr);
+          }
+        });
+        const mergedRecords = Array.from(recordMap.values());
+
+        const currentPlans = await Database.getAllWeeklyPlansMap();
+        const mergedPlans = { ...currentPlans };
+        Object.entries(newWeeklyPlans).forEach(([weekKey, plan]) => {
+          if (!mergedPlans[weekKey]) {
+            mergedPlans[weekKey] = plan;
+          } else {
+            const existingItems = mergedPlans[weekKey].scheduleItems || [];
+            const itemMap = new Map();
+            existingItems.forEach((it) => itemMap.set(it.id || `${it.date}_${it.startTime}_${it.studentName}`, it));
+            (plan.scheduleItems || []).forEach((nit) => {
+              const k = nit.id || `${nit.date}_${nit.startTime}_${nit.studentName}`;
+              if (!itemMap.has(k)) {
+                itemMap.set(k, nit);
+              }
+            });
+            mergedPlans[weekKey] = {
+              ...mergedPlans[weekKey],
+              ...plan,
+              scheduleItems: Array.from(itemMap.values()),
+            };
+          }
+        });
+
+        await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify(mergedStudents));
+        await AsyncStorage.setItem(RECORDS_KEY, JSON.stringify(mergedRecords));
+        await AsyncStorage.setItem(WEEKLY_PLANS_KEY, JSON.stringify(mergedPlans));
+        console.log(`Successfully merged data (students: ${mergedStudents.length}, records: ${mergedRecords.length})`);
+        return {
+          mode: 'merge',
+          studentsCount: mergedStudents.length,
+          recordsCount: mergedRecords.length,
+          plansCount: Object.keys(mergedPlans).length,
+        };
+      } else {
+        await AsyncStorage.setItem(STUDENTS_KEY, JSON.stringify(newStudents));
+        await AsyncStorage.setItem(RECORDS_KEY, JSON.stringify(newRecords));
+        await AsyncStorage.setItem(WEEKLY_PLANS_KEY, JSON.stringify(newWeeklyPlans));
+  
+        return {
+          mode: 'replace',
+          studentsCount: newStudents.length,
+          recordsCount: newRecords.length,
+          plansCount: Object.keys(newWeeklyPlans).length,
+        };
+      }
     } catch (e) {
       console.error('Failed to import all data:', e);
       throw e;

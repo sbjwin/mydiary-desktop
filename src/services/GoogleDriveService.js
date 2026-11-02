@@ -68,14 +68,14 @@ export const GoogleDriveService = {
   },
 
   // PC 로컬 백업 파일(.json) 불러와 복원
-  importLocalBackup: async (fileContent) => {
+  importLocalBackup: async (fileContent, options = {}) => {
     try {
       const data = typeof fileContent === 'string' ? JSON.parse(fileContent) : fileContent;
       if (!data.students && !data.records && !data.weeklyPlans) {
         throw new Error('유효한 MyDiary 백업 파일이 아닙니다.');
       }
 
-      await Database.importAllData(data);
+      const res = await Database.importAllData(data, options);
       return {
         success: true,
         studentsCount: (data.students || []).length,
@@ -91,6 +91,16 @@ export const GoogleDriveService = {
   // -------------------------------------------------------------
   // 2. 구글 계정 인증 및 토큰 관리 (Electron OAuth 2.0 Loopback & Mock)
   // -------------------------------------------------------------
+
+  // 직전 복원 실행 취소(롤백)
+  rollbackLastRestore: async () => {
+    return await Database.rollbackToSnapshot();
+  },
+
+  // 보관 중인 롤백 스냅샷 정보 조회
+  getRollbackInfo: async () => {
+    return await Database.getRollbackSnapshot();
+  },
 
   getAuthState: () => {
     try {
@@ -201,7 +211,7 @@ export const GoogleDriveService = {
   // -------------------------------------------------------------
 
   // 스마트폰 앱이 업로드한 mydiary_backup.json 다운로드 및 복원
-  downloadCloudBackup: async () => {
+  downloadCloudBackup: async (options = {}) => {
     try {
       const auth = GoogleDriveService.getAuthState();
       if (!auth.isLoggedIn) {
@@ -221,7 +231,7 @@ export const GoogleDriveService = {
         }
 
         const parsedData = JSON.parse(mockRaw);
-        await Database.importAllData(parsedData);
+        const res = await Database.importAllData(parsedData, options);
 
         return {
           success: true,
@@ -286,7 +296,7 @@ export const GoogleDriveService = {
       const parsedData = JSON.parse(backupDataText);
 
       // 3. 데이터 무결성 검증 및 로컬 DB 복원
-      await Database.importAllData(parsedData);
+      const res = await Database.importAllData(parsedData, options);
 
       return {
         success: true,

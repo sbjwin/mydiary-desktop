@@ -39,6 +39,8 @@ export const BackupSettingTab = () => {
 
   const [processingAction, setProcessingAction] = useState(null); // 'login' | 'download' | 'upload' | 'import' | 'seed' | null
   const [statusMessage, setStatusMessage] = useState(null);
+  const [restoreMode, setRestoreMode] = useState('merge'); // 'merge' | 'replace'
+  const [rollbackSnapshot, setRollbackSnapshot] = useState(null);
 
   const isBusy = !!processingAction;
   const isMock = auth.isMock || GoogleDriveService.isMockMode();
@@ -142,11 +144,45 @@ export const BackupSettingTab = () => {
     });
   };
 
+
+  // 롤백(직전 복원 취소) 핸들러
+  const handleRollback = () => {
+    if (!rollbackSnapshot) return;
+    const timeStr = rollbackSnapshot.snapshotCreatedAt ? rollbackSnapshot.snapshotCreatedAt.replace('T', ' ').slice(0, 19) : '';
+    showConfirm({
+      title: '직전 복원 실행 취소 (스냅샷 롤백)',
+      message: `복원 직전에 자동으로 보관된 안전 스냅샷(${timeStr})으로 모든 데이터를 되돌리시겠습니까?\n\n※ 롤백 대상: 학생 ${rollbackSnapshot.studentsCount}명, 수업 일지 ${rollbackSnapshot.recordsCount}건, 주간 계획 ${rollbackSnapshot.plansCount}주차`,
+      type: 'warning',
+      confirmText: '이전 상태로 롤백',
+      cancelText: '취소',
+      onConfirm: async () => {
+        setProcessingAction('rollback');
+        setStatusMessage({ type: 'info', text: '이전 안전 스냅샷으로 데이터를 롤백 복구하는 중입니다...' });
+        try {
+          const res = await GoogleDriveService.rollbackLastRestore();
+          await loadStats();
+          setStatusMessage({
+            type: 'success',
+            text: `롤백 성공: 복원 직전 상태로 복구되었습니다. (학생 ${res.studentsCount}명, 일지 ${res.recordsCount}건)`,
+          });
+          showToast('복원 직전 안전 상태로 성공적으로 롤백되었습니다.', 'success');
+          focusAppWindow();
+        } catch (err) {
+          console.error('Rollback failed:', err);
+          setStatusMessage({ type: 'error', text: `롤백 실패: ${err.message}` });
+          showToast(`롤백 실패: ${err.message}`, 'error');
+        } finally {
+          setProcessingAction(null);
+        }
+      },
+    });
+  };
+
   // 3. 스마트폰 구글 드라이브 백업 가져와 복원 (인앱 모달 및 토스트 적용)
   const handleDownloadCloudBackup = () => {
     showConfirm({
       title: '스마트폰 백업 데이터 복원',
-      message: '구글 드라이브(스마트폰 백업)에서 데이터를 다운로드하여 현재 데스크톱 데이터를 복원하시겠습니까?\n\n※ 기존 로컬 데이터가 스마트폰 백업 데이터로 갱신됩니다.',
+      message: `구글 드라이브(스마트폰 백업)에서 데이터를 다운로드하여 현재 데스크톱에 복원하시겠습니까?\n\n선택된 복원 모드: [${restoreMode === 'merge' ? '스마트 병합 (권장)' : '전체 덮어쓰기'}]\n※ 복원 직전 안전 롤백 스냅샷이 자동 생성됩니다.`,
       type: 'primary',
       confirmText: '복원 실행',
       cancelText: '취소',
@@ -155,7 +191,7 @@ export const BackupSettingTab = () => {
         setStatusMessage({ type: 'info', text: '구글 드라이브(appDataFolder)에서 백업 파일을 탐색하고 다운로드하는 중입니다...' });
 
         try {
-          const result = await GoogleDriveService.downloadCloudBackup();
+          const result = await GoogleDriveService.downloadCloudBackup({ mode: restoreMode });
           setStatusMessage({
             type: 'success',
             text: `성공적으로 복원되었습니다! (학생 ${result.studentsCount}명, 수업 일지 ${result.recordsCount}건, 주간 계획 ${result.plansCount}주차)`,
@@ -225,7 +261,7 @@ export const BackupSettingTab = () => {
 
     showConfirm({
       title: '로컬 백업 파일 불러오기',
-      message: `선택한 파일(${file.name})로 복원하시겠습니까?\n\n※ 기존 데이터가 이 백업 파일의 데이터로 대체됩니다.`,
+      message: `선택한 파일(${file.name})로 복원하시겠습니까?\n\n선택된 복원 모드: [${restoreMode === 'merge' ? '스마트 병합 (권장)' : '전체 덮어쓰기'}]\n※ 복원 직전 안전 롤백 스냅샷이 자동 생성됩니다.`,
       type: 'warning',
       confirmText: '복원 실행',
       cancelText: '취소',
@@ -236,7 +272,7 @@ export const BackupSettingTab = () => {
           try {
             const content = event.target?.result;
             if (content) {
-              const res = await GoogleDriveService.importLocalBackup(content);
+              const res = await GoogleDriveService.importLocalBackup(content, { mode: restoreMode });
               await loadStats();
               showToast(`성공적으로 복원되었습니다 (학생 ${res.studentsCount}명, 일지 ${res.recordsCount}건)`, 'success');
               focusAppWindow();
@@ -309,6 +345,66 @@ export const BackupSettingTab = () => {
             <span>{statusMessage.text}</span>
           </div>
         )}
+
+
+        {/* 복원 옵션 정책 및 안전 롤백 스냅샷 컨트롤러 */}
+        <div className="restore-policy-card">
+          <div className="restore-policy-left">
+            <div className="restore-policy-title">
+              <ShieldCheck size={18} className="text-primary" />
+              <span>복원 시 데이터 반영 방식 (Phase 4)</span>
+            </div>
+            <div className="restore-mode-toggle-group">
+              <button
+                type="button"
+                className={`restore-mode-btn ${restoreMode === 'merge' ? 'active' : ''}`}
+                onClick={() => setRestoreMode('merge')}
+              >
+                <span>✨ 스마트 병합 (Merge 권장)</span>
+              </button>
+              <button
+                type="button"
+                className={`restore-mode-btn ${restoreMode === 'replace' ? 'active' : ''}`}
+                onClick={() => setRestoreMode('replace')}
+              >
+                <span>⚠️ 전체 덮어쓰기 (Replace)</span>
+              </button>
+            </div>
+            <p className="restore-policy-desc">
+              {restoreMode === 'merge'
+                ? '기존에 작성된 데스크톱 일지와 학생 데이터를 안전하게 보존하면서 백업 파일의 최신 기록을 지능적으로 합칩니다.'
+                : '현재 데스크톱 데이터를 모두 비우고 선택한 백업 파일의 상태로 완전히 교체합니다.'}
+            </p>
+          </div>
+
+          {rollbackSnapshot && (
+            <div className="restore-rollback-action">
+              <div className="rollback-meta">
+                <span className="rollback-tag">🛡️ 안전 롤백 스냅샷 보관 중</span>
+                <span className="rollback-time">
+                  {rollbackSnapshot.snapshotCreatedAt ? rollbackSnapshot.snapshotCreatedAt.replace('T', ' ').slice(0, 19) : ''}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn-warning sm btn-rollback"
+                onClick={handleRollback}
+                disabled={isBusy}
+                title="직전 복원 실행 이전의 안전 상태로 데이터를 즉시 되돌립니다."
+              >
+                {processingAction === 'rollback' ? (
+                  <>
+                    <RefreshCw size={13} className="spin-icon" /> 롤백 진행 중...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw size={13} /> ↩ 직전 복원 실행 취소(롤백)
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* 구글 드라이브(스마트폰 연동) 클라우드 동기화 카드 */}
         <div className="cloud-sync-card">
