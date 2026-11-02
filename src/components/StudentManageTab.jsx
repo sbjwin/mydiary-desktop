@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Database, getTodayDateString, formatPhoneInfo } from '../database/Database';
 import { generateStudentProfileHtml, printStudentProfile } from '../services/PrintService';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
@@ -32,7 +32,13 @@ const WEEKDAYS = [
   { val: 7, label: '일요일' },
 ];
 
-export const StudentManageTab = () => {
+export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
+  const [ isDirty, setIsDirty ] = useState(false);
+  const searchInputRef = useRef(null);
+  const updateDirty = (dirty) => {
+    setIsDirty(dirty);
+    if (onDirtyChange) onDirtyChange(dirty);
+  };
   const [students, setStudents] = useState([]);
   const [activeFilter, setActiveFilter] = useState('active'); // 'active' | 'paused' | 'all'
   const [searchQuery, setSearchQuery] = useState('');
@@ -323,6 +329,21 @@ export const StudentManageTab = () => {
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
+  // 전역 키보드 단축키 연동 (Ctrl+S: 저장, Ctrl+N: 신규 학생, Ctrl+F: 검색)
+  useEffect(() => {
+    const onShortcutSave = () => handleSaveStudent();
+    const onShortcutNew = () => handleNewStudent();
+    const onShortcutSearch = () => searchInputRef.current?.focus();
+    window.addEventListener('mydiary:shortcut-save', onShortcutSave);
+    window.addEventListener('mydiary:shortcut-new', onShortcutNew);
+    window.addEventListener('mydiary:shortcut-search', onShortcutSearch);
+    return () => {
+      window.removeEventListener('mydiary:shortcut-save', onShortcutSave);
+      window.removeEventListener('mydiary:shortcut-new', onShortcutNew);
+      window.removeEventListener('mydiary:shortcut-search', onShortcutSearch);
+    };
+  }, [formData, selectedStudentId]);
+
   return (
     <div className="tab-container student-manage-tab">
       {/* 좌측 사이드바: 학생 필터 및 목록 */}
@@ -353,7 +374,7 @@ export const StudentManageTab = () => {
             <Search size={14} className="text-muted" />
             <input
               type="text"
-              placeholder="학생 이름, 학교, 연락처 검색..."
+              ref={searchInputRef} placeholder="학생 이름, 학교, 연락처 검색... (Ctrl+F)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

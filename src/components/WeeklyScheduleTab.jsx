@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Database, getMondayOfWeek, getDateFromMondayOffset } from '../database/Database';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Calendar as CalendarIcon,
   CheckCircle2,
   Clock,
@@ -15,6 +16,8 @@ import {
   Sparkles,
   Copy,
   RotateCcw,
+  BookOpen,
+  Settings2,
 } from 'lucide-react';
 import { ScheduleModal } from './ScheduleModal';
 import { printWeeklyReport, exportWeeklyReportPdf, shareWeeklyReportHwpx, shareWeeklyReportDocx } from '../services/PrintService';
@@ -77,6 +80,26 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialData, setModalInitialData] = useState(null);
+
+  // 상단 툴바 드롭다운 상태 ('manage' | 'export' | null)
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const toolbarDropdownRef = useRef(null);
+
+  // 드래그 앤 드롭 상태
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverKey, setDragOverKey] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (toolbarDropdownRef.current && !toolbarDropdownRef.current.contains(e.target)) {
+        setOpenDropdown(null);
+      }
+    };
+    if (openDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdown]);
 
   const loadWeekData = async (monday) => {
     setLoading(true);
@@ -326,6 +349,98 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
     });
   };
 
+  // 원클릭 수업 일지 바로가기 핸들러
+  const handleQuickNavigateToDiary = (e, item, dateStr) => {
+    if (e) e.stopPropagation();
+    if (!onNavigateToDiary) return;
+    onNavigateToDiary({
+      studentId: item.studentId,
+      date: dateStr,
+      classTime: item.classTime || item.startTime || '10:00',
+      course: item.course || item.subject || '',
+      diaryId: item.record?.id || null,
+    });
+  };
+
+  // 드래그 앤 드롭으로 수업 시간/요일 이동
+  const handleDragStart = (e, item, sourceDate) => {
+    setDraggedItem({ item, sourceDate });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, targetKey) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverKey !== targetKey) {
+      setDragOverKey(targetKey);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverKey(null);
+  };
+
+  const handleDropOnSlot = async (e, targetDateStr, targetHour = null) => {
+    e.preventDefault();
+    setDragOverKey(null);
+    if (!draggedItem || !weeklyPlan) return;
+
+    const { item, sourceDate } = draggedItem;
+    setDraggedItem(null);
+
+    const origTime = item.classTime || item.startTime || '10:00';
+    const minutePart = origTime.includes(':') ? origTime.split(':')[1].slice(0, 2) : '00';
+    const nextStartTime =
+      targetHour !== null
+        ? `${String(targetHour).padStart(2, '0')}:${minutePart}`
+        : origTime;
+
+    if (sourceDate === targetDateStr && nextStartTime === origTime) return;
+
+    try {
+      const [y, m, d] = targetDateStr.split('-').map(Number);
+      const nextDayOfWeek = new Date(y, m - 1, d).getDay() || 7;
+
+      if (item.planItem) {
+        const items = Array.isArray(weeklyPlan.scheduleItems) ? [...weeklyPlan.scheduleItems] : [];
+        const idx = items.findIndex((it) => it.id === item.planItem.id);
+        if (idx >= 0) {
+          items[idx] = {
+            ...items[idx],
+            date: targetDateStr,
+            dayOfWeek: nextDayOfWeek,
+            startTime: nextStartTime,
+          };
+          await Database.saveWeeklyPlan(currentMonday, { ...weeklyPlan, scheduleItems: items });
+        }
+      }
+
+      if (item.record?.id) {
+        await Database.updateClassRecord(item.record.id, {
+          class_date: targetDateStr,
+          class_time: nextStartTime,
+        });
+      }
+
+      await loadWeekData(currentMonday);
+      showToast(`${item.studentName} 수업이 ${targetDateStr.slice(5)} ${nextStartTime}(으)로 이동되었습니다.`, 'success');
+    } catch (err) {
+      showToast('일정 이동 실패: ' + err.message, 'error');
+    }
+  };
+
+  // 전역 키보드 단축키 연동 (Ctrl+S: 주간 메모 저장, Ctrl+N: 새 일정 추가)
+  useEffect(() => {
+    const onShortcutSave = () => handleSaveNotes();
+    const onShortcutNew = () => handleOpenAddSchedule(currentMonday, 10);
+    window.addEventListener('mydiary:shortcut-save', onShortcutSave);
+    window.addEventListener('mydiary:shortcut-new', onShortcutNew);
+    return () => {
+      window.removeEventListener('mydiary:shortcut-save', onShortcutSave);
+      window.removeEventListener('mydiary:shortcut-new', onShortcutNew);
+    };
+  }, [weeklyPlan, mainNotes, currentMonday]);
+
   return (
     <div className="tab-container weekly-schedule-tab">
       {/* 1. 상단 컨트롤 바 */}
@@ -367,48 +482,124 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
           </button>
         </div>
 
-        {/* 액션 버튼 그룹 (수업 등록 / 복사 / 비우기 / 인쇄 / 한글 / 워드) */}
-        <div className="week-actions-group">
+        {/* 액션 버튼 그룹 (슬림화 드롭다운 그룹) */}
+        <div className="week-actions-group" ref={toolbarDropdownRef}>
           <button
             className="btn-primary sm"
             onClick={() => handleOpenAddSchedule(currentMonday, 10)}
-            title="새 수업 일정 등록"
+            title="새 수업 일정 등록 (단축키: Ctrl+N)"
           >
             <Plus size={15} /> 일정 추가
           </button>
-          <button
-            className="btn-secondary sm"
-            onClick={handleCopyPrevWeek}
-            title="이전 주의 수업 일정들을 이번 주로 한 번에 복사합니다"
-          >
-            <Copy size={15} /> 이전 주 복사
-          </button>
-          <button
-            className="btn-secondary sm"
-            onClick={handleLoadDefaultSchedule}
-            title="학생 원장에 등록된 정규 기본 시간표를 이번 주로 일괄 불러옵니다"
-          >
-            <Sparkles size={15} /> 기본 시간표 불러오기
-          </button>
-          <button
-            className="btn-secondary sm"
-            onClick={handleClearWeek}
-            title="이번 주 시간표에 등록된 모든 수업 일정을 비웁니다"
-          >
-            <RotateCcw size={15} /> 시간표 비우기
-          </button>
-          <button className="btn-secondary sm" onClick={handleExportPdf} title="A4 PDF 문서로 바로 저장합니다 (docs-template 양식)">
-            <FileDown size={15} /> PDF 저장
-          </button>
-          <button className="btn-secondary sm" onClick={handlePrint} title="프린터로 직접 인쇄합니다">
-            <Printer size={15} /> 인쇄
-          </button>
-          <button className="btn-secondary sm" onClick={handleExportHwpx} title="한글(HWPX) 문서로 내보내기">
-            <FileDown size={15} /> 한글(HWPX)
-          </button>
-          <button className="btn-secondary sm" onClick={handleExportDocx} title="워드(DOCX) 문서로 내보내기">
-            <FileDown size={15} /> 워드(DOCX)
-          </button>
+
+          {/* 시간표 관리 드롭다운 */}
+          <div className="toolbar-dropdown-wrapper">
+            <button
+              type="button"
+              className={`btn-secondary sm ${openDropdown === 'manage' ? 'active' : ''}`}
+              onClick={() => setOpenDropdown(openDropdown === 'manage' ? null : 'manage')}
+            >
+              <Settings2 size={15} /> 시간표 관리 <ChevronDown size={13} />
+            </button>
+            {openDropdown === 'manage' && (
+              <div className="toolbar-dropdown-menu">
+                <button
+                  type="button"
+                  className="toolbar-dropdown-item"
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    handleLoadDefaultSchedule();
+                  }}
+                >
+                  <Sparkles size={14} className="text-primary" />
+                  <span>기본 시간표 불러오기</span>
+                </button>
+                <button
+                  type="button"
+                  className="toolbar-dropdown-item"
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    handleCopyPrevWeek();
+                  }}
+                >
+                  <Copy size={14} />
+                  <span>이전 주 시간표 복사</span>
+                </button>
+                <div className="toolbar-dropdown-divider" />
+                <button
+                  type="button"
+                  className="toolbar-dropdown-item danger"
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    handleClearWeek();
+                  }}
+                >
+                  <RotateCcw size={14} />
+                  <span>이번 주 시간표 비우기</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 문서 내보내기 드롭다운 */}
+          <div className="toolbar-dropdown-wrapper">
+            <button
+              type="button"
+              className={`btn-secondary sm ${openDropdown === 'export' ? 'active' : ''}`}
+              onClick={() => setOpenDropdown(openDropdown === 'export' ? null : 'export')}
+            >
+              <FileDown size={15} /> 문서 내보내기 <ChevronDown size={13} />
+            </button>
+            {openDropdown === 'export' && (
+              <div className="toolbar-dropdown-menu">
+                <button
+                  type="button"
+                  className="toolbar-dropdown-item"
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    handleExportHwpx();
+                  }}
+                >
+                  <FileDown size={14} className="text-primary" />
+                  <span>한글 문서 (HWPX) 저장</span>
+                </button>
+                <button
+                  type="button"
+                  className="toolbar-dropdown-item"
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    handleExportDocx();
+                  }}
+                >
+                  <FileDown size={14} />
+                  <span>워드 문서 (DOCX) 저장</span>
+                </button>
+                <button
+                  type="button"
+                  className="toolbar-dropdown-item"
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    handleExportPdf();
+                  }}
+                >
+                  <FileDown size={14} />
+                  <span>A4 PDF 파일 저장</span>
+                </button>
+                <div className="toolbar-dropdown-divider" />
+                <button
+                  type="button"
+                  className="toolbar-dropdown-item"
+                  onClick={() => {
+                    setOpenDropdown(null);
+                    handlePrint();
+                  }}
+                >
+                  <Printer size={14} />
+                  <span>프린터 직접 인쇄</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -418,11 +609,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
           <span>📅 이번 주 등록 수업: <strong>{totalScheduleCount}건</strong></span>
         </div>
         <div className="view-hint">
-          {viewMode === 'table' ? (
-            <span>💡 빈 칸의 <strong>+</strong>를 누르면 해당 시간대에 수업을 즉시 등록할 수 있으며, 수업 카드를 클릭하면 일지 작성으로 바로 이동합니다.</span>
-          ) : (
-            <span>💡 요일별 카드를 클릭하면 해당 일자의 수업 일지를 바로 작성하거나 수정할 수 있습니다.</span>
-          )}
+          <span>💡 카드를 <strong>드래그</strong>하여 시간/요일을 이동하거나, 카드 우측 <strong>📝 버튼(또는 더블클릭)</strong>으로 수업 일지를 즉시 작성하세요.</span>
         </div>
       </div>
 
@@ -481,11 +668,17 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                       const dateStr = getDateFromMondayOffset(currentMonday, idx);
                       const items = getSlotItems(dateStr, slot);
                       const isToday = dateStr === new Date().toISOString().slice(0, 10);
+                      const cellKey = `${dateStr}-${slot.hour}`;
 
                       return (
                         <td
-                          key={`${dateStr}-${slot.hour}`}
-                          className={`matrix-slot-cell ${isToday ? 'cell-today' : ''}`}
+                          key={cellKey}
+                          className={`matrix-slot-cell ${isToday ? 'cell-today' : ''} ${
+                            dragOverKey === cellKey ? 'drag-over-target' : ''
+                          }`}
+                          onDragOver={(e) => handleDragOver(e, cellKey)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDropOnSlot(e, dateStr, slot.hour)}
                         >
                           <div className="slot-cell-content">
                             {/* 일정 카드 목록 */}
@@ -494,19 +687,32 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                               return (
                                 <div
                                   key={item.id}
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, item, dateStr)}
                                   className={`matrix-schedule-badge ${isDone ? 'done' : 'pending'}`}
                                   onClick={() =>
                                     handleOpenEditSchedule(
                                       item.planItem ? { ...item.planItem, record: item.record } : item
                                     )
                                   }
-                                  title={`클릭하여 수정 또는 일지 작성 (${item.studentName})`}
+                                  onDoubleClick={(e) => handleQuickNavigateToDiary(e, item, dateStr)}
+                                  title={`클릭: 일정 수정 | 더블클릭: 일지 바로가기 | 드래그: 시간 이동 (${item.studentName})`}
                                 >
                                   <div className="badge-header-row">
                                     <span className="badge-time">
                                       {item.classTime ? item.classTime.slice(0, 5) : `${slot.hour}:00`}
                                     </span>
-                                    <span className={`badge-status-dot ${isDone ? 'dot-done' : 'dot-pending'}`} />
+                                    <div className="badge-header-right">
+                                      <button
+                                        type="button"
+                                        className="badge-quick-diary-btn"
+                                        onClick={(e) => handleQuickNavigateToDiary(e, item, dateStr)}
+                                        title="수업 일지 바로 작성/열기"
+                                      >
+                                        <BookOpen size={10} />
+                                      </button>
+                                      <span className={`badge-status-dot ${isDone ? 'dot-done' : 'dot-pending'}`} />
+                                    </div>
                                   </div>
                                   <div className="badge-student-name">
                                     {item.studentName}
@@ -549,9 +755,18 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
             const dateStr = getDateFromMondayOffset(currentMonday, idx);
             const isToday = dateStr === new Date().toISOString().slice(0, 10);
             const items = dailyData[dateStr] || [];
+            const colKey = `col-${dateStr}`;
 
             return (
-              <div key={dateStr} className={`day-column ${isToday ? 'is-today' : ''}`}>
+              <div
+                key={dateStr}
+                className={`day-column ${isToday ? 'is-today' : ''} ${
+                  dragOverKey === colKey ? 'drag-over-target' : ''
+                }`}
+                onDragOver={(e) => handleDragOver(e, colKey)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDropOnSlot(e, dateStr, null)}
+              >
                 <div className="day-column-header">
                   <span className="day-name">{dayInfo.name}</span>
                   <span className="day-date">{dateStr.slice(5)}</span>
@@ -573,26 +788,39 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                       return (
                         <div
                           key={item.id}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, item, dateStr)}
                           className={`schedule-card ${isDone ? 'done' : 'pending'}`}
                           onClick={() =>
                             handleOpenEditSchedule(
                               item.planItem ? { ...item.planItem, record: item.record } : item
                             )
                           }
+                          onDoubleClick={(e) => handleQuickNavigateToDiary(e, item, dateStr)}
                         >
                           <div className="card-time-row">
                             <span className="card-time">
                               <Clock size={12} /> {item.classTime || '시간 미지정'}
                             </span>
-                            <span className={`status-pill ${isDone ? 'completed' : 'planned'}`}>
-                              {isDone ? (
-                                <>
-                                  <CheckCircle2 size={11} /> 작성완료
-                                </>
-                              ) : (
-                                '미작성'
-                              )}
-                            </span>
+                            <div className="card-status-actions">
+                              <button
+                                type="button"
+                                className="badge-quick-diary-btn"
+                                onClick={(e) => handleQuickNavigateToDiary(e, item, dateStr)}
+                                title="수업 일지 바로 작성/열기"
+                              >
+                                <BookOpen size={11} />
+                              </button>
+                              <span className={`status-pill ${isDone ? 'completed' : 'planned'}`}>
+                                {isDone ? (
+                                  <>
+                                    <CheckCircle2 size={11} /> 작성완료
+                                  </>
+                                ) : (
+                                  '미작성'
+                                )}
+                              </span>
+                            </div>
                           </div>
 
                           <div className="card-student-name">{item.studentName}</div>

@@ -21,19 +21,26 @@ import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 
 const COMMON_COURSES = ['국어', '수학', '사회', '과학', '영어', '독서논술', '창의체험'];
 
-export const ClassDiaryTab = ({ initialParams }) => {
+export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   const [students, setStudents] = useState([]);
   const [records, setRecords] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
 
   // 포커스 안전 유지 및 1회성 initialParams 처리용 Refs
   const initialHandledRef = useRef(false);
   const contentTextareaRef = useRef(null);
   const lastFocusedFieldRef = useRef(null);
+  const searchInputRef = useRef(null);
   // 저장 버튼 최근 피드백 상태
   const [isSavedRecently, setIsSavedRecently] = useState(false);
+
+  const updateDirty = (dirty) => {
+    setIsDirty(dirty);
+    if (onDirtyChange) onDirtyChange(dirty);
+  };
 
   // 필드 포커스 및 윈도우 OS 포커스 강제 복원 헬퍼
   const ensureFieldFocus = (e) => {
@@ -142,6 +149,12 @@ export const ClassDiaryTab = ({ initialParams }) => {
       homework: rec.homework || rec.assignment || '',
       notes: rec.notes || rec.special_notes || rec.memo || '',
     });
+    updateDirty(false);
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    updateDirty(true);
   };
 
   const handleSelectRecord = (rec) => {
@@ -161,6 +174,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
       homework: '',
       notes: '',
     });
+    updateDirty(false);
   };
 
   const handleSave = async () => {
@@ -192,6 +206,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
       }
 
       setIsSavedRecently(true);
+      updateDirty(false);
       setTimeout(() => setIsSavedRecently(false), 2000);
 
       await loadData(targetId);
@@ -281,6 +296,21 @@ export const ClassDiaryTab = ({ initialParams }) => {
 
   const currentStudent = students.find((s) => s.id === formData.studentId);
 
+  // 전역 키보드 단축키 연동 (Ctrl+S: 저장, Ctrl+N: 새 일지, Ctrl+F: 검색 포커스)
+  useEffect(() => {
+    const onShortcutSave = () => handleSave();
+    const onShortcutNew = () => handleNewDiary();
+    const onShortcutSearch = () => searchInputRef.current?.focus();
+    window.addEventListener('mydiary:shortcut-save', onShortcutSave);
+    window.addEventListener('mydiary:shortcut-new', onShortcutNew);
+    window.addEventListener('mydiary:shortcut-search', onShortcutSearch);
+    return () => {
+      window.removeEventListener('mydiary:shortcut-save', onShortcutSave);
+      window.removeEventListener('mydiary:shortcut-new', onShortcutNew);
+      window.removeEventListener('mydiary:shortcut-search', onShortcutSearch);
+    };
+  }, [formData, selectedRecordId, selectedStudentId, students]);
+
   return (
     <div className="tab-container class-diary-tab">
       {/* 좌측: 일지 목록 사이드 패널 */}
@@ -295,6 +325,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 setSelectedStudentId(e.target.value);
                 setFormData((prev) => ({ ...prev, studentId: e.target.value }));
                 setSelectedRecordId(null);
+                updateDirty(false);
               }}
             >
               <option value="">전체 학생 일지 보기</option>
@@ -309,14 +340,15 @@ export const ClassDiaryTab = ({ initialParams }) => {
           <div className="search-input-box">
             <Search size={14} className="text-muted" />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="일지 검색 (과목, 날짜, 내용)..."
+              placeholder="일지 검색 (과목, 날짜, 내용)... (Ctrl+F)"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
             />
           </div>
 
-          <button className="btn-primary full-width" onClick={handleNewDiary}>
+          <button className="btn-primary full-width" onClick={handleNewDiary} title="단축키: Ctrl+N">
             <Plus size={15} /> 새 일지 작성
           </button>
         </div>
@@ -360,6 +392,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 {currentStudent.name} ({currentStudent.school_grade || currentStudent.grade || '일반'})
               </span>
             )}
+            {isDirty && <span className="unsaved-dirty-badge">● 작성 중 (미저장)</span>}
           </div>
 
           <div className="btn-group">
@@ -378,6 +411,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
               type="button"
               className={`btn-primary ${isSavedRecently ? 'btn-saved-success' : ''}`}
               onClick={handleSave}
+              title="단축키: Ctrl+S"
             >
               {isSavedRecently ? <CheckCircle size={15} /> : <Save size={15} />}
               {isSavedRecently ? '저장 완료!' : '저장하기'}
@@ -393,7 +427,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
               <select
                 className="form-select"
                 value={formData.studentId}
-                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                onChange={(e) => handleFieldChange('studentId', e.target.value)}
                 onFocus={ensureFieldFocus}
                 onClick={ensureFieldFocus}
               >
@@ -412,7 +446,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 type="date"
                 className="form-input"
                 value={formData.classDate}
-                onChange={(e) => setFormData({ ...formData, classDate: e.target.value })}
+                onChange={(e) => handleFieldChange('classDate', e.target.value)}
                 onFocus={ensureFieldFocus}
                 onClick={ensureFieldFocus}
               />
@@ -425,7 +459,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-input"
                 placeholder="예: 14:00"
                 value={formData.classTime}
-                onChange={(e) => setFormData({ ...formData, classTime: e.target.value })}
+                onChange={(e) => handleFieldChange('classTime', e.target.value)}
                 onFocus={ensureFieldFocus}
                 onClick={ensureFieldFocus}
               />
@@ -438,7 +472,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 className="form-input"
                 placeholder="예: 초등 수학 5-1 디딤돌"
                 value={formData.course}
-                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                onChange={(e) => handleFieldChange('course', e.target.value)}
                 onFocus={ensureFieldFocus}
                 onClick={ensureFieldFocus}
               />
@@ -456,7 +490,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
               rows={6}
               placeholder="오늘 진행한 학습 진도, 개념 설명, 문제 풀이 결과 등을 상세히 기록하세요..."
               value={formData.content || ''}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              onChange={(e) => handleFieldChange('content', e.target.value)}
               onFocus={ensureFieldFocus}
               onClick={ensureFieldFocus}
               onMouseDown={ensureFieldFocus}
@@ -471,7 +505,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 rows={4}
                 placeholder="다음 시간까지 완료할 문제집 페이지, 복습 과제 등을 입력하세요..."
                 value={formData.homework || ''}
-                onChange={(e) => setFormData({ ...formData, homework: e.target.value })}
+                onChange={(e) => handleFieldChange('homework', e.target.value)}
                 onFocus={ensureFieldFocus}
                 onClick={ensureFieldFocus}
                 onMouseDown={ensureFieldFocus}
@@ -485,7 +519,7 @@ export const ClassDiaryTab = ({ initialParams }) => {
                 rows={4}
                 placeholder="학생의 집중도, 학습 태도, 다음 수업 준비물 또는 학부모 상담 메모를 기록하세요..."
                 value={formData.notes || ''}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={(e) => handleFieldChange('notes', e.target.value)}
                 onFocus={ensureFieldFocus}
                 onClick={ensureFieldFocus}
                 onMouseDown={ensureFieldFocus}

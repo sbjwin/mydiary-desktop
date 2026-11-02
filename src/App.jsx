@@ -17,6 +17,7 @@ export function App() {
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [helpInitialTab, setHelpInitialTab] = useState('guide');
   const [currentTheme, setCurrentTheme] = useState(() => getStoredTheme());
+  const [isEditorDirty, setIsEditorDirty] = useState(false);
 
   // 전역 토스트 및 확인 모달 상태 (Electron 네이티브 팝업 포커스 단절 원천 방어)
   const [globalToast, setGlobalToast] = useState(null);
@@ -122,13 +123,63 @@ export function App() {
     initDefaultStudents();
   }, []);
 
-  // F1 단축키 및 Electron 네이티브 메뉴 IPC 리스너 등록
+  // 미저장 변경사항 보호를 포함한 탭 전환 핸들러
+  const handleSafeSelectTab = (nextTab) => {
+    if (nextTab === activeTab) return;
+    if (isEditorDirty) {
+      setGlobalConfirm({
+        isOpen: true,
+        title: '작성 중인 내용 확인',
+        message: '저장하지 않은 변경사항이 있습니다.\n저장하지 않고 다른 탭으로 이동하시겠습니까?',
+        type: 'warning',
+        confirmText: '이동하기',
+        cancelText: '계속 작성',
+        isAlertOnly: false,
+        onConfirm: () => {
+          setIsEditorDirty(false);
+          setActiveTab(nextTab);
+        },
+        onCancel: null,
+      });
+      return;
+    }
+    setActiveTab(nextTab);
+  };
+
+  // F1 및 데스크톱 전역 단축키 (Ctrl+S, Ctrl+N, Ctrl+F, Ctrl+1~4) 리스너 등록
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'F1') {
         e.preventDefault();
         setHelpInitialTab('guide');
         setHelpModalOpen(true);
+        return;
+      }
+
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 's') {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('mydiary:shortcut-save'));
+        } else if (key === 'n') {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('mydiary:shortcut-new'));
+        } else if (key === 'f') {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('mydiary:shortcut-search'));
+        } else if (key === '1') {
+          e.preventDefault();
+          handleSafeSelectTab('weekly');
+        } else if (key === '2') {
+          e.preventDefault();
+          handleSafeSelectTab('diary');
+        } else if (key === '3') {
+          e.preventDefault();
+          handleSafeSelectTab('students');
+        } else if (key === '4') {
+          e.preventDefault();
+          handleSafeSelectTab('backup');
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -146,10 +197,11 @@ export function App() {
       window.removeEventListener('keydown', handleKeyDown);
       if (cleanupIpc) cleanupIpc();
     };
-  }, []);
+  }, [activeTab, isEditorDirty]);
 
   // 주간 시간표에서 수업 카드를 클릭했을 때 해당 일지 작성 화면으로 바로 이동
   const handleNavigateToDiary = (params) => {
+    setIsEditorDirty(false);
     setDiaryParams(params);
     setActiveTab('diary');
   };
@@ -163,7 +215,7 @@ export function App() {
     <div className="app-container">
       <Header
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={handleSafeSelectTab}
         onOpenHelp={() => handleOpenHelp('guide')}
         currentTheme={currentTheme}
         onSelectTheme={handleSelectTheme}
@@ -173,10 +225,10 @@ export function App() {
           <WeeklyScheduleTab onNavigateToDiary={handleNavigateToDiary} />
         )}
         {activeTab === 'diary' && (
-          <ClassDiaryTab initialParams={diaryParams} />
+          <ClassDiaryTab initialParams={diaryParams} onDirtyChange={setIsEditorDirty} />
         )}
         {activeTab === 'students' && (
-          <StudentManageTab />
+          <StudentManageTab onDirtyChange={setIsEditorDirty} onNavigateToDiary={handleNavigateToDiary} />
         )}
         {activeTab === 'backup' && (
           <BackupSettingTab />
