@@ -21,6 +21,7 @@ import {
   Sparkles,
   RotateCcw,
   ShieldCheck,
+  Wrench,
 } from 'lucide-react';
 
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
@@ -43,6 +44,7 @@ export const BackupSettingTab = () => {
   const [statusMessage, setStatusMessage] = useState(null);
   const [restoreMode, setRestoreMode] = useState('merge'); // 'merge' | 'replace'
   const [rollbackSnapshot, setRollbackSnapshot] = useState(null);
+  const [lastLoginError, setLastLoginError] = useState(null);
 
   const isBusy = !!processingAction;
   const isMock = auth.isMock || GoogleDriveService.isMockMode();
@@ -90,11 +92,72 @@ export const BackupSettingTab = () => {
       const modeText = authData.isMock ? ' (Mock 개발 모드)' : '';
       setStatusMessage({ type: 'success', text: `구글 드라이브 계정(${authData.user?.email || '인증됨'})${modeText}이 연결되었습니다.` });
       showToast(`구글 드라이브 계정이 연결되었습니다.${modeText}`, 'success');
+      setLastLoginError(null);
       focusAppWindow();
     } catch (err) {
       console.error('Login failed:', err);
+      setLastLoginError(err.message);
       setStatusMessage({ type: 'error', text: `구글 로그인 실패: ${err.message}` });
       showToast(`구글 로그인 실패: ${err.message}`, 'error');
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+
+  // 1-0. 인증 오류 자가 복구 & 재연결
+  const handleAutoRepairAndRetry = async () => {
+    setProcessingAction('repair');
+    setStatusMessage({ type: 'info', text: '인증 키를 자동 복구하고 최신 설정을 동기화하는 중입니다...' });
+    try {
+      const repairRes = await GoogleDriveService.repairGoogleAuth();
+      if (repairRes.success) {
+        showToast('인증 키가 정상 복구되었습니다. 다시 로그인을 시도합니다.', 'success');
+        setLastLoginError(null);
+        await handleGoogleLogin();
+      } else {
+        throw new Error(repairRes.error || '자동 복구에 실패했습니다.');
+      }
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: `복구 실패: ${err.message}` });
+      showToast(`복구 실패: ${err.message}`, 'error');
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  // 1-0-1. 앱 원클릭 재시작
+  const handleRestartApp = () => {
+    showConfirm({
+      title: '애플리케이션 재시작',
+      message: '최신 환경 설정(.env)을 완전히 적용하기 위해 MyDiary 앱을 지금 재시작하시겠습니까?',
+      type: 'primary',
+      confirmText: '앱 재시작',
+      cancelText: '취소',
+      onConfirm: async () => {
+        await GoogleDriveService.restartApp();
+      },
+    });
+  };
+
+  // 1-0-2. 가상(Mock) 모드로 즉시 전환
+  const handleForceMockMode = async () => {
+    setProcessingAction('login');
+    setStatusMessage({ type: 'info', text: '가상(Mock) 개발 모드로 즉시 전환하여 로그인합니다...' });
+    try {
+      const res = await GoogleDriveService.seedMockData();
+      await loadStats();
+      setAuth({
+        isLoggedIn: true,
+        user: { name: '홍길동 선생님 (Mock)', email: 'teacher.mock@mydiary.test' },
+        accessToken: 'mock_token',
+        isMock: true,
+      });
+      setLastLoginError(null);
+      setStatusMessage({ type: 'success', text: '가상(Mock) 개발 모드로 연결되었습니다.' });
+      showToast('가상(Mock) 모드로 전환되었습니다. 모든 기능을 테스트할 수 있습니다.', 'success');
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: err.message });
     } finally {
       setProcessingAction(null);
     }
@@ -614,7 +677,7 @@ export const BackupSettingTab = () => {
           </div>
           <div className="info-row">
             <DbIcon size={16} className="text-muted" />
-            <span>엔진 버전: <strong>v0.6.0</strong> | 크로스 플랫폼 (Windows, macOS, Linux 지원)</span>
+            <span>엔진 버전: <strong>v0.6.1</strong> | 크로스 플랫폼 (Windows, macOS, Linux 지원)</span>
           </div>
           <div className="info-row">
             <Users size={16} className="text-muted" />

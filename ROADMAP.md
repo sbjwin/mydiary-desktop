@@ -1,6 +1,6 @@
 # MyDiary Desktop 로드맵 (Roadmap)
 
-**Stage: v0.6.0 (Beta)** · next: v1.0.0 (Production Stable) · 잔여 공수 추정치: ~40–60 에이전트-시간 (Agent Wall-Clock Hours)
+**Stage: v0.6.1 (Beta)** · next: v1.0.0 (Production Stable) · 잔여 공수 추정치: ~40–60 에이전트-시간 (Agent Wall-Clock Hours)
 
 > **최종 갱신일:** 2026-10-19  
 > **총괄 관리자:** 성백진 (`Sung Baekjin` / `sbjwin4271@gmail.com`)  

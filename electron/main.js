@@ -10,12 +10,17 @@ const candidateEnvPaths = [
   path.join(process.resourcesPath, '.env'),
   path.join(process.resourcesPath, 'app.asar/.env'),
 ];
-for (const envPath of candidateEnvPaths) {
-  if (fs.existsSync(envPath)) {
-    require('dotenv').config({ path: envPath });
-    break;
+
+function loadEnvConfig(override = false) {
+  for (const envPath of candidateEnvPaths) {
+    if (fs.existsSync(envPath)) {
+      require('dotenv').config({ path: envPath, override });
+      return true;
+    }
   }
+  return false;
 }
+loadEnvConfig();
 
 // 런타임 수명주기 1: 단일 인스턴스 락 (Single Instance Lock)
 // 중복 기동으로 인한 로컬스토리지 동시 쓰기 및 포트 충돌 방어
@@ -498,10 +503,9 @@ ipcMain.handle('focus-window', () => {
 });
 
 // ==========================================
+// ==========================================
 // Google OAuth 2.0 Loopback Authentication (Desktop App / PKCE)
 // ==========================================
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.appdata',
   'https://www.googleapis.com/auth/userinfo.email',
@@ -509,17 +513,78 @@ const GOOGLE_SCOPES = [
   'openid',
 ].join(' ');
 
-// Mock 환경 판별: 환경변수로 강제 지정되었거나, 개발 환경에서 GCP 키가 없는 경우
-const isDevMode = !app.isPackaged && process.env.NODE_ENV !== 'production';
-const isMockAuthEnabled =
-  process.env.VITE_USE_MOCK_GOOGLE === 'true' ||
-  process.env.MOCK_GOOGLE === 'true' ||
-  ((!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) && isDevMode);
+// 최신 환경변수 동적 조회 헬퍼 (핫 리로드 및 템플릿 키 자동 감지)
+function getGoogleAuthConfig() {
+  loadEnvConfig(true);
+  let clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  let clientSecret = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+
+  // 템플릿 플레이스홀더 문자열 방어
+  if (clientId.includes('your_google') || clientId.includes('example')) {
+    clientId = '';
+  }
+  if (clientSecret.includes('your_google') || clientSecret.includes('example')) {
+    clientSecret = '';
+  }
+
+  const isDev = !app.isPackaged && process.env.NODE_ENV !== 'production';
+  const isMockAuthEnabled =
+    process.env.VITE_USE_MOCK_GOOGLE === 'true' ||
+    process.env.MOCK_GOOGLE === 'true' ||
+    ((!clientId || !clientSecret) && isDev);
+
+  return { clientId, clientSecret, isMock: isMockAuthEnabled, isMockAuthEnabled, isDev };
+}
+
+// IPC: 환경변수 핫 리로드 및 상태 진단
+ipcMain.handle('reload-env', async () => {
+  const loaded = loadEnvConfig(true);
+  const config = getGoogleAuthConfig();
+  return {
+    success: true,
+    loaded,
+    hasClientId: Boolean(config.clientId),
+    hasClientSecret: Boolean(config.clientSecret),
+    isMock: config.isMock,
+    isDev: config.isDev,
+  };
+});
+
+// IPC: 앱 원클릭 자체 재기동 (터미널 명령어 없이 복구)
+ipcMain.handle('app-restart', async () => {
+  app.relaunch();
+  app.exit(0);
+});
+
+// IPC: 환경변수 자동 복구 및 동기화 (패키징된 앱 템플릿 키 복구)
+ipcMain.handle('repair-google-auth', async () => {
+  try {
+    const devEnvPath = 'd:\\development\\mydiary-desktop\\.env';
+    const targetEnvPath = path.join(process.resourcesPath, '.env');
+
+    if (fs.existsSync(devEnvPath)) {
+      const devContent = fs.readFileSync(devEnvPath, 'utf8');
+      if (fs.existsSync(process.resourcesPath)) {
+        fs.writeFileSync(targetEnvPath, devContent, 'utf8');
+      }
+      loadEnvConfig(true);
+      const conf = getGoogleAuthConfig();
+      return { success: true, repaired: true, hasKey: Boolean(conf.clientId) };
+    }
+    loadEnvConfig(true);
+    const conf = getGoogleAuthConfig();
+    return { success: true, repaired: false, hasKey: Boolean(conf.clientId) };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
 
 ipcMain.handle('google-auth-login', async () => {
   return new Promise((resolve) => {
     try {
-      if (isMockAuthEnabled) {
+      const { clientId, clientSecret, isMock } = getGoogleAuthConfig();
+
+      if (isMock) {
         console.log('[Google Auth] GCP 키가 없거나 개발 Mock 모드가 활성화되어 가상(Mock) 계정으로 로그인합니다.');
         return resolve({
           success: true,
@@ -536,10 +601,10 @@ ipcMain.handle('google-auth-login', async () => {
         });
       }
 
-      if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      if (!clientId || !clientSecret) {
         return resolve({
           success: false,
-          error: '.env 파일에 GOOGLE_CLIENT_ID 또는 GOOGLE_CLIENT_SECRET이 설정되어 있지 않습니다.',
+          error: '.env 파일에 유효한 GOOGLE_CLIENT_ID 또는 GOOGLE_CLIENT_SECRET이 설정되어 있지 않습니다. (템플릿 플레이스홀더 감지됨)',
         });
       }
 
@@ -551,7 +616,7 @@ ipcMain.handle('google-auth-login', async () => {
       // 2. 임시 로컬 루프백 서버 구동 (포트 0 -> 사용 가능한 빈 포트 자동 바인딩)
       const server = http.createServer(async (req, res) => {
         try {
-          const reqUrl = new URL(req.url, `http://127.0.0.1:${server.address().port}`);
+          const reqUrl = new URL(req.url, 'http://127.0.0.1:' + server.address().port);
 
           // favicon.ico 등 브라우저 부가 요청은 조용히 무시 (204 처리)
           if (reqUrl.pathname === '/favicon.ico' || req.method !== 'GET') {
@@ -586,7 +651,7 @@ ipcMain.handle('google-auth-login', async () => {
 
           // RFC 6749 보안: CSRF 방어 state 토큰 일치 여부 검증
           if (oauthState && returnedState && returnedState !== oauthState) {
-            console.warn(`OAuth state mismatch: expected ${oauthState}, got ${returnedState}`);
+            console.warn('OAuth state mismatch: expected ' + oauthState + ', got ' + returnedState);
             res.writeHead(400, { 'Content-Type': 'text/html; charset=UTF-8' });
             res.end(`
               <!DOCTYPE html>
@@ -612,12 +677,12 @@ ipcMain.handle('google-auth-login', async () => {
 
             // 3. 인가 코드로 액세스 토큰 교환 (PKCE + Client Secret)
             const tokenParams = new URLSearchParams({
-              client_id: GOOGLE_CLIENT_ID,
-              client_secret: GOOGLE_CLIENT_SECRET,
+              client_id: clientId,
+              client_secret: clientSecret,
               code: authCode,
               code_verifier: codeVerifier,
               grant_type: 'authorization_code',
-              redirect_uri: `http://127.0.0.1:${server.address().port}`,
+              redirect_uri: 'http://127.0.0.1:' + server.address().port,
             });
 
             const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -636,7 +701,7 @@ ipcMain.handle('google-auth-login', async () => {
             let userInfo = null;
             try {
               const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: { Authorization: `Bearer ${tokenData.access_token}` },
+                headers: { Authorization: 'Bearer ' + tokenData.access_token },
               });
               userInfo = await userRes.json();
             } catch (uErr) {
@@ -668,20 +733,19 @@ ipcMain.handle('google-auth-login', async () => {
 
       server.listen(0, '127.0.0.1', () => {
         const port = server.address().port;
-        const redirectUri = `http://127.0.0.1:${port}`;
+        const redirectUri = 'http://127.0.0.1:' + port;
 
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-          `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}` +
-          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&response_type=code` +
-          `&scope=${encodeURIComponent(GOOGLE_SCOPES)}` +
-          `&code_challenge=${encodeURIComponent(codeChallenge)}` +
-          `&code_challenge_method=S256` +
-          `&state=${encodeURIComponent(oauthState)}` +
-          `&access_type=offline` +
-          `&prompt=consent`;
+        const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+          'client_id=' + encodeURIComponent(clientId) +
+          '&redirect_uri=' + encodeURIComponent(redirectUri) +
+          '&response_type=code' +
+          '&scope=' + encodeURIComponent(GOOGLE_SCOPES) +
+          '&code_challenge=' + encodeURIComponent(codeChallenge) +
+          '&code_challenge_method=S256' +
+          '&state=' + encodeURIComponent(oauthState) +
+          '&access_type=offline' +
+          '&prompt=consent';
 
-        // 기본 시스템 브라우저로 구글 로그인 화면 열기
         shell.openExternal(authUrl);
       });
 
@@ -702,7 +766,9 @@ ipcMain.handle('google-auth-login', async () => {
 // IPC: 구글 액세스 토큰 갱신 (리프레시 토큰 활용)
 ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
   try {
-    if (isMockAuthEnabled || (refreshToken && refreshToken.startsWith('mock_'))) {
+    const { clientId, clientSecret, isMock } = getGoogleAuthConfig();
+
+    if (isMock || (refreshToken && refreshToken.startsWith('mock_'))) {
       return {
         success: true,
         isMock: true,
@@ -711,7 +777,7 @@ ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
       };
     }
 
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    if (!clientId || !clientSecret) {
       return { success: false, error: 'GOOGLE_CLIENT_ID 또는 GOOGLE_CLIENT_SECRET 설정이 누락되었습니다.' };
     }
     if (!refreshToken) {
@@ -719,8 +785,8 @@ ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
     }
 
     const refreshParams = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
+      client_id: clientId,
+      client_secret: clientSecret,
       refresh_token: refreshToken,
       grant_type: 'refresh_token',
     });
@@ -746,4 +812,3 @@ ipcMain.handle('google-auth-refresh', async (event, refreshToken) => {
     return { success: false, error: err.message };
   }
 });
-

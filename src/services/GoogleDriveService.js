@@ -37,7 +37,7 @@ export const GoogleDriveService = {
   exportLocalBackup: async () => {
     try {
       const backupData = {
-        version: '0.6.0',
+        version: '0.6.1',
         exportedAt: new Date().toISOString(),
         students: JSON.parse(localStorage.getItem('@mydiary:students') || '[]'),
         records: JSON.parse(localStorage.getItem('@mydiary:records') || '[]'),
@@ -543,7 +543,7 @@ export const GoogleDriveService = {
       };
 
       const seedData = {
-        version: '0.6.0',
+        version: '0.6.1',
         exportedAt: new Date().toISOString(),
         timestamp: new Date().toISOString(),
         students: sampleStudents,
@@ -567,5 +567,26 @@ export const GoogleDriveService = {
       console.error('Seed mock data failed:', err);
       throw err;
     }
+  },
+
+  // 5. 환경변수 핫 리로드 및 자가 복구 도구
+  reloadEnv: async () => {
+    if (window.electronAPI?.reloadEnv) {
+      return await window.electronAPI.reloadEnv();
+    }
+    return { success: true, isMock: true };
+  },
+
+  restartApp: async () => {
+    if (window.electronAPI?.restartApp) {
+      await window.electronAPI.restartApp();
+    }
+  },
+
+  repairGoogleAuth: async () => {
+    if (window.electronAPI?.repairGoogleAuth) {
+      return await window.electronAPI.repairGoogleAuth();
+    }
+    return { success: false, error: '데스크톱 환경에서만 지원됩니다.' };
   },
 };
