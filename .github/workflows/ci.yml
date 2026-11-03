@@ -27,9 +27,18 @@ jobs:
         run: npm ci
 
       - name: 환경변수 파일 준비 (.env)
+        shell: bash
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
-          if [ -f .env.example ]; then
+          if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ]; then
+            echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" > .env
+            echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+            echo "✅ GitHub Secrets에서 실제 Google OAuth 키를 .env에 안전하게 주입했습니다."
+          elif [ -f .env.example ]; then
             cp .env.example .env
+            echo "⚠️ GitHub Secrets가 설정되지 않아 .env.example 템플릿으로 빌드합니다."
           else
             touch .env
           fi
@@ -79,9 +88,17 @@ jobs:
 
       - name: 환경변수 파일 준비 (.env)
         shell: bash
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
-          if [ -f .env.example ]; then
+          if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ]; then
+            echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" > .env
+            echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
+            echo "✅ GitHub Secrets에서 실제 Google OAuth 키를 .env에 안전하게 주입했습니다."
+          elif [ -f .env.example ]; then
             cp .env.example .env
+            echo "⚠️ GitHub Secrets가 설정되지 않아 .env.example 템플릿으로 빌드합니다."
           else
             touch .env
           fi

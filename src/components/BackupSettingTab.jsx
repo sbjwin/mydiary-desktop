@@ -414,6 +414,48 @@ export const BackupSettingTab = () => {
           </div>
         )}
 
+        {/* 인증 에러 발생 시 원클릭 자동 복구 도구 패널 */}
+        {(statusMessage?.type === 'error' || lastLoginError) && (
+          <div className="auth-recovery-box">
+            <div className="auth-recovery-header">
+              <Wrench size={20} className="text-warning flex-shrink-0" />
+              <div>
+                <strong>인증 오류 원클릭 자동 복구 도구</strong>
+                <p>설치된 앱의 키가 올바르지 않거나 변경되었을 때, 아래 버튼으로 터미널 없이 즉시 복구할 수 있습니다.</p>
+              </div>
+            </div>
+            <div className="auth-recovery-btn-group">
+              <button
+                type="button"
+                className="btn-recovery-primary"
+                onClick={handleAutoRepairAndRetry}
+                disabled={isBusy}
+                title="유효한 .env 키를 감지하여 패키지 리소스로 동기화하고 즉시 다시 로그인합니다."
+              >
+                <RotateCcw size={14} /> 🚀 원클릭 자동 복구 & 재연결
+              </button>
+              <button
+                type="button"
+                className="btn-recovery-secondary"
+                onClick={handleRestartApp}
+                disabled={isBusy}
+                title="터미널 없이 앱 프로세스를 완전히 자체 재기동합니다."
+              >
+                <RefreshCw size={14} /> 🔄 앱 원클릭 재시작
+              </button>
+              <button
+                type="button"
+                className="btn-recovery-secondary"
+                onClick={handleForceMockMode}
+                disabled={isBusy}
+                title="GCP 키 문제 해결 전까지 임시로 Mock 계정으로 즉시 전환하여 작업합니다."
+              >
+                <Sparkles size={14} /> 🧪 Mock 모드로 전환
+              </button>
+            </div>
+          </div>
+        )}
+
 
         {/* 복원 옵션 정책 및 안전 롤백 스냅샷 컨트롤러 */}
         <div className="restore-policy-card">
