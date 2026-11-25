@@ -1,4 +1,4 @@
-# MyDiary Desktop (v0.6.1)
+# MyDiary Desktop (v0.6.2)
 
 선생님들을 위한 스마트 수업 일지 및 학생 성장 기록 관리 크로스 플랫폼 데스크톱 애플리케이션입니다.  
 기존 스마트폰용 MyDiary 모바일 앱의 핵심 편의성과 데이터 호환성을 100% 계승하면서, 넓은 PC 모니터 화면에 특화된 와이드 시간표 매트릭스, 2열 마스터-디테일 에디터, 공문서 표준 한글(HWPX)/워드(DOCX) 내보내기, **스마트폰과 PC 간 구글 드라이브 원클릭 클라우드 데이터 동기화**, 그리고 **사용자 맞춤형 5대 다중 테마 시스템**을 제공합니다.
@@ -11,7 +11,7 @@
 
 ## 📌 프로젝트 정보
 
-- **버전**: `v0.6.1`
+- **버전**: `v0.6.2`
 - **기획 및 개발자**: 성백진 (Sung Baekjin) <sbjwin4271@gmail.com>
 - **지원 운영체제**: Windows 10/11, macOS, Linux (3대 OS 완벽 지원)
 - **핵심 기술 스택**: Electron, React 19, Vite, Lucide-React, JSZip (HWPX OWPML 파서), Google OAuth 2.0 PKCE Loopback
@@ -99,6 +99,28 @@
 
 ---
 
+## 🌟 v0.6.2 주요 신규 기능 및 기술 개선 사항
+
+### 1. 🌙 다크 모드·확인 모달 가독성 복구 및 KST 타임존 정합성 확보
+- **미드나잇 다크 테마 & `ConfirmModal` 전면 정상화**:
+  - 미정의 CSS 변수(`--bg-modal`, `--bg-panel`, `--bg-card-header`, `--bg-card-footer`, `--text-secondary`)와 하드코딩 배경을 토큰화하여 라이트/다크 전 테마에서 확인 모달 및 모든 카드·입력창의 대비와 가독성을 복구했습니다.
+- **한국 표준시(KST) 날짜 통일 & 토스트 시야 개선**:
+  - `toISOString()` UTC 기준 날짜 비교를 로컬 `getTodayDateString()`으로 통일하고, 토스트 알림을 화면 하단 중앙으로 배치해 에디터 시야 가림을 해소했습니다.
+
+### 2. 🛡️ 미저장 변경 보호 보강 및 팝오버·모달 UX 일관성 통일
+- **학생/일지 전환 데이터 유실 방어**:
+  - `StudentManageTab`·`ClassDiaryTab`에서 수정 중인 내용을 저장하지 않고 다른 학생/일지나 탭으로 이동할 때 확인 모달(`isDirty` 보호)이 표시되도록 보강했습니다.
+- **공통 훅(`useClickOutside`, `useEscapeKey`) & 폰트·반응형 정비**:
+  - 헤더 프로필/테마 팝오버, HWPX 드롭다운, 툴바 드롭다운 및 휴회/재수강 모달의 바깥 클릭·`ESC` 닫기를 통일하고, `Pretendard Variable` 공식 CDN 연동과 1180px 이하 좁은 창 반응형 레이아웃을 적용했습니다.
+
+### 3. ⚡ Dead CSS 제거 및 컴포넌트 SSOT·렌더링 성능 최적화
+- **CSS 경량화 및 중복 통합**:
+  - 미사용 Dead CSS 62개 클래스 제거, 충돌 셀렉터(`.stat-info`, `.stat-label`) 스코프 분리, 중복 `@keyframes`(`fadeIn`, `modalScaleIn`) 및 공통 UI 규칙 통합으로 스타일시트를 경량화했습니다.
+- **렌더링·데이터 로딩 최적화**:
+  - 주간 시간표 `Promise.all` 병렬 조회 및 `slotItemsMap`/`studentMap`/`recordCountMap` `useMemo` O(1) 조회, `useRef` 기반 전역 단축키 1회 바인딩, `extractHour`·`WEEKDAYS`·`getStudentPrimaryCourse`·`focusAppWindow` SSOT 통합을 완료했습니다.
+
+---
+
 ## 🌟 v0.6.1 주요 신규 기능 및 기술 개선 사항
 
 ### 1. 🎨 헤더 퀵 테마 팔레트 최적화 & 깔끔한 미니멀 네비게이션 UX
@@ -127,7 +149,7 @@
 
 ---
 
-## 🌟 v0.6.1 주요 신규 기능 및 기술 개선 사항
+## 🌟 v0.6.0 이전 주요 기능 및 기술 이력
 
 ### 1. 🔄 클라우드 백업/복원 버튼별 독립 로딩 분리 및 피드백 안정화
 - **로딩 상태 상호 간섭 결함 해결**:
