@@ -11,7 +11,7 @@
 /* 상단 메인 헤더 */
 .app-header {
   height: 60px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -90,7 +90,7 @@
 }
 
 .nav-tab-btn.active {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   color: var(--primary);
   font-weight: 700;
   box-shadow: var(--shadow-sm);
@@ -156,7 +156,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   color: var(--text-main);
   border: 1px solid var(--border-color);
   padding: 8px 14px;
@@ -175,7 +175,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   color: var(--accent-red);
   border: 1px solid var(--accent-red-light);
   padding: 8px 14px;
@@ -217,9 +217,33 @@
   cursor: pointer;
 }
 
-.btn-primary.sm, .btn-secondary.sm {
+.btn-primary.sm,
+.btn-secondary.sm,
+.btn-danger.sm,
+.btn-warning.sm,
+.btn-success.sm {
   padding: 6px 10px;
   font-size: 12px;
+}
+
+.btn-outline-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-outline-sm:hover {
+  background-color: var(--bg-input);
+  color: var(--text-main);
 }
 
 .btn-primary:disabled,
@@ -238,7 +262,7 @@
 }
 
 .icon-btn {
-  background: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   width: 32px;
@@ -276,9 +300,16 @@
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 13.5px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
+  color: var(--text-main);
   outline: none;
   transition: border-color 0.15s ease;
+}
+
+.form-input.sm, .form-select.sm {
+  height: 32px;
+  padding: 0 8px;
+  font-size: 12.5px;
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -294,9 +325,21 @@
   border-radius: 6px;
   font-size: 13.5px;
   line-height: 1.6;
+  background-color: var(--bg-card);
+  color: var(--text-main);
   outline: none;
   resize: vertical;
 }
+
+/* 공통 유틸리티 클래스 */
+.text-primary { color: var(--primary); }
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--accent-green); }
+.text-danger { color: var(--accent-red); }
+.text-warning { color: var(--accent-amber); }
+.flex-shrink-0 { flex-shrink: 0; }
+.mr-1 { margin-right: 4px; }
+.inline-icon { display: inline-block; vertical-align: -2px; }
 
 /* ==========================================================================
    1. 주간 시간표 탭 (WeeklyScheduleTab)
@@ -312,7 +355,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   padding: 12px 20px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
@@ -371,7 +414,7 @@
 }
 
 .view-mode-btn.active {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   color: var(--primary, #0284c7);
   font-weight: 700;
   box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
@@ -389,7 +432,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 14px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border-radius: 8px;
   border: 1px solid var(--border-color, #e2e8f0);
   font-size: 12.5px;
@@ -411,7 +454,7 @@
 .weekly-matrix-container {
   flex: 1;
   min-height: 520px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 10px;
   overflow: auto;
@@ -586,7 +629,7 @@
   position: absolute;
   right: 2px;
   bottom: 2px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   color: var(--primary, #0284c7);
   border: 1px dashed var(--primary, #0284c7);
   border-radius: 4px;
@@ -701,7 +744,7 @@
 }
 
 .day-column {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   display: flex;
@@ -734,7 +777,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 4px;
   cursor: pointer;
@@ -873,7 +916,7 @@
 }
 
 .weekly-notes-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 16px 20px;
@@ -916,7 +959,7 @@
 }
 
 .modal-content.schedule-modal {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
   width: 100%;
@@ -1059,8 +1102,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 24px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-main);
+  border-top: 1px solid var(--border-color);
 }
 
 .schedule-modal-footer .footer-left-actions,
@@ -1149,7 +1192,7 @@
 .diary-list-sidebar,
 .student-list-sidebar {
   width: 320px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
@@ -1190,6 +1233,7 @@
   border: none;
   outline: none;
   font-size: 12.5px;
+  color: var(--text-main);
   flex: 1;
 }
 
@@ -1218,7 +1262,7 @@
 .diary-item-card:hover,
 .student-item-card:hover {
   border-color: var(--primary);
-  background-color: #ffffff;
+  background-color: var(--bg-card);
 }
 
 .diary-item-card.active,
@@ -1268,7 +1312,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   padding: 16px 20px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
@@ -1302,7 +1346,7 @@
 }
 
 .diary-form-body {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 24px;
@@ -1356,7 +1400,7 @@
 }
 
 .pill-btn.active {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   color: var(--text-main);
   box-shadow: var(--shadow-sm);
 }
@@ -1408,7 +1452,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   padding: 16px 20px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
@@ -1532,7 +1576,7 @@
 }
 
 .form-section-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 20px;
@@ -1628,7 +1672,7 @@
 }
 
 .modal-box {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border-radius: 12px;
   width: 440px;
   padding: 24px;
@@ -1713,7 +1757,7 @@
 }
 
 .stats-cards-grid .stat-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 18px 20px;
@@ -1791,9 +1835,9 @@
 
 /* 구글 드라이브 클라우드 동기화 카드 */
 .cloud-sync-card {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-top: 3px solid #0284c7;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-top: 3px solid var(--primary);
   border-radius: 10px;
   padding: 22px 24px;
   display: flex;
@@ -1869,7 +1913,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background-color: #f8fafc;
+  background-color: var(--bg-main);
   border: 1px solid var(--border-color);
   padding: 6px 14px 6px 8px;
   border-radius: 30px;
@@ -1919,12 +1963,12 @@
 }
 
 .cloud-login-prompt {
-  background-color: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background-color: var(--bg-main);
+  border: 1px dashed var(--border-color);
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 13px;
-  color: #475569;
+  color: var(--text-muted);
 }
 
 .cloud-actions-grid {
@@ -1932,12 +1976,12 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   padding-top: 6px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-color);
 }
 
 .cloud-action-subbox {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 18px;
   display: flex;
@@ -2056,7 +2100,7 @@
 }
 
 .action-box-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 24px;
@@ -2089,7 +2133,7 @@
 }
 
 .app-info-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 18px 20px;
@@ -2197,7 +2241,7 @@
   max-width: 1060px;
   height: 90vh;
   max-height: 860px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -2297,7 +2341,7 @@
 /* 3대 메인 탭 */
 .help-main-tabs {
   display: flex;
-  background-color: #f8fafc;
+  background-color: var(--bg-main);
   border-bottom: 1px solid var(--border-color);
   padding: 0 24px;
   gap: 10px;
@@ -2313,7 +2357,6 @@
   color: var(--text-muted);
   background: transparent;
   border: none;
-  border-bottom: 3px solid 'transparent';
   border-bottom: 3px solid transparent;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2334,7 +2377,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 20px 24px;
-  background-color: #f8fafc;
+  background-color: var(--bg-main);
 }
 
 /* 화면 선택 서브 탭 */
@@ -2352,7 +2395,7 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-muted);
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
@@ -2374,7 +2417,7 @@
 
 /* 화면 소개 배너 */
 .guide-screen-intro-banner {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-left: 4px solid var(--primary);
   border-radius: 10px;
@@ -2414,7 +2457,7 @@
 
 /* 실제 실행 화면 캡처 뷰어 (윈도우 모니터 프레임) */
 .guide-screenshot-frame {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
@@ -2495,7 +2538,7 @@
 }
 
 .feature-callout-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 16px 18px;
@@ -2549,7 +2592,6 @@
   gap: 6px;
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--primary);
   background-color: #f0fdf4;
   color: #15803d;
   padding: 4px 8px;
@@ -2562,7 +2604,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 10px 14px;
@@ -2575,6 +2617,7 @@
   border: none;
   outline: none;
   font-size: 13.5px;
+  color: var(--text-main);
   background: transparent;
 }
 
@@ -2593,7 +2636,7 @@
 }
 
 .faq-item-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 18px 20px;
@@ -2723,7 +2766,7 @@
 }
 
 .about-info-card {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px 24px;
@@ -2751,7 +2794,7 @@
 
 .developer-profile-box {
   margin-top: 8px;
-  background-color: #f8fafc;
+  background-color: var(--bg-main);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 14px 16px;
@@ -2811,7 +2854,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 24px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border-top: 1px solid var(--border-color);
 }
 
@@ -3530,9 +3573,9 @@
 
 .diary-toast-notice {
   position: fixed;
-  top: 50%;
+  bottom: 28px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   background: rgba(15, 23, 42, 0.94);
   color: #ffffff;
   padding: 16px 28px;
@@ -3594,11 +3637,11 @@
 @keyframes diaryToastCenterIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.92);
+    transform: translateX(-50%) translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateX(-50%) translateY(0);
   }
 }
 
@@ -3621,12 +3664,12 @@
 }
 
 .confirm-modal-container {
-  background: var(--bg-modal, #1e293b);
-  border: 1px solid var(--border-color, #334155);
+  background: var(--bg-modal);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   width: 90%;
   max-width: 480px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   animation: confirmScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
@@ -3638,8 +3681,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-color, #334155);
-  background: var(--bg-card-header, rgba(255, 255, 255, 0.02));
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card-header);
 }
 
 .confirm-title-group {
@@ -3652,13 +3695,13 @@
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: var(--text-main, #f8fafc);
+  color: var(--text-main);
 }
 
 .confirm-modal-close {
   background: none;
   border: none;
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
@@ -3669,15 +3712,15 @@
 }
 
 .confirm-modal-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main, #ffffff);
+  background: var(--bg-input);
+  color: var(--text-main);
 }
 
 .confirm-modal-body {
   padding: 22px;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--text-secondary, #cbd5e1);
+  color: var(--text-secondary);
 }
 
 .confirm-modal-body p {
@@ -3703,8 +3746,8 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  border-top: 1px solid var(--border-color, #334155);
-  background: var(--bg-card-footer, rgba(0, 0, 0, 0.1));
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card-footer);
 }
 
 .confirm-btn-submit {
@@ -4101,7 +4144,7 @@
   top: calc(100% + 8px);
   right: 0;
   width: 260px;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 10px;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
@@ -4259,7 +4302,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color, #cbd5e1);
   border-radius: 10px;
   padding: 14px 18px;
@@ -4305,7 +4348,7 @@
 }
 
 .restore-mode-btn.active {
-  background-color: #ffffff;
+  background-color: var(--bg-card);
   color: var(--primary, #0284c7);
   font-weight: 700;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -4435,4 +4478,53 @@
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.35);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 탭 에러 바운더리 폴백 UI */
+.tab-error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  min-height: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.tab-error-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background-color: var(--accent-red-light);
+  color: var(--accent-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.tab-error-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-main);
+}
+
+.tab-error-message {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 480px;
+  margin-bottom: 24px;
+  word-break: break-all;
+}
+
+.tab-error-actions {
+  display: flex;
+  gap: 12px;
 }

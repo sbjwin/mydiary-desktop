@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag, AlertTriangle } from 'lucide-react';
-import { formatPhoneInfo } from '../database/Database';
+import { formatPhoneInfo, getTodayDateString } from '../database/Database';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
 
 const QUICK_TAGS = ['이번주만', '휴일', '아픔', '(30분 수업)', '보강', '시간변경'];
@@ -33,7 +33,7 @@ export const ScheduleModal = ({
     if (initialData) {
       setStudentId(initialData.studentId || '');
       setStudentName(initialData.studentName || '');
-      setDate(initialData.date || new Date().toISOString().slice(0, 10));
+      setDate(initialData.date || getTodayDateString());
       setStartTime(initialData.startTime || '10:00');
       setDuration(initialData.duration || 60);
       setSubject(initialData.subject || initialData.course || '');
@@ -45,7 +45,7 @@ export const ScheduleModal = ({
       // 기본값
       setStudentId('');
       setStudentName('');
-      setDate(new Date().toISOString().slice(0, 10));
+      setDate(getTodayDateString());
       setStartTime('10:00');
       setDuration(60);
       setSubject('');

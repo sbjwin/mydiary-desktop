@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Database, getMondayOfWeek, getDateFromMondayOffset } from '../database/Database';
+import { Database, getMondayOfWeek, getDateFromMondayOffset, getTodayDateString } from '../database/Database';
 import {
   ChevronLeft,
   ChevronRight,
@@ -329,6 +329,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
   };
 
   const sundayDate = getDateFromMondayOffset(currentMonday, 6);
+  const todayStr = getTodayDateString();
 
   // 주간 총 수업 건수
   const totalScheduleCount = useMemo(() => {
@@ -623,7 +624,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                 <th className="time-col-header">구분</th>
                 {DAYS.map((dayInfo, idx) => {
                   const dateStr = getDateFromMondayOffset(currentMonday, idx);
-                  const isToday = dateStr === new Date().toISOString().slice(0, 10);
+                  const isToday = dateStr === todayStr;
                   const isSunday = dayInfo.dayOfWeek === 7;
                   const isSaturday = dayInfo.dayOfWeek === 6;
 
@@ -667,7 +668,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                     {DAYS.map((dayInfo, idx) => {
                       const dateStr = getDateFromMondayOffset(currentMonday, idx);
                       const items = getSlotItems(dateStr, slot);
-                      const isToday = dateStr === new Date().toISOString().slice(0, 10);
+                      const isToday = dateStr === todayStr;
                       const cellKey = `${dateStr}-${slot.hour}`;
 
                       return (
@@ -753,7 +754,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
         <div className="weekly-grid-container">
           {DAYS.map((dayInfo, idx) => {
             const dateStr = getDateFromMondayOffset(currentMonday, idx);
-            const isToday = dateStr === new Date().toISOString().slice(0, 10);
+            const isToday = dateStr === todayStr;
             const items = dailyData[dateStr] || [];
             const colKey = `col-${dateStr}`;
 

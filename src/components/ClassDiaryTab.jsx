@@ -579,7 +579,7 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
                       {hwpxPreset === p.id && <strong>✓</strong>}
                     </button>
                   ))}
-                  <div className="dropdown-divider" />
+                  <div className="toolbar-dropdown-divider" />
                   <div className="hwpx-preset-section-title">2. 저장 실행 범위 선택</div>
                   <button type="button" className="toolbar-dropdown-item primary-action" onClick={handleExportHwpx}>
                     <FileDown size={14} /> 현재 작성 일지 1건 HWPX 저장
