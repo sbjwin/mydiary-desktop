@@ -24,7 +24,7 @@ import {
   Wrench,
 } from 'lucide-react';
 
-import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import { showToast, showConfirm } from '../utils/dialog';
 
 export const BackupSettingTab = () => {
   const [stats, setStats] = useState({
@@ -93,7 +93,6 @@ export const BackupSettingTab = () => {
       setStatusMessage({ type: 'success', text: `구글 드라이브 계정(${authData.user?.email || '인증됨'})${modeText}이 연결되었습니다.` });
       showToast(`구글 드라이브 계정이 연결되었습니다.${modeText}`, 'success');
       setLastLoginError(null);
-      focusAppWindow();
     } catch (err) {
       console.error('Login failed:', err);
       setLastLoginError(err.message);
@@ -182,7 +181,6 @@ export const BackupSettingTab = () => {
             text: `샘플 데이터 생성 완료: 학생 ${res.studentsCount}명, 일지 ${res.recordsCount}건, 주간계획 ${res.plansCount}건 및 가상 클라우드 백업이 준비되었습니다.`,
           });
           showToast('테스트용 샘플 데이터 및 가상 클라우드 백업이 생성되었습니다.', 'success');
-          focusAppWindow();
         } catch (err) {
           console.error('Seed mock data failed:', err);
           setStatusMessage({ type: 'error', text: `샘플 데이터 생성 실패: ${err.message}` });
@@ -234,7 +232,6 @@ export const BackupSettingTab = () => {
             text: `롤백 성공: 복원 직전 상태로 복구되었습니다. (학생 ${res.studentsCount}명, 일지 ${res.recordsCount}건)`,
           });
           showToast('복원 직전 안전 상태로 성공적으로 롤백되었습니다.', 'success');
-          focusAppWindow();
         } catch (err) {
           console.error('Rollback failed:', err);
           setStatusMessage({ type: 'error', text: `롤백 실패: ${err.message}` });
@@ -266,7 +263,6 @@ export const BackupSettingTab = () => {
           });
           await loadStats();
           showToast(`스마트폰 백업 복원 성공 (학생 ${result.studentsCount}명, 일지 ${result.recordsCount}건)`, 'success');
-          focusAppWindow();
         } catch (err) {
           console.error('Restore error:', err);
           setStatusMessage({ type: 'error', text: err.message });
@@ -297,7 +293,6 @@ export const BackupSettingTab = () => {
             text: '현재 데스크톱 데이터가 구글 드라이브(mydiary_backup.json)에 안전하게 백업되었습니다.',
           });
           showToast('구글 드라이브 백업이 성공적으로 완료되었습니다.', 'success');
-          focusAppWindow();
         } catch (err) {
           console.error('Upload error:', err);
           setStatusMessage({ type: 'error', text: err.message });
@@ -316,7 +311,6 @@ export const BackupSettingTab = () => {
       if (res && res.success) {
         showToast(res.filePath ? `백업 파일이 저장되었습니다: ${res.filePath}` : '백업 파일이 안전하게 다운로드되었습니다.', 'success');
       }
-      focusAppWindow();
     } catch (err) {
       showToast(`백업 파일 생성 실패: ${err.message}`, 'error');
     }
@@ -343,7 +337,6 @@ export const BackupSettingTab = () => {
               const res = await GoogleDriveService.importLocalBackup(content, { mode: restoreMode });
               await loadStats();
               showToast(`성공적으로 복원되었습니다 (학생 ${res.studentsCount}명, 일지 ${res.recordsCount}건)`, 'success');
-              focusAppWindow();
             }
           } catch (err) {
             showToast(`백업 복원 실패: ${err.message}`, 'error');

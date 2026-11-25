@@ -68,7 +68,7 @@ export const THEME_PRESETS = [
     description: '야간 일지 작성 시 눈부심을 줄여주는 다크 모드',
     primary: '#38bdf8',
     primaryHover: '#7dd3fc',
-    primaryLight: '#082f49',
+    primaryLight: '#0c4a6e',
     primaryDark: '#0284c7',
     secondary: '#2dd4bf',
     previewBg: '#0f172a',

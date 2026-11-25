@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Database, getTodayDateString, getMondayOfWeek, getDateFromMondayOffset } from '../database/Database';
 import { exportDiaryToHwpx, exportMultipleDiariesToHwpx } from '../services/HwpxExportService';
-import { generateClassRecordsHtml, printClassRecords } from '../services/PrintService';
+import { printClassRecords } from '../services/PrintService';
 import {
-  Calendar,
-  Clock,
   BookOpen,
-  User,
   Users,
   Save,
   Plus,
@@ -15,8 +12,6 @@ import {
   Printer,
   Search,
   CheckCircle,
-  AlertCircle,
-  Info,
   Sparkles,
 } from 'lucide-react';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
@@ -24,7 +19,6 @@ import { formatDisplayTime } from '../utils/dateUtils';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
-const COMMON_COURSES = ['국어', '수학', '사회', '과학', '영어', '독서논술', '창의체험'];
 const CONTENT_PHRASES = [
   '개념 이해 및 기본 문제 풀이 완료',
   '응용/심화 문제 오답 정리',
@@ -57,6 +51,8 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   const lastFocusedFieldRef = useRef(null);
   const searchInputRef = useRef(null);
   const hwpxMenuRef = useRef(null);
+  const savedTimerRef = useRef(null);
+  const focusTimerRef = useRef(null);
   // 저장 버튼 최근 피드백 상태
   const [isSavedRecently, setIsSavedRecently] = useState(false);
 
@@ -91,22 +87,16 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
     if (e && e.target) {
       lastFocusedFieldRef.current = e.target;
     }
-    if (typeof window !== 'undefined' && window.focus) {
-      window.focus();
-    }
-    if (window.electronAPI?.focusWindow) {
-      window.electronAPI.focusWindow();
-    }
+    focusAppWindow();
   };
 
-  // 탭 마운트 시 즉시 창 포커스 보장
+  // 탭 마운트 시 즉시 창 포커스 보장 및 타이머 정리
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.focus) {
-      window.focus();
-    }
-    if (window.electronAPI?.focusWindow) {
-      window.electronAPI.focusWindow();
-    }
+    focusAppWindow();
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    };
   }, []);
 
   // 일지 폼 상태
@@ -258,15 +248,14 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
 
       setIsSavedRecently(true);
       updateDirty(false);
-      setTimeout(() => setIsSavedRecently(false), 2000);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setIsSavedRecently(false), 2000);
 
       await loadData(targetId);
 
-      // [2번 포커스 안전 유지]: 윈도우 포커스 보장 및 웹뷰 포커스 유지
-      if (typeof window !== 'undefined' && window.focus) {
-        window.focus();
-      }
-      setTimeout(() => {
+      focusAppWindow();
+      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+      focusTimerRef.current = setTimeout(() => {
         if (lastFocusedFieldRef.current && typeof lastFocusedFieldRef.current.focus === 'function') {
           lastFocusedFieldRef.current.focus({ preventScroll: true });
         } else if (contentTextareaRef.current) {
@@ -290,9 +279,18 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
         try {
           await Database.deleteClassRecord(selectedRecordId);
           showToast('수업 일지가 삭제되었습니다.', 'info');
-          handleNewDiary();
+          setSelectedRecordId(null);
+          setFormData({
+            studentId: selectedStudentId || (students[0]?.id || ''),
+            classDate: getTodayDateString(),
+            classTime: '10:00',
+            course: '수학',
+            content: '',
+            homework: '',
+            notes: '',
+          });
+          updateDirty(false);
           await loadData();
-          focusAppWindow();
         } catch (err) {
           showToast('삭제 실패: ' + err.message, 'error');
         }
@@ -348,7 +346,19 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
     await printClassRecords(student, [currentRecord], formData.classDate);
   };
 
-  // 복합 필터링된 일지 목록 (G5: 학생, 과목, 본문, 과제, 특이사항 + 기간 필터)
+  // 학생 O(1) 조회 맵 & 학생별 일지 수 집계 맵
+  const studentMap = useMemo(() => new Map(students.map((s) => [s.id, s])), [students]);
+
+  const recordCountMap = useMemo(() => {
+    const counts = new Map();
+    records.forEach((r) => {
+      const sid = r.student_id || r.studentId;
+      if (sid) counts.set(sid, (counts.get(sid) || 0) + 1);
+    });
+    return counts;
+  }, [records]);
+
+  // 복합 필터링된 일지 목록 (학생, 과목, 본문, 과제, 특이사항 + 기간 필터)
   const filteredRecords = useMemo(() => {
     const todayStr = getTodayDateString();
     const mondayStr = getMondayOfWeek(new Date());
@@ -371,7 +381,7 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
 
       if (searchFilter.trim()) {
         const q = searchFilter.toLowerCase().trim();
-        const st = students.find((s) => s.id === rStudentId);
+        const st = studentMap.get(rStudentId);
         const matchStudent = (st?.name || '').toLowerCase().includes(q);
         const matchCourse = (r.course || r.subject || '').toLowerCase().includes(q);
         const matchContent = (r.content || '').toLowerCase().includes(q);
@@ -382,7 +392,7 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
       }
       return true;
     });
-  }, [records, selectedStudentId, dateFilterMode, customFromDate, customToDate, searchFilter, students]);
+  }, [records, selectedStudentId, dateFilterMode, customFromDate, customToDate, searchFilter, studentMap]);
 
   // 현재 대상 학생의 직전 수업 일지 탐색
   const prevRecord = useMemo(() => {
@@ -419,12 +429,15 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
     updateDirty(true);
   };
 
-  const currentStudent = students.find((s) => s.id === formData.studentId);
+  const currentStudent = studentMap.get(formData.studentId);
 
   // 전역 키보드 단축키 연동 (Ctrl+S: 저장, Ctrl+N: 새 일지, Ctrl+F: 검색 포커스)
+  const shortcutsRef = useRef({ save: handleSave, create: handleNewDiary });
+  shortcutsRef.current = { save: handleSave, create: handleNewDiary };
+
   useEffect(() => {
-    const onShortcutSave = () => handleSave();
-    const onShortcutNew = () => handleNewDiary();
+    const onShortcutSave = () => shortcutsRef.current.save();
+    const onShortcutNew = () => shortcutsRef.current.create();
     const onShortcutSearch = () => searchInputRef.current?.focus();
     window.addEventListener('mydiary:shortcut-save', onShortcutSave);
     window.addEventListener('mydiary:shortcut-new', onShortcutNew);
@@ -434,7 +447,7 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
       window.removeEventListener('mydiary:shortcut-new', onShortcutNew);
       window.removeEventListener('mydiary:shortcut-search', onShortcutSearch);
     };
-  }, [formData, selectedRecordId, selectedStudentId, students]);
+  }, []);
 
   return (
     <div className="tab-container class-diary-tab">
@@ -460,7 +473,7 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
             <span className="rail-count-badge">{records.length}</span>
           </button>
           {students.map((s) => {
-            const count = records.filter((r) => (r.student_id || r.studentId) === s.id).length;
+            const count = recordCountMap.get(s.id) || 0;
             const isSelected = selectedStudentId === s.id;
             return (
               <button
@@ -557,7 +570,7 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
             <div className="empty-notice">조건에 맞는 수업 일지가 없습니다.</div>
           ) : (
             filteredRecords.map((rec) => {
-              const st = students.find((s) => s.id === (rec.student_id || rec.studentId));
+              const st = studentMap.get(rec.student_id || rec.studentId);
               const isSelected = selectedRecordId === rec.id;
               return (
                 <div
@@ -628,9 +641,6 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
                 </div>
               )}
             </div>
-            <button className="btn-secondary" style={{ display: 'none' }} onClick={handleExportHwpx}>
-              <FileDown size={15} /> 한글 문서(HWPX) 저장
-            </button>
             <button className="btn-secondary" onClick={handlePrint}>
               <Printer size={15} /> 인쇄 / 미리보기
             </button>
@@ -768,8 +778,6 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
               value={formData.content || ''}
               onChange={(e) => handleFieldChange('content', e.target.value)}
               onFocus={ensureFieldFocus}
-              onClick={ensureFieldFocus}
-              onMouseDown={ensureFieldFocus}
             />
           </div>
 
@@ -783,8 +791,6 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
                 value={formData.homework || ''}
                 onChange={(e) => handleFieldChange('homework', e.target.value)}
                 onFocus={ensureFieldFocus}
-                onClick={ensureFieldFocus}
-                onMouseDown={ensureFieldFocus}
               />
             </div>
 
@@ -811,8 +817,6 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
                 value={formData.notes || ''}
                 onChange={(e) => handleFieldChange('notes', e.target.value)}
                 onFocus={ensureFieldFocus}
-                onClick={ensureFieldFocus}
-                onMouseDown={ensureFieldFocus}
               />
             </div>
           </div>

@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Database, getTodayDateString, formatPhoneInfo } from '../database/Database';
-import { generateStudentProfileHtml, printStudentProfile } from '../services/PrintService';
-import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Database, getTodayDateString } from '../database/Database';
+import { printStudentProfile } from '../services/PrintService';
+import { showToast, showConfirm } from '../utils/dialog';
+import { WEEKDAYS } from '../utils/dateUtils';
+import { getStudentPrimaryCourse } from '../utils/studentUtils';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
-  Users,
   UserPlus,
   Search,
-  Phone,
   Calendar,
   Clock,
-  MapPin,
-  FileText,
   Save,
   Trash2,
   PauseCircle,
@@ -22,16 +20,6 @@ import {
   BookOpen,
   TrendingUp,
 } from 'lucide-react';
-
-const WEEKDAYS = [
-  { val: 1, label: '월요일' },
-  { val: 2, label: '화요일' },
-  { val: 3, label: '수요일' },
-  { val: 4, label: '목요일' },
-  { val: 5, label: '금요일' },
-  { val: 6, label: '토요일' },
-  { val: 7, label: '일요일' },
-];
 
 export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
   const [ isDirty, setIsDirty ] = useState(false);
@@ -144,12 +132,6 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
             monthlyTrend: [],
             recentRecords: [],
           });
-          if (false) setStudentStats({
-            totalCount: 0,
-            monthCount: 0,
-            lastClassDate: null,
-            recentCourse: '',
-          });
           return;
         }
 
@@ -179,12 +161,6 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
           monthlyTrend,
           recentRecords: sorted.slice(0, 5),
         });
-        if (false) setStudentStats({
-          totalCount: sorted.length,
-          monthCount: thisMonthCount,
-          lastClassDate: latest.class_date || null,
-          recentCourse: latest.course || latest.subject || '',
-        });
       })
       .catch((err) => {
         console.warn('학생 통계 로드 실패:', err);
@@ -196,11 +172,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
   }, [selectedStudentId]);
 
   const populateForm = (st) => {
-    const resolvedCourse =
-      st.course ||
-      st.subject ||
-      (Array.isArray(st.default_schedules) && st.default_schedules[0]?.subject) ||
-      '';
+    const resolvedCourse = getStudentPrimaryCourse(st, '');
     setFormData({
       name: st.name || '',
       school_grade: st.school_grade || st.grade || '',
@@ -278,7 +250,6 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       }
       updateDirty(false);
       await loadStudents();
-      focusAppWindow();
     } catch (err) {
       showToast('저장 실패: ' + err.message, 'error');
     }
@@ -298,7 +269,6 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
           showToast('학생이 성공적으로 삭제되었습니다.', 'info');
           setSelectedStudentId(null);
           await loadStudents();
-          focusAppWindow();
         } catch (err) {
           showToast('삭제 실패: ' + err.message, 'error');
         }
@@ -318,7 +288,6 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       setPauseModalOpen(false);
       setModalReason('');
       await loadStudents();
-      focusAppWindow();
     } catch (err) {
       showToast('휴회 처리 실패: ' + err.message, 'error');
     }
@@ -337,7 +306,6 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       setResumeModalOpen(false);
       setModalReason('');
       await loadStudents();
-      focusAppWindow();
     } catch (err) {
       showToast('재수강 처리 실패: ' + err.message, 'error');
     }
@@ -379,26 +347,45 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
     await printStudentProfile(st);
   };
 
-  // 필터링된 학생 리스트
-  const filteredStudents = students.filter((s) => {
-    if (activeFilter === 'active' && s.status === 'paused') return false;
-    if (activeFilter === 'paused' && s.status !== 'paused') return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const matchName = (s.name || '').toLowerCase().includes(q);
-      const matchGrade = (s.school_grade || s.grade || '').toLowerCase().includes(q);
-      const matchPhone = (s.mobile_phone || '').includes(q);
-      return matchName || matchGrade || matchPhone;
-    }
-    return true;
-  });
+  const statusCounts = useMemo(() => {
+    let activeCount = 0;
+    let pausedCount = 0;
+    students.forEach((s) => {
+      if (s.status === 'paused') pausedCount += 1;
+      else activeCount += 1;
+    });
+    return { activeCount, pausedCount };
+  }, [students]);
+
+  const filteredStudents = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return students.filter((s) => {
+      if (activeFilter === 'active' && s.status === 'paused') return false;
+      if (activeFilter === 'paused' && s.status !== 'paused') return false;
+      if (q) {
+        const matchName = (s.name || '').toLowerCase().includes(q);
+        const matchGrade = (s.school_grade || s.grade || '').toLowerCase().includes(q);
+        const matchPhone = (s.mobile_phone || '').includes(q);
+        return matchName || matchGrade || matchPhone;
+      }
+      return true;
+    });
+  }, [students, activeFilter, searchQuery]);
+
+  const maxMonthlyCount = useMemo(
+    () => Math.max(1, ...(studentStats.monthlyTrend || []).map((x) => x.count)),
+    [studentStats.monthlyTrend]
+  );
 
   const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
   // 전역 키보드 단축키 연동 (Ctrl+S: 저장, Ctrl+N: 신규 학생, Ctrl+F: 검색)
+  const shortcutsRef = useRef({ save: handleSaveStudent, create: handleNewStudent });
+  shortcutsRef.current = { save: handleSaveStudent, create: handleNewStudent };
+
   useEffect(() => {
-    const onShortcutSave = () => handleSaveStudent();
-    const onShortcutNew = () => handleNewStudent();
+    const onShortcutSave = () => shortcutsRef.current.save();
+    const onShortcutNew = () => shortcutsRef.current.create();
     const onShortcutSearch = () => searchInputRef.current?.focus();
     window.addEventListener('mydiary:shortcut-save', onShortcutSave);
     window.addEventListener('mydiary:shortcut-new', onShortcutNew);
@@ -408,7 +395,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       window.removeEventListener('mydiary:shortcut-new', onShortcutNew);
       window.removeEventListener('mydiary:shortcut-search', onShortcutSearch);
     };
-  }, [formData, selectedStudentId]);
+  }, []);
 
   return (
     <div className="tab-container student-manage-tab">
@@ -420,13 +407,13 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
               className={`pill-btn ${activeFilter === 'active' ? 'active' : ''}`}
               onClick={() => setActiveFilter('active')}
             >
-              재원생 ({students.filter((s) => s.status !== 'paused').length})
+              재원생 ({statusCounts.activeCount})
             </button>
             <button
               className={`pill-btn ${activeFilter === 'paused' ? 'active' : ''}`}
               onClick={() => setActiveFilter('paused')}
             >
-              휴회생 ({students.filter((s) => s.status === 'paused').length})
+              휴회생 ({statusCounts.pausedCount})
             </button>
             <button
               className={`pill-btn ${activeFilter === 'all' ? 'active' : ''}`}
@@ -472,12 +459,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   </div>
                   <div className="student-sub-info">
                     <span>{st.school_grade || st.grade || '학교/학년 미지정'}</span>
-                    <span>
-                      {st.course ||
-                        st.subject ||
-                        (Array.isArray(st.default_schedules) && st.default_schedules[0]?.subject) ||
-                        '과목미지정'}
-                    </span>
+                    <span>{getStudentPrimaryCourse(st, '과목미지정')}</span>
                   </div>
                 </div>
               );
@@ -585,8 +567,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                 <h3 className="section-title">📊 최근 6개월 월별 수업 추이</h3>
                 <div className="monthly-bar-chart">
                   {(studentStats.monthlyTrend || []).map((m) => {
-                    const maxCnt = Math.max(1, ...(studentStats.monthlyTrend || []).map((x) => x.count));
-                    const heightPct = Math.max(10, Math.round((m.count / maxCnt) * 100));
+                    const heightPct = Math.max(10, Math.round((m.count / maxMonthlyCount) * 100));
                     return (
                       <div key={m.ym} className="bar-col" title={`${m.ym}: ${m.count}회 수업`}>
                         <span className="bar-count-label">{m.count}회</span>
@@ -797,8 +778,8 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                       onChange={(e) => handleScheduleChange(idx, 'dayOfWeek', Number(e.target.value))}
                     >
                       {WEEKDAYS.map((w) => (
-                        <option key={w.val} value={w.val}>
-                          {w.label}
+                        <option key={w.dayOfWeek} value={w.dayOfWeek}>
+                          {w.name}
                         </option>
                       ))}
                     </select>

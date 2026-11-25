@@ -21,19 +21,10 @@ import {
 } from 'lucide-react';
 import { ScheduleModal } from './ScheduleModal';
 import { printWeeklyReport, exportWeeklyReportPdf, shareWeeklyReportHwpx, shareWeeklyReportDocx } from '../services/PrintService';
-import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import { showToast, showConfirm } from '../utils/dialog';
+import { extractHour, WEEKDAYS } from '../utils/dateUtils';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { useEscapeKey } from '../hooks/useEscapeKey';
-
-const DAYS = [
-  { dayOfWeek: 1, name: '월요일', short: '월' },
-  { dayOfWeek: 2, name: '화요일', short: '화' },
-  { dayOfWeek: 3, name: '수요일', short: '수' },
-  { dayOfWeek: 4, name: '목요일', short: '목' },
-  { dayOfWeek: 5, name: '금요일', short: '금' },
-  { dayOfWeek: 6, name: '토요일', short: '토' },
-  { dayOfWeek: 7, name: '일요일', short: '일' },
-];
 
 const TIME_SLOTS = [
   { label: '오전', hour: 9 },
@@ -49,26 +40,6 @@ const TIME_SLOTS = [
   { label: '7시', hour: 19 },
   { label: '8시', hour: 20 },
 ];
-
-// 시간 문자열에서 24시간 형식의 '시(hour)' 추출 헬퍼
-const extractHour = (timeStr) => {
-  if (!timeStr) return 10;
-  const str = String(timeStr).trim();
-  const digitalMatch = str.match(/^(\d{1,2}):(\d{2})/);
-  if (digitalMatch) {
-    return parseInt(digitalMatch[1], 10);
-  }
-  const isPM = str.includes('오후') || str.includes('PM') || str.includes('pm');
-  const isAM = str.includes('오전') || str.includes('AM') || str.includes('am');
-  const hourMatch = str.match(/(\d{1,2})\s*시/) || str.match(/\b(\d{1,2})\b/);
-  if (hourMatch) {
-    let hour = parseInt(hourMatch[1], 10);
-    if (isPM && hour < 12) hour += 12;
-    else if (isAM && hour === 12) hour = 0;
-    return hour;
-  }
-  return 10;
-};
 
 export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
   const [currentMonday, setCurrentMonday] = useState(() => getMondayOfWeek(new Date()));
@@ -106,13 +77,14 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
       setMainNotes(plan.mainNotes || '');
       setStudents(allStudents || []);
 
-      const daily = {};
-      for (let i = 0; i < 7; i++) {
-        const dateStr = getDateFromMondayOffset(monday, i);
-        const daySchedule = await Database.getDailyScheduleAndRecords(dateStr);
-        daily[dateStr] = daySchedule;
-      }
-      setDailyData(daily);
+      const dailyEntries = await Promise.all(
+        Array.from({ length: 7 }, async (_, i) => {
+          const dateStr = getDateFromMondayOffset(monday, i);
+          const daySchedule = await Database.getDailyScheduleAndRecords(dateStr);
+          return [dateStr, daySchedule];
+        })
+      );
+      setDailyData(Object.fromEntries(dailyEntries));
     } catch (err) {
       console.error('Failed to load weekly schedule:', err);
     } finally {
@@ -148,7 +120,6 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
         mainNotes: mainNotes,
       });
       showToast('주간 메모가 성공적으로 저장되었습니다.', 'success');
-      focusAppWindow();
     } catch (err) {
       showToast('저장 실패: ' + err.message, 'error');
     }
@@ -201,7 +172,6 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
       await Database.saveWeeklyPlan(currentMonday, updatedPlan);
       await loadWeekData(currentMonday);
       showToast('일정이 저장되었습니다.', 'success');
-      focusAppWindow();
     } catch (err) {
       console.error('Failed to save schedule:', err);
       showToast('일정 저장 중 오류가 발생했습니다: ' + err.message, 'error');
@@ -221,7 +191,6 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
       await Database.saveWeeklyPlan(currentMonday, updatedPlan);
       await loadWeekData(currentMonday);
       showToast('일정이 삭제되었습니다.', 'info');
-      focusAppWindow();
     } catch (err) {
       console.error('Failed to delete schedule:', err);
       showToast('일정 삭제 중 오류가 발생했습니다: ' + err.message, 'error');
@@ -245,7 +214,6 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
           await Database.copyPreviousWeekPlan(currentMonday);
           await loadWeekData(currentMonday);
           showToast('이전 주 시간표가 성공적으로 복사되었습니다.', 'success');
-          focusAppWindow();
         } catch (err) {
           showToast('시간표 복사 실패: ' + err.message, 'error');
         }
@@ -269,7 +237,6 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
           await loadWeekData(currentMonday);
           const count = updatedPlan?.scheduleItems?.length || 0;
           showToast(`학생 기본 시간표 ${count}건을 성공적으로 불러왔습니다.`, 'success');
-          focusAppWindow();
         } catch (err) {
           showToast('기본 시간표 불러오기 실패: ' + err.message, 'error');
         }
@@ -292,7 +259,6 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
           await Database.clearWeeklyPlan(currentMonday);
           await loadWeekData(currentMonday);
           showToast('이번 주 시간표의 모든 수업 일정이 초기화되었습니다.', 'info');
-          focusAppWindow();
         } catch (err) {
           showToast('시간표 비우기 실패: ' + err.message, 'error');
         }
@@ -329,19 +295,20 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
     return Object.values(dailyData).reduce((sum, list) => sum + (list?.length || 0), 0);
   }, [dailyData]);
 
-  // 특정 날짜 및 시간 슬롯에 해당하는 일정 아이템 조회
-  const getSlotItems = (dateStr, slot) => {
-    const dayItems = dailyData[dateStr] || [];
-    return dayItems.filter((item) => {
-      const h = extractHour(item.classTime || item.startTime);
-      if (slot.hour === 9) {
-        return h <= 9; // 9시 및 9시 이전(오전)
-      } else if (slot.hour === 20) {
-        return h >= 20; // 20시 및 20시 이후(저녁/야간)
-      }
-      return h === slot.hour;
+  // 날짜·시간대별 일정 사전 그룹핑 (77개 셀 렌더 시 O(1) 조회)
+  const slotItemsMap = useMemo(() => {
+    const map = {};
+    Object.entries(dailyData).forEach(([dateStr, dayItems]) => {
+      (dayItems || []).forEach((item) => {
+        const h = extractHour(item.classTime || item.startTime);
+        const bucketHour = h <= 9 ? 9 : h >= 20 ? 20 : h;
+        const key = `${dateStr}-${bucketHour}`;
+        if (!map[key]) map[key] = [];
+        map[key].push(item);
+      });
     });
-  };
+    return map;
+  }, [dailyData]);
 
   // 원클릭 수업 일지 바로가기 핸들러
   const handleQuickNavigateToDiary = (e, item, dateStr) => {
@@ -424,16 +391,19 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
   };
 
   // 전역 키보드 단축키 연동 (Ctrl+S: 주간 메모 저장, Ctrl+N: 새 일정 추가)
+  const shortcutsRef = useRef({ save: handleSaveNotes, create: () => {} });
+  shortcutsRef.current = { save: handleSaveNotes, create: () => handleOpenAddSchedule(currentMonday, 10) };
+
   useEffect(() => {
-    const onShortcutSave = () => handleSaveNotes();
-    const onShortcutNew = () => handleOpenAddSchedule(currentMonday, 10);
+    const onShortcutSave = () => shortcutsRef.current.save();
+    const onShortcutNew = () => shortcutsRef.current.create();
     window.addEventListener('mydiary:shortcut-save', onShortcutSave);
     window.addEventListener('mydiary:shortcut-new', onShortcutNew);
     return () => {
       window.removeEventListener('mydiary:shortcut-save', onShortcutSave);
       window.removeEventListener('mydiary:shortcut-new', onShortcutNew);
     };
-  }, [weeklyPlan, mainNotes, currentMonday]);
+  }, []);
 
   return (
     <div className="tab-container weekly-schedule-tab">
@@ -619,7 +589,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
             <thead>
               <tr>
                 <th className="time-col-header">구분</th>
-                {DAYS.map((dayInfo, idx) => {
+                {WEEKDAYS.map((dayInfo, idx) => {
                   const dateStr = getDateFromMondayOffset(currentMonday, idx);
                   const isToday = dateStr === todayStr;
                   const isSunday = dayInfo.dayOfWeek === 7;
@@ -662,11 +632,11 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
                 return (
                   <tr key={slot.hour} className="matrix-time-row">
                     <td className="time-slot-label">{slot.label}</td>
-                    {DAYS.map((dayInfo, idx) => {
+                    {WEEKDAYS.map((dayInfo, idx) => {
                       const dateStr = getDateFromMondayOffset(currentMonday, idx);
-                      const items = getSlotItems(dateStr, slot);
-                      const isToday = dateStr === todayStr;
                       const cellKey = `${dateStr}-${slot.hour}`;
+                      const items = slotItemsMap[cellKey] || [];
+                      const isToday = dateStr === todayStr;
 
                       return (
                         <td
@@ -749,7 +719,7 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
       ) : (
         /* := 요일별 카드 뷰 (기존 7열 카드 목록) */
         <div className="weekly-grid-container">
-          {DAYS.map((dayInfo, idx) => {
+          {WEEKDAYS.map((dayInfo, idx) => {
             const dateStr = getDateFromMondayOffset(currentMonday, idx);
             const isToday = dateStr === todayStr;
             const items = dailyData[dateStr] || [];

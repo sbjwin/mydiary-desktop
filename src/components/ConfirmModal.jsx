@@ -7,6 +7,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { focusAppWindow } from '../utils/dialog';
 
 export const ConfirmModal = ({
   isOpen,
@@ -21,12 +22,7 @@ export const ConfirmModal = ({
 }) => {
   const handleCancel = useCallback(() => {
     if (onClose) onClose();
-    if (typeof window !== 'undefined' && window.focus) {
-      window.focus();
-    }
-    if (window.electronAPI?.focusWindow) {
-      window.electronAPI.focusWindow();
-    }
+    focusAppWindow();
   }, [onClose]);
 
   useEscapeKey(isOpen, handleCancel);
@@ -34,12 +30,7 @@ export const ConfirmModal = ({
   // 모달이 닫힐 때 윈도우 포커스 복원 보장
   useEffect(() => {
     return () => {
-      if (typeof window !== 'undefined' && window.focus) {
-        window.focus();
-      }
-      if (window.electronAPI?.focusWindow) {
-        window.electronAPI.focusWindow();
-      }
+      focusAppWindow();
     };
   }, [isOpen]);
 
@@ -47,12 +38,7 @@ export const ConfirmModal = ({
 
   const handleConfirm = () => {
     if (onConfirm) onConfirm();
-    if (typeof window !== 'undefined' && window.focus) {
-      window.focus();
-    }
-    if (window.electronAPI?.focusWindow) {
-      window.electronAPI.focusWindow();
-    }
+    focusAppWindow();
   };
 
   const renderIcon = () => {

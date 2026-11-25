@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag, AlertTriangle } from 'lucide-react';
 import { formatPhoneInfo, getTodayDateString } from '../database/Database';
-import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import { getStudentPrimaryCourse } from '../utils/studentUtils';
+import { showToast, showConfirm } from '../utils/dialog';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const QUICK_TAGS = ['이번주만', '휴일', '아픔', '(30분 수업)', '보강', '시간변경'];
@@ -57,23 +58,35 @@ export const ScheduleModal = ({
     }
   }, [isOpen, initialData]);
 
+  const activeSortedStudents = useMemo(() => {
+    return students
+      .filter((s) => s.status !== 'paused')
+      .slice()
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+  }, [students]);
+
   // 동일 날짜 및 시작 시간대 수업 중복 감지 (현재 수정 중인 대상 제외)
-  const conflictSchedule = existingSchedules?.find((item) => {
-    if (!date || !startTime) return false;
-    if (initialData?.id && item.id === initialData.id) return false;
-    const itemTime = (item.startTime || item.classTime || '').slice(0, 5);
+  const conflictSchedule = useMemo(() => {
+    if (!date || !startTime) return undefined;
     const targetTime = startTime.slice(0, 5);
-    return item.date === date && itemTime === targetTime;
-  });
+    return existingSchedules?.find((item) => {
+      if (initialData?.id && item.id === initialData.id) return false;
+      const itemTime = (item.startTime || item.classTime || '').slice(0, 5);
+      return item.date === date && itemTime === targetTime;
+    });
+  }, [existingSchedules, date, startTime, initialData?.id]);
 
   // 동일 날짜에 같은 학생이 이미 등록되어 있는지 감지 (현재 수정 중인 대상 제외)
-  const sameStudentOnDate = existingSchedules?.find((item) => {
-    if (!date || !studentName?.trim()) return false;
-    if (initialData?.id && item.id === initialData.id) return false;
-    const isSameId = studentId && item.studentId && item.studentId === studentId;
-    const isSameName = item.studentName && item.studentName.trim() === studentName.trim();
-    return item.date === date && (isSameId || isSameName);
-  });
+  const sameStudentOnDate = useMemo(() => {
+    const trimmedName = studentName?.trim();
+    if (!date || !trimmedName) return undefined;
+    return existingSchedules?.find((item) => {
+      if (initialData?.id && item.id === initialData.id) return false;
+      const isSameId = studentId && item.studentId && item.studentId === studentId;
+      const isSameName = item.studentName && item.studentName.trim() === trimmedName;
+      return item.date === date && (isSameId || isSameName);
+    });
+  }, [existingSchedules, date, studentId, studentName, initialData?.id]);
 
   useEscapeKey(isOpen, onClose);
 
@@ -89,12 +102,7 @@ export const ScheduleModal = ({
     const student = students.find((s) => s.id === selectedId);
     if (student) {
       setStudentName(student.name || '');
-      const studentCourse =
-        student.subject ||
-        student.course ||
-        (Array.isArray(student.default_schedules) && student.default_schedules[0]?.subject) ||
-        '';
-      setSubject(studentCourse);
+      setSubject(getStudentPrimaryCourse(student, ''));
       setPaymentType(student.payment_type || '지사입금');
       setAddress(student.address || '');
 
@@ -139,7 +147,21 @@ export const ScheduleModal = ({
 
     onSave(scheduleData);
     onClose();
-    focusAppWindow();
+  };
+
+  const confirmSameStudentAndSave = () => {
+    if (!sameStudentOnDate) {
+      doSaveSchedule();
+      return;
+    }
+    showConfirm({
+      title: '동일 학생 중복 안내',
+      message: `[${studentName.trim()}] 학생은 같은 날(${date})에 이미 다른 수업(${sameStudentOnDate.startTime || sameStudentOnDate.classTime || ''})이 등록되어 있습니다.\n\n해당 학생의 수업을 추가로 등록하시겠습니까?`,
+      type: 'info',
+      confirmText: '추가 등록',
+      cancelText: '취소',
+      onConfirm: doSaveSchedule,
+    });
   };
 
   const handleSubmit = (e) => {
@@ -156,37 +178,12 @@ export const ScheduleModal = ({
         type: 'warning',
         confirmText: '등록 진행',
         cancelText: '취소',
-        onConfirm: () => {
-          if (sameStudentOnDate) {
-            showConfirm({
-              title: '동일 학생 중복 안내',
-              message: `[${studentName.trim()}] 학생은 같은 날(${date})에 이미 다른 수업(${sameStudentOnDate.startTime || sameStudentOnDate.classTime || ''})이 등록되어 있습니다.\n\n해당 학생의 수업을 추가로 등록하시겠습니까?`,
-              type: 'info',
-              confirmText: '추가 등록',
-              cancelText: '취소',
-              onConfirm: doSaveSchedule,
-            });
-          } else {
-            doSaveSchedule();
-          }
-        },
+        onConfirm: confirmSameStudentAndSave,
       });
       return;
     }
 
-    if (sameStudentOnDate) {
-      showConfirm({
-        title: '동일 학생 중복 안내',
-        message: `[${studentName.trim()}] 학생은 같은 날(${date})에 이미 다른 수업(${sameStudentOnDate.startTime || sameStudentOnDate.classTime || ''})이 등록되어 있습니다.\n\n해당 학생의 수업을 추가로 등록하시겠습니까?`,
-        type: 'info',
-        confirmText: '추가 등록',
-        cancelText: '취소',
-        onConfirm: doSaveSchedule,
-      });
-      return;
-    }
-
-    doSaveSchedule();
+    confirmSameStudentAndSave();
   };
 
   const handleDelete = () => {
@@ -200,7 +197,6 @@ export const ScheduleModal = ({
       onConfirm: () => {
         onDelete(initialData.id);
         onClose();
-        focusAppWindow();
       },
     });
   };
@@ -257,16 +253,8 @@ export const ScheduleModal = ({
                   onChange={handleStudentSelect}
                 >
                   <option value="">-- 등록된 학생에서 선택 --</option>
-                  {students
-                    .filter((s) => s.status !== 'paused')
-                    .slice()
-                    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'))
-                    .map((s) => {
-                      const displayCourse =
-                        s.subject ||
-                        s.course ||
-                        (Array.isArray(s.default_schedules) && s.default_schedules[0]?.subject) ||
-                        '과목미지정';
+                  {activeSortedStudents.map((s) => {
+                      const displayCourse = getStudentPrimaryCourse(s, '과목미지정');
                       return (
                         <option key={s.id} value={s.id}>
                           {s.name} ({displayCourse})

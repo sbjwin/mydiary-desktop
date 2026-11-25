@@ -3,6 +3,19 @@
  */
 
 /**
+ * 주간 요일 메타데이터 (월요일=1 ~ 일요일=7)
+ */
+export const WEEKDAYS = [
+  { dayOfWeek: 1, name: '월요일', short: '월' },
+  { dayOfWeek: 2, name: '화요일', short: '화' },
+  { dayOfWeek: 3, name: '수요일', short: '수' },
+  { dayOfWeek: 4, name: '목요일', short: '목' },
+  { dayOfWeek: 5, name: '금요일', short: '금' },
+  { dayOfWeek: 6, name: '토요일', short: '토' },
+  { dayOfWeek: 7, name: '일요일', short: '일' },
+];
+
+/**
  * 오늘 날짜를 YYYY-MM-DD 형식으로 반환
  * @returns {string} 예: '2026-10-06'
  */
