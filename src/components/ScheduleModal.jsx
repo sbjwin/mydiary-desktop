@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, BookOpen, Trash2, Edit3, ArrowRight, Tag, AlertTriangle } from 'lucide-react';
 import { formatPhoneInfo, getTodayDateString } from '../database/Database';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const QUICK_TAGS = ['이번주만', '휴일', '아픔', '(30분 수업)', '보강', '시간변경'];
 const DURATION_OPTIONS = [30, 40, 50, 60, 80, 90, 120];
@@ -38,7 +39,7 @@ export const ScheduleModal = ({
       setDuration(initialData.duration || 60);
       setSubject(initialData.subject || initialData.course || '');
       setStatusNote(initialData.statusNote || '');
-      setPaymentType(initialData.paymentType || '지사입금');
+      setPaymentType(initialData.paymentType === '직접결제' ? '직접결제(카드)' : (initialData.paymentType || '지사입금'));
       setPhoneInfo(initialData.phoneInfo || '');
       setAddress(initialData.address || '');
     } else {
@@ -74,18 +75,7 @@ export const ScheduleModal = ({
     return item.date === date && (isSameId || isSameName);
   });
 
-  // ESC 키로 모달 닫기 지원
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useEscapeKey(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -409,7 +399,7 @@ export const ScheduleModal = ({
                 onChange={(e) => setPaymentType(e.target.value)}
               >
                 <option value="지사입금">지사입금</option>
-                <option value="직접결제">직접결제</option>
+                <option value="직접결제(카드)">직접결제(카드)</option>
                 <option value="계좌이체">계좌이체</option>
                 <option value="기타">기타</option>
               </select>

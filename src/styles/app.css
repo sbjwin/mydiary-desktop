@@ -4528,3 +4528,24 @@
   display: flex;
   gap: 12px;
 }
+
+/* ==========================================================================
+   반응형: 좁은 데스크톱 창(1180px 이하) 레이아웃 압축 방어
+   ========================================================================== */
+@media (max-width: 1180px) {
+  .diary-student-rail {
+    width: 155px;
+  }
+
+  .diary-list-sidebar {
+    width: 260px;
+  }
+
+  .form-row-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

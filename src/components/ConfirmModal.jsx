@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   AlertTriangle,
   Info,
@@ -6,6 +6,7 @@ import {
   HelpCircle,
   X,
 } from 'lucide-react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export const ConfirmModal = ({
   isOpen,
@@ -18,21 +19,21 @@ export const ConfirmModal = ({
   onConfirm,
   onClose,
 }) => {
-  // ESC 키로 모달 닫기 및 포커스 복원 보장
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
+  const handleCancel = useCallback(() => {
+    if (onClose) onClose();
+    if (typeof window !== 'undefined' && window.focus) {
+      window.focus();
     }
+    if (window.electronAPI?.focusWindow) {
+      window.electronAPI.focusWindow();
+    }
+  }, [onClose]);
 
+  useEscapeKey(isOpen, handleCancel);
+
+  // 모달이 닫힐 때 윈도우 포커스 복원 보장
+  useEffect(() => {
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      // 모달이 닫힐 때 윈도우 포커스 복원
       if (typeof window !== 'undefined' && window.focus) {
         window.focus();
       }
@@ -40,22 +41,12 @@ export const ConfirmModal = ({
         window.electronAPI.focusWindow();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
     if (onConfirm) onConfirm();
-    if (typeof window !== 'undefined' && window.focus) {
-      window.focus();
-    }
-    if (window.electronAPI?.focusWindow) {
-      window.electronAPI.focusWindow();
-    }
-  };
-
-  const handleCancel = () => {
-    if (onClose) onClose();
     if (typeof window !== 'undefined' && window.focus) {
       window.focus();
     }

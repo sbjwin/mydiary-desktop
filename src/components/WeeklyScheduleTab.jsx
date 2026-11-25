@@ -22,6 +22,8 @@ import {
 import { ScheduleModal } from './ScheduleModal';
 import { printWeeklyReport, exportWeeklyReportPdf, shareWeeklyReportHwpx, shareWeeklyReportDocx } from '../services/PrintService';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import { useClickOutside } from '../hooks/useClickOutside';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const DAYS = [
   { dayOfWeek: 1, name: '월요일', short: '월' },
@@ -89,17 +91,8 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverKey, setDragOverKey] = useState(null);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (toolbarDropdownRef.current && !toolbarDropdownRef.current.contains(e.target)) {
-        setOpenDropdown(null);
-      }
-    };
-    if (openDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openDropdown]);
+  useClickOutside(toolbarDropdownRef, Boolean(openDropdown), () => setOpenDropdown(null));
+  useEscapeKey(Boolean(openDropdown), () => setOpenDropdown(null));
 
   const loadWeekData = async (monday) => {
     setLoading(true);
@@ -607,7 +600,11 @@ export const WeeklyScheduleTab = ({ onNavigateToDiary }) => {
       {/* 요약 바 */}
       <div className="weekly-sub-bar">
         <div className="week-stats">
-          <span>📅 이번 주 등록 수업: <strong>{totalScheduleCount}건</strong></span>
+          {loading ? (
+            <span className="text-muted">⏳ 주간 일정을 불러오는 중...</span>
+          ) : (
+            <span>📅 이번 주 등록 수업: <strong>{totalScheduleCount}건</strong></span>
+          )}
         </div>
         <div className="view-hint">
           <span>💡 카드를 <strong>드래그</strong>하여 시간/요일을 이동하거나, 카드 우측 <strong>📝 버튼(또는 더블클릭)</strong>으로 수업 일지를 즉시 작성하세요.</span>

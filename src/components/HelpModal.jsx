@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
   X,
   HelpCircle,
@@ -28,18 +29,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
     if (initialTab) setActiveMainTab(initialTab);
   }, [initialTab]);
 
-  // ESC 키로 모달 닫기
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useEscapeKey(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -88,7 +78,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
       id: 'diary',
       title: '수업 일지 (Class Diary)',
       badge: '3단 와이드 워크스테이션',
-      desc: '좌측(학생 및 일지 목록) - 중앙(상세 작성기) - 우측(학생 프로필 & 직전 수업 과제/교재 원클릭 참조 카드 및 상용구 칩) 3단 레이아웃을 통해 최적의 수업 기록 환경을 제공합니다.',
+      desc: '좌측(학생 빠른 선택 레일) - 중앙(일지 목록 및 복합 검색) - 우측(상세 작성기 및 상단 직전 수업 참조 카드) 3단 레이아웃을 통해 최적의 수업 기록 환경을 제공합니다.',
       image: './guide/guide_diary.png',
       features: [
         {
@@ -390,7 +380,7 @@ export const HelpModal = ({ isOpen, onClose, initialTab = 'guide' }) => {
               <div className="guide-features-container">
                 <h5 className="features-group-title">
                   <Sparkles size={16} className="text-primary" />
-                  주요 영역별 기능 안내 (①, ②, ③, ④)
+                  주요 영역별 기능 안내
                 </h5>
                 <div className="features-grid">
                   {currentScreen.features.map((item, idx) => (

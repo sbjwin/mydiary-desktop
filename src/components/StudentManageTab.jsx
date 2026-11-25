@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Database, getTodayDateString, formatPhoneInfo } from '../database/Database';
 import { generateStudentProfileHtml, printStudentProfile } from '../services/PrintService';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import {
   Users,
   UserPlus,
@@ -39,6 +40,29 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
     setIsDirty(dirty);
     if (onDirtyChange) onDirtyChange(dirty);
   };
+
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    updateDirty(true);
+  };
+
+  const confirmDiscardIfDirty = (action) => {
+    if (!isDirty) {
+      action();
+      return;
+    }
+    showConfirm({
+      title: '작성 중인 내용 확인',
+      message: '저장하지 않은 학생 정보 변경사항이 있습니다.\n저장하지 않고 이동하시겠습니까?',
+      type: 'warning',
+      confirmText: '이동하기',
+      cancelText: '계속 작성',
+      onConfirm: () => {
+        updateDirty(false);
+        action();
+      },
+    });
+  };
   const [students, setStudents] = useState([]);
   const [activeFilter, setActiveFilter] = useState('active'); // 'active' | 'paused' | 'all'
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,6 +92,9 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
   const [modalDate, setModalDate] = useState(getTodayDateString());
   const [modalReason, setModalReason] = useState('');
+
+  useEscapeKey(pauseModalOpen, () => setPauseModalOpen(false));
+  useEscapeKey(resumeModalOpen, () => setResumeModalOpen(false));
 
   const loadStudents = async () => {
     const list = await Database.getAllStudents();
@@ -191,14 +218,18 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       notes: st.notes || '',
       default_schedules: Array.isArray(st.default_schedules) ? [...st.default_schedules] : [],
     });
+    updateDirty(false);
   };
 
   const handleSelectStudent = (st) => {
-    setSelectedStudentId(st.id);
-    populateForm(st);
+    if (st.id === selectedStudentId) return;
+    confirmDiscardIfDirty(() => {
+      setSelectedStudentId(st.id);
+      populateForm(st);
+    });
   };
 
-  const handleNewStudent = () => {
+  const applyNewStudent = () => {
     setSelectedStudentId(null);
     setFormData({
       name: '',
@@ -217,6 +248,11 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       notes: '',
       default_schedules: [{ dayOfWeek: 1, startTime: '14:00', duration: 60, subject: '수학' }],
     });
+    updateDirty(false);
+  };
+
+  const handleNewStudent = () => {
+    confirmDiscardIfDirty(applyNewStudent);
   };
 
   const handleSaveStudent = async () => {
@@ -240,6 +276,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
         setSelectedStudentId(newSt.id);
         showToast('새 학생이 등록되었습니다.', 'success');
       }
+      updateDirty(false);
       await loadStudents();
       focusAppWindow();
     } catch (err) {
@@ -315,6 +352,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
         { dayOfWeek: 1, startTime: '15:00', duration: 60, subject: '수학' },
       ],
     }));
+    updateDirty(true);
   };
 
   const handleRemoveSchedule = (index) => {
@@ -322,6 +360,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       ...prev,
       default_schedules: prev.default_schedules.filter((_, idx) => idx !== index),
     }));
+    updateDirty(true);
   };
 
   const handleScheduleChange = (index, field, value) => {
@@ -330,6 +369,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, default_schedules: updated };
     });
+    updateDirty(true);
   };
 
   // 학생 카드 인쇄
@@ -458,6 +498,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   : `현재 ${selectedStudent.current_term_number || 1}차 수강 중`}
               </span>
             )}
+            {isDirty && <span className="unsaved-dirty-badge">● 수정 중 (미저장)</span>}
           </div>
 
           <div className="btn-group">
@@ -606,7 +647,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   className="form-input"
                   placeholder="예: 김민준"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
                 />
               </div>
 
@@ -617,7 +658,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   className="form-input"
                   placeholder="예: 중앙초 3학년"
                   value={formData.school_grade}
-                  onChange={(e) => setFormData({ ...formData, school_grade: e.target.value })}
+                  onChange={(e) => handleFieldChange('school_grade', e.target.value)}
                 />
               </div>
 
@@ -628,7 +669,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   className="form-input"
                   placeholder="예: 수학, 영어, 독서 등"
                   value={formData.course || ''}
-                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                  onChange={(e) => handleFieldChange('course', e.target.value)}
                 />
               </div>
 
@@ -638,7 +679,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   type="date"
                   className="form-input"
                   value={formData.first_enrolled_date}
-                  onChange={(e) => setFormData({ ...formData, first_enrolled_date: e.target.value })}
+                  onChange={(e) => handleFieldChange('first_enrolled_date', e.target.value)}
                 />
               </div>
 
@@ -647,7 +688,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                 <select
                   className="form-select"
                   value={formData.study_method}
-                  onChange={(e) => setFormData({ ...formData, study_method: e.target.value })}
+                  onChange={(e) => handleFieldChange('study_method', e.target.value)}
                 >
                   <option value="방문지도">방문지도</option>
                   <option value="교실(학원)">교실(학원)</option>
@@ -660,7 +701,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                 <select
                   className="form-select"
                   value={formData.payment_type}
-                  onChange={(e) => setFormData({ ...formData, payment_type: e.target.value })}
+                  onChange={(e) => handleFieldChange('payment_type', e.target.value)}
                 >
                   <option value="지사입금">지사입금</option>
                   <option value="직접결제(카드)">직접결제(카드)</option>
@@ -676,7 +717,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   className="form-input"
                   placeholder="앞자리 또는 전체"
                   value={formData.resident_number}
-                  onChange={(e) => setFormData({ ...formData, resident_number: e.target.value })}
+                  onChange={(e) => handleFieldChange('resident_number', e.target.value)}
                 />
               </div>
             </div>
@@ -688,7 +729,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                 className="form-input"
                 placeholder="예: 서울시 강남구 테헤란로 123 아파트 101동"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) => handleFieldChange('address', e.target.value)}
               />
             </div>
           </div>
@@ -704,7 +745,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   className="form-input"
                   placeholder="010-XXXX-XXXX"
                   value={formData.mobile_phone}
-                  onChange={(e) => setFormData({ ...formData, mobile_phone: e.target.value })}
+                  onChange={(e) => handleFieldChange('mobile_phone', e.target.value)}
                 />
               </div>
 
@@ -715,7 +756,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   className="form-input"
                   placeholder="예: 홍길동 (모)"
                   value={formData.parent_name}
-                  onChange={(e) => setFormData({ ...formData, parent_name: e.target.value })}
+                  onChange={(e) => handleFieldChange('parent_name', e.target.value)}
                 />
               </div>
 
@@ -726,7 +767,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
                   className="form-input"
                   placeholder="010-XXXX-XXXX"
                   value={formData.parent_mobile_phone}
-                  onChange={(e) => setFormData({ ...formData, parent_mobile_phone: e.target.value })}
+                  onChange={(e) => handleFieldChange('parent_mobile_phone', e.target.value)}
                 />
               </div>
             </div>
@@ -840,7 +881,7 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
               rows={4}
               placeholder="학생의 성향, 학습 스타일, 주의할 점 등을 기록하세요..."
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) => handleFieldChange('notes', e.target.value)}
             />
           </div>
         </div>
@@ -848,8 +889,8 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
 
       {/* 휴회 처리 모달 */}
       {pauseModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-box">
+        <div className="modal-overlay" onClick={() => setPauseModalOpen(false)} role="dialog" aria-modal="true">
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <h3>학생 휴회 처리</h3>
             <p className="modal-desc">
               <strong>{formData.name}</strong> 학생의 수강을 일시 중단(휴회)합니다.
@@ -887,8 +928,8 @@ export const StudentManageTab = ({ onDirtyChange, onNavigateToDiary }) => {
 
       {/* 재수강(새 차수) 모달 */}
       {resumeModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-box">
+        <div className="modal-overlay" onClick={() => setResumeModalOpen(false)} role="dialog" aria-modal="true">
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <h3>재수강 (새 차수) 복귀 시작</h3>
             <p className="modal-desc">
               <strong>{formData.name}</strong> 학생의 새로운 수강 차수를 시작합니다.

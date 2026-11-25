@@ -20,6 +20,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { showToast, showConfirm, focusAppWindow } from '../utils/dialog';
+import { formatDisplayTime } from '../utils/dateUtils';
+import { useClickOutside } from '../hooks/useClickOutside';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 const COMMON_COURSES = ['국어', '수학', '사회', '과학', '영어', '독서논술', '창의체험'];
 const CONTENT_PHRASES = [
@@ -53,12 +56,34 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   const contentTextareaRef = useRef(null);
   const lastFocusedFieldRef = useRef(null);
   const searchInputRef = useRef(null);
+  const hwpxMenuRef = useRef(null);
   // 저장 버튼 최근 피드백 상태
   const [isSavedRecently, setIsSavedRecently] = useState(false);
 
   const updateDirty = (dirty) => {
     setIsDirty(dirty);
     if (onDirtyChange) onDirtyChange(dirty);
+  };
+
+  useClickOutside(hwpxMenuRef, hwpxMenuOpen, () => setHwpxMenuOpen(false));
+  useEscapeKey(hwpxMenuOpen, () => setHwpxMenuOpen(false));
+
+  const confirmDiscardIfDirty = (action) => {
+    if (!isDirty) {
+      action();
+      return;
+    }
+    showConfirm({
+      title: '작성 중인 내용 확인',
+      message: '저장하지 않은 변경사항이 있습니다.\n저장하지 않고 이동하시겠습니까?',
+      type: 'warning',
+      confirmText: '이동하기',
+      cancelText: '계속 작성',
+      onConfirm: () => {
+        updateDirty(false);
+        action();
+      },
+    });
   };
 
   // 필드 포커스 및 윈도우 OS 포커스 강제 복원 헬퍼
@@ -159,10 +184,12 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   }, [initialParams]);
 
   const populateForm = (rec) => {
+    const rawTime = rec.class_time || rec.time || rec.classTime || '10:00';
+    const normalizedTime = formatDisplayTime(rawTime);
     setFormData({
       studentId: rec.student_id || rec.studentId || '',
       classDate: rec.class_date || rec.date || getTodayDateString(),
-      classTime: rec.class_time || rec.time || rec.classTime || '10:00',
+      classTime: /^\d{2}:\d{2}$/.test(normalizedTime) ? normalizedTime : '10:00',
       course: rec.course || rec.subject || rec.book_issue_date || '',
       content: rec.content || '',
       homework: rec.homework || rec.assignment || '',
@@ -177,23 +204,28 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
   };
 
   const handleSelectRecord = (rec) => {
-    setSelectedRecordId(rec.id);
-    setSelectedStudentId(rec.student_id || rec.studentId);
-    populateForm(rec);
+    if (rec.id === selectedRecordId) return;
+    confirmDiscardIfDirty(() => {
+      setSelectedRecordId(rec.id);
+      setSelectedStudentId(rec.student_id || rec.studentId);
+      populateForm(rec);
+    });
   };
 
   const handleNewDiary = () => {
-    setSelectedRecordId(null);
-    setFormData({
-      studentId: selectedStudentId || (students[0]?.id || ''),
-      classDate: getTodayDateString(),
-      classTime: '10:00',
-      course: '수학',
-      content: '',
-      homework: '',
-      notes: '',
+    confirmDiscardIfDirty(() => {
+      setSelectedRecordId(null);
+      setFormData({
+        studentId: selectedStudentId || (students[0]?.id || ''),
+        classDate: getTodayDateString(),
+        classTime: '10:00',
+        course: '수학',
+        content: '',
+        homework: '',
+        notes: '',
+      });
+      updateDirty(false);
     });
-    updateDirty(false);
   };
 
   const handleSave = async () => {
@@ -417,8 +449,11 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
             type="button"
             className={`rail-student-item ${selectedStudentId === '' ? 'active' : ''}`}
             onClick={() => {
-              setSelectedStudentId('');
-              setSelectedRecordId(null);
+              if (selectedStudentId === '') return;
+              confirmDiscardIfDirty(() => {
+                setSelectedStudentId('');
+                setSelectedRecordId(null);
+              });
             }}
           >
             <span className="rail-student-name">전체 학생 보기</span>
@@ -435,14 +470,17 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
                   s.status === 'paused' ? 'is-paused' : ''
                 }`}
                 onClick={() => {
-                  setSelectedStudentId(s.id);
-                  setFormData((prev) => ({
-                    ...prev,
-                    studentId: s.id,
-                    course: s.course || s.subject || prev.course,
-                  }));
-                  setSelectedRecordId(null);
-                  updateDirty(false);
+                  if (selectedStudentId === s.id) return;
+                  confirmDiscardIfDirty(() => {
+                    setSelectedStudentId(s.id);
+                    setFormData((prev) => ({
+                      ...prev,
+                      studentId: s.id,
+                      course: s.course || s.subject || prev.course,
+                    }));
+                    setSelectedRecordId(null);
+                    updateDirty(false);
+                  });
                 }}
               >
                 <div className="rail-student-meta">
@@ -557,13 +595,13 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
           </div>
 
           <div className="btn-group">
-            <div className="toolbar-dropdown-wrapper">
+            <div className="toolbar-dropdown-wrapper" ref={hwpxMenuRef}>
               <button type="button" className="btn-secondary" onClick={() => setHwpxMenuOpen(!hwpxMenuOpen)}>
                 <FileDown size={15} /> 한글(HWPX) 양식 저장 ▾
               </button>
               {hwpxMenuOpen && (
                 <div className="toolbar-dropdown-menu hwpx-preset-dropdown">
-                  <div className="hwpx-preset-section-title">1. HWPX 문서 서식 프리셋 (G1)</div>
+                  <div className="hwpx-preset-section-title">1. HWPX 문서 서식 프리셋</div>
                   {[
                     { id: 'standard', label: '📄 표준형 (기본 관찰일지 표)' },
                     { id: 'approval', label: '🏛️ 결재란 포함형 (담당·원장·학부모 서명)' },
@@ -680,9 +718,8 @@ export const ClassDiaryTab = ({ initialParams, onDirtyChange }) => {
             <div className="form-group">
               <label className="form-label">수업 시간 *</label>
               <input
-                type="text"
+                type="time"
                 className="form-input"
-                placeholder="예: 14:00"
                 value={formData.classTime}
                 onChange={(e) => handleFieldChange('classTime', e.target.value)}
                 onFocus={ensureFieldFocus}

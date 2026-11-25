@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Calendar, BookOpen, Users, HardDrive, Laptop, HelpCircle, Palette, Check } from 'lucide-react';
 import { THEME_PRESETS } from '../theme';
 import { getTeacherProfile, saveTeacherProfile } from '../services/HwpxExportService';
 import { showToast } from '../utils/dialog';
+import { useClickOutside } from '../hooks/useClickOutside';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export const Header = ({
   activeTab,
@@ -16,8 +18,8 @@ export const Header = ({
   const profileRef = useRef(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [teacherProfile, setTeacherProfile] = useState(() => getTeacherProfile());
-  const [draftTeacherName, setDraftTeacherName] = useState(() => getTeacherProfile().teacherName);
-  const [draftOrgName, setDraftOrgName] = useState(() => getTeacherProfile().orgName);
+  const [draftTeacherName, setDraftTeacherName] = useState(teacherProfile.teacherName);
+  const [draftOrgName, setDraftOrgName] = useState(teacherProfile.orgName);
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
@@ -36,20 +38,12 @@ export const Header = ({
     { id: 'backup', label: '백업 및 복원', icon: HardDrive },
   ];
 
-  // 외부 클릭 시 테마 팝오버 닫기
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (paletteRef.current && !paletteRef.current.contains(e.target)) {
-        setIsPaletteOpen(false);
-      }
-    };
-    if (isPaletteOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isPaletteOpen]);
+  useClickOutside(paletteRef, isPaletteOpen, () => setIsPaletteOpen(false));
+  useClickOutside(profileRef, isProfileOpen, () => setIsProfileOpen(false));
+  useEscapeKey(isPaletteOpen || isProfileOpen, () => {
+    setIsPaletteOpen(false);
+    setIsProfileOpen(false);
+  });
 
   return (
     <header className="app-header">
@@ -85,7 +79,10 @@ export const Header = ({
         <div className="header-theme-wrapper" ref={paletteRef}>
           <button
             className={`header-theme-btn ${isPaletteOpen ? 'active' : ''}`}
-            onClick={() => setIsPaletteOpen(!isPaletteOpen)}
+            onClick={() => {
+              setIsProfileOpen(false);
+              setIsPaletteOpen(!isPaletteOpen);
+            }}
             title="화면 테마 색상 변경"
           >
             <Palette size={15} />
@@ -136,17 +133,22 @@ export const Header = ({
           <span>도움말 (F1)</span>
         </button>
 
-        <div className="user-profile-badge">
+        <div className="user-profile-badge" ref={profileRef}>
           <Laptop size={14} />
           <span
             className="user-profile-clickable"
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            onClick={() => {
+              setIsPaletteOpen(false);
+              setDraftTeacherName(teacherProfile.teacherName);
+              setDraftOrgName(teacherProfile.orgName);
+              setIsProfileOpen(!isProfileOpen);
+            }}
             title="클릭하여 교사명 및 교실/기관명 변경 (HWPX 문서 작성자 연동)"
           >
             {teacherProfile.teacherName} 선생님 ({teacherProfile.orgName}) ▾
           </span>
           {isProfileOpen && (
-            <form className="profile-popover-dropdown" onSubmit={handleSaveProfile} ref={profileRef}>
+            <form className="profile-popover-dropdown" onSubmit={handleSaveProfile}>
               <div className="theme-popover-header">
                 <span>👩‍🏫 교사 및 기관명 설정</span>
               </div>

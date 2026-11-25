@@ -462,7 +462,7 @@ export const BackupSettingTab = () => {
           <div className="restore-policy-left">
             <div className="restore-policy-title">
               <ShieldCheck size={18} className="text-primary" />
-              <span>복원 시 데이터 반영 방식 (Phase 4)</span>
+              <span>복원 시 데이터 반영 방식</span>
             </div>
             <div className="restore-mode-toggle-group">
               <button
